@@ -149,6 +149,23 @@ class Effects:
             self.add.emit(1, p + n * 0.02, (0, 0, 0), 0.06, 0.12, 0.2, (5.0, 3.0, 1.2, 1.0), (2.0, 1.0, 0.3, 0.0),
                           frame=P.F_GLOW)
 
+    def debris_burst(self, pos, out, color, effect: str = "dust_grey", strong: bool = False) -> None:
+        """A chunk of wall breaking away: a dust puff and flying fragments."""
+        p = Point3(*pos)
+        n = Vec3(*out)
+        c = color
+        nd = 3 if not strong else 5
+        self.alpha.emit(nd, _jitter(nd, p, 0.08), _cone(nd, n, 0.9, (0.3, 1.8 if strong else 1.0)),
+                        np.random.uniform(1.2, 2.6, nd), np.random.uniform(0.12, 0.2, nd),
+                        np.random.uniform(0.6, 1.1, nd), (c[0], c[1], c[2], 0.7), (c[0], c[1], c[2], 0.0),
+                        rotv=np.random.uniform(-1, 1, nd), drag=2.5, grav=-0.1, frame=P.F_SMOKE2, lit=1.0)
+        nc = 6 if not strong else 10
+        frame = IMPACTS.get(effect, IMPACTS["dust_grey"]).get("chip_frame", P.F_CHUNK)
+        self.alpha.emit(nc, _jitter(nc, p, 0.06), _cone(nc, n, 1.1, (1.5, 6.0 if strong else 3.5)),
+                        np.random.uniform(0.5, 1.1, nc), np.random.uniform(0.015, 0.04, nc), 0.02,
+                        (c[0] * 0.9, c[1] * 0.9, c[2] * 0.9, 1.0), rotv=np.random.uniform(-15, 15, nc), drag=0.4,
+                        grav=9.8, frame=frame, lit=1.0)
+
     def blood(self, p: Point3, d: Vec3) -> None:
         n = 6
         self.alpha.emit(n, _jitter(n, p, 0.03), _cone(n, d, 0.7, (0.4, 2.0)), np.random.uniform(0.25, 0.5, n),

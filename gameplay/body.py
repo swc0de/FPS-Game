@@ -34,6 +34,7 @@ import math
 from panda3d.core import LVecBase4f, NodePath, Point3, Vec3
 
 from engine.geometry import MeshBuilder
+from gameplay.lean import Lean
 from gameplay.hitboxes import PARTS, HitboxRig
 from weapons.models import build_weapon_model, segment_hpr
 
@@ -266,8 +267,9 @@ class CharacterBody:
 
     # ---------------------------------------------------------- animation
     def animate(self, dt: float, pos, yaw: float, pitch: float, crouch: float, vel: Vec3, on_ground: bool,
-                walking: bool = False) -> None:
-        """Pose for this tick and move the hit boxes along. ``pitch`` is the aim pitch."""
+                walking: bool = False, lean: float = 0.0) -> None:
+        """Pose for this tick and move the hit boxes along. ``pitch`` is the aim pitch,
+        ``lean`` -1..1 rolls the upper body sideways (gameplay/lean.py)."""
         self.root.setPos(Point3(*pos))
         self.root.setH(yaw)
         if self.dead_t >= 0.0:
@@ -276,7 +278,7 @@ class CharacterBody:
         # nothing changed (standing still, same view): the pose and hit boxes are current
         speed = math.hypot(vel.x, vel.y)
         sig = (round(pos[0], 3), round(pos[1], 3), round(pos[2], 3), round(yaw, 1), round(pitch, 1),
-               round(crouch, 2), self.hold, self.weapon_key)
+               round(crouch, 2), round(lean, 2), self.hold, self.weapon_key)
         if sig == self._sig and speed < 0.05 and self.move_weight < 0.01 and self.kick <= 0.0 and self.flash <= 0:
             return
         self._sig = sig
@@ -284,6 +286,7 @@ class CharacterBody:
         self.aim_pitch = max(-80.0, min(80.0, pitch))
         moving = min(speed / 2.0, 1.0) if on_ground else 0.0
         self.move_weight += (moving - self.move_weight) * min(dt * 10.0, 1.0)
+        lean_amount = lean
         stride = 1.0 if crouch > 0.5 else (1.15 if walking else 1.6)
         self.phase = (self.phase + speed * dt / stride * math.pi) % (2 * math.pi)
         self.kick = max(self.kick - dt * 8.0, 0.0)
@@ -305,9 +308,10 @@ class CharacterBody:
         j["pelvis"].setR(vs * s * 4.0 * w)
         lean = -12.0 * crouch - 4.0 * w * vf
         a = self.aim_pitch
-        j["spine"].setP(lean + a * 0.25)
+        roll = Lean.body_roll(lean_amount)
+        j["spine"].setHpr(0, lean + a * 0.25, roll)
         j["chest"].setP(a * 0.30 - self.kick * 3.0)
-        j["neck"].setP(a * 0.45 - lean)
+        j["neck"].setHpr(0, a * 0.45 - lean, -roll * 0.35)
         j["gun"].setP(a * 0.45 + self.kick * 4.0)
         j["gun"].setY(HOLDS[self.hold]["pos"][1] - self.kick * 0.03)
         hip_base = 80.0 * crouch

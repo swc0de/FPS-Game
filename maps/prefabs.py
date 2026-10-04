@@ -71,6 +71,9 @@ def wall(ctx, e):
     openings: [{"at": distance from p0 to opening centre, "width": w,
                 "bottom": z0 (relative), "top": z1 (relative)}]
     mat = +left side (and edges), mat2 = right side (e.g. interior plaster).
+    soft: destructible (each segment between openings becomes a panel);
+    reinforce: defenders can reinforce it; breach: bots may blow it open;
+    surface: destruction/penetration surface override (default from mat).
     """
     p0, p1 = e["p0"], e["p1"]
     h = e.get("height", 3.0)
@@ -121,7 +124,10 @@ def wall(ctx, e):
         center = (cx, cy, z0 + (zb + zt) / 2)
         size = (b - a, t, zt - zb)
         hpr = (heading, 0, 0)
-        if mat2 != mat:
+        if e.get("soft"):
+            ctx.panel(center, size, mat, mat2, hpr=hpr, reinforce=e.get("reinforce", False),
+                      breach=e.get("breach", False), name=e.get("name", ""), surface=e.get("surface"))
+        elif mat2 != mat:
             ctx.box(center, size, mat, hpr=hpr, collide=True, occlude=True, skip_faces=("-y",))
             ctx.box(center, size, mat2, hpr=hpr, collide=False, occlude=False,
                     skip_faces=("+x", "-x", "+y", "+z", "-z"))

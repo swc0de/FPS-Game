@@ -104,6 +104,8 @@ class Grenade:
         if kind == "frag":
             self.game.effects.explosion(p, float(self.d.get("radius", 9.0)))
             self.game.audio.play_at("explosion", p, volume=1.0)
+            self.game.destruction.explosion(p, float(self.d.get("wall_damage", 260)),
+                                            float(self.d.get("wall_radius", 1.1)))
             self._apply_blast(p)
             self.game.notify_noise(p, 1.0, 60.0, source=self.thrower)
             self.destroy()

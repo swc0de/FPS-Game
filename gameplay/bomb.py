@@ -115,6 +115,7 @@ class Bomb:
         g.audio.play_at("explosion", self.pos, volume=1.0)
         g.notify_noise(self.pos, 1.0, 120.0)
         center = self.pos + Vec3(0, 0, 0.5)
+        g.destruction.explosion(center, float(self.cfg.get("wall_damage", 900)), float(self.cfg.get("wall_radius", 4.5)))
         for target in g.damageables():
             if not target.damageable.alive:
                 continue

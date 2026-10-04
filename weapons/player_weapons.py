@@ -172,8 +172,7 @@ class PlayerWeapons:
                           scoped=ws.zoom_level > 0 and self.vm.ads > 0.9)
 
     def eye(self) -> Point3:
-        c = self.player.char
-        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
+        return self.player.eye()
 
     # --------------------------------------------------------------- fire
     def _fire(self, ws, now: float) -> None:
@@ -304,6 +303,8 @@ class PlayerWeapons:
             from engine.physics import surface_of
             self.game.effects.impact(pos, Vec3(res.getHitNormal()), surface_of(node), d)
             self.game.audio.play_at("knife_hit_wall", pos)
+            dmg = float(ws.d.raw.get("heavy_damage", 65)) if heavy else ws.d.damage
+            self.game.destruction.melee_hit(node, pos, d, dmg)
 
     # ------------------------------------------------------------ grenades
     def _grenade_logic(self, dt: float, now: float, inp) -> None:

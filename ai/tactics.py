@@ -193,7 +193,8 @@ class TeamBrain:
         r = self.rng.random()
         self.plan = "rush" if r < 0.18 else ("default" if r < 0.45 else "execute")
         d = self.director
-        self.commit_t = now + float(d.rules["timers"]["freeze_time"]) + self.rng.uniform(25.0, 45.0)
+        self.commit_t = now + float(d.rules["timers"]["freeze_time"]) + float(d.rules["timers"].get("prep_time", 0.0)) \
+            + self.rng.uniform(25.0, 45.0)
         if self.plan == "rush":
             lane = min(self.lanes[self.site], key=lambda ln: len(ln["points"]))
             for b in bots:

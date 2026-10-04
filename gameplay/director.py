@@ -179,8 +179,17 @@ class MatchDirector:
                 t.side = other_side(t.side)
         self.start()
 
-    def combat_locked(self) -> bool:
-        return self.match.phase in ("freeze", "match_end")
+    def combat_locked(self, agent=None) -> bool:
+        """No shooting in freeze time; during prep only the defenders may
+        (murder holes - nobody can be hurt before the round goes live)."""
+        phase = self.match.phase
+        if phase == "prep":
+            return agent is None or agent.side != "defend"
+        return phase in ("freeze", "match_end")
+
+    def move_locked(self, agent) -> bool:
+        phase = self.match.phase
+        return phase == "freeze" or (phase == "prep" and agent.side != "defend")
 
     def fixed_update(self, dt: float) -> None:
         g = self.game
@@ -198,7 +207,7 @@ class MatchDirector:
                 tb.round_start(now)
         planting = self._update_plant(dt)
         defusing = self._update_defuse(dt)
-        player.move_lock = m.phase == "freeze" or planting or defusing
+        player.move_lock = self.move_locked(human) or planting or defusing
         if m.phase == "planted" and m.bomb_time_left() <= 0.0 and self.bomb.state == "planted":
             self.bomb.explode()
             m.on_bomb_exploded()
@@ -213,9 +222,8 @@ class MatchDirector:
                     b.weapons.inv.has_bomb = True
                     break
         # bots and their team brains
-        locked = self.combat_locked()
         for b in self.bots:
-            b.fixed_update(dt, now, locked)
+            b.fixed_update(dt, now, self.move_locked(b) if b.active else True)
             if b.active and b.alive and b.char.pos.z < self._kill_z:
                 self._out_of_world(b)
         if human.alive and not self.spectate_only and not player.noclip and player.char.pos.z < self._kill_z:
@@ -229,7 +237,8 @@ class MatchDirector:
         if human.alive and not self.spectate_only:
             c = player.char
             crouch = (c.stand_height - c.height) / max(c.stand_height - c.crouch_height, 1e-3)
-            self.player_body.animate(dt, c.pos, player.yaw, player.pitch, crouch, c.vel, c.on_ground)
+            self.player_body.animate(dt, c.pos, player.yaw, player.pitch, crouch, c.vel, c.on_ground,
+                                     lean=player.lean.amount)
         # death: spectate teammates after a moment
         if not human.alive:
             self._dead_t += dt

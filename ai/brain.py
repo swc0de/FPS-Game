@@ -33,6 +33,7 @@ from panda3d.core import Point3, Vec3
 from ai.aim import angles_to, wrap180
 from ai.steering import PathFollower
 from engine.physics import GRAVITY, MASK_BULLETS, MASK_SIGHT
+from gameplay.lean import OFFSET as LEAN_OFFSET, clearance, right_of
 
 
 @dataclass
@@ -128,6 +129,8 @@ class Brain:
         self.alert_until = 0.0
         self.plant_t = 0.0
         self.defuse_t = 0.0
+        self.lean = 0.0
+        self.lean_check = 0.0
         self.scan_t = 0.0
         self.scan_offset = 0.0
         self.throw: ThrowOrder | None = None
@@ -221,6 +224,51 @@ class Brain:
         if self.throw is not None and self.mode in ("task", "alert") and self._do_throw(dt, now):
             return
         getattr(self, "_" + self.mode)(dt, now)
+        self._choose_lean(now)
+
+    def _watch_point(self) -> Point3 | None:
+        """What the bot is looking at right now (for peeking)."""
+        if self.mode == "engage" and self.target is not None and self.target.agent.alive:
+            return self.target.agent.head_pos()
+        if self.mode == "alert" and self.alert_pos is not None:
+            return self.alert_pos + Vec3(0, 0, 1.5)
+        if self.mode == "task" and self.arrived and self.task.look is not None:
+            return self.task.look
+        return None
+
+    def _choose_lean(self, now: float) -> None:
+        """Peek around corners: lean when what we watch is hidden from the
+        upright eye but visible from one side (and only while standing still)."""
+        bot = self.bot
+        it = bot.intent
+        if it.wish.lengthSquared() > 0.04 or self.mode in ("retreat", "seek") or bot.char.horizontal_speed > 1.6:
+            self.lean = 0.0
+        elif now >= self.lean_check:
+            self.lean_check = now + bot.rng.uniform(0.25, 0.4)
+            point = self._watch_point()
+            if point is None:
+                self.lean = 0.0
+            else:
+                c = bot.char
+                eye = Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
+                phys = self.director.game.physics
+                free = clearance(phys, eye, bot.aim.yaw)
+                visible = []
+                for sign, f in ((-1.0, free[0]), (0.0, 1.0), (1.0, free[1])):
+                    p = eye + right_of(bot.aim.yaw) * (sign * LEAN_OFFSET * f)
+                    visible.append(f > 0.6 and phys.ray_cast(p, point, MASK_SIGHT) is None)
+                keep = self.mode == "engage" and self.lean != 0.0 and visible[1 + int(self.lean)]
+                if keep:
+                    pass                      # keep peeking while shooting
+                elif visible[1]:
+                    self.lean = 0.0
+                elif visible[2] and not visible[0]:
+                    self.lean = 1.0
+                elif visible[0] and not visible[2]:
+                    self.lean = -1.0
+                else:
+                    self.lean = 0.0
+        it.lean = self.lean
 
     # -------------------------------------------------------------- think
     def _think(self, now: float) -> None:

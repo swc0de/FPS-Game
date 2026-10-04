@@ -6,6 +6,7 @@ from gameplay.match import Match, Participant, load_rules
 RULES = load_rules()
 T = RULES["timers"]
 ECO = RULES["economy"]
+PRE = T["freeze_time"] + T.get("prep_time", 0.0)     # freeze + prep until the round goes live
 
 
 def make(human_side="attack", opponents=5, teammates=0):
@@ -36,12 +37,27 @@ def run(m, seconds, dt=0.1):
 
 
 class RoundFlowTests(unittest.TestCase):
+    def test_no_damage_before_live(self):
+        m, you, opps, events, _ = make()
+        m.start()
+        self.assertFalse(m.allow_damage(opps[0], you))
+        run(m, T["freeze_time"] + 0.2)
+        self.assertEqual(m.phase, "prep")
+        self.assertFalse(m.allow_damage(opps[0], you))
+        self.assertTrue(m.allow_damage(you, None))          # falling still hurts
+        run(m, T["prep_time"])
+        self.assertTrue(m.allow_damage(opps[0], you))
+
     def test_freeze_then_live_then_time_win_for_defenders(self):
         m, you, opps, events, _ = make()
         m.start()
         self.assertEqual(m.phase, "freeze")
         self.assertTrue(m.can_buy())
         run(m, T["freeze_time"] + 0.2)
+        self.assertEqual(m.phase, "prep")
+        self.assertTrue(m.can_buy())
+        self.assertAlmostEqual(m.round_time_left(), T["round_time"])
+        run(m, T["prep_time"])
         self.assertEqual(m.phase, "live")
         run(m, T["buy_time"] + 0.2)
         self.assertFalse(m.can_buy())
@@ -53,7 +69,7 @@ class RoundFlowTests(unittest.TestCase):
     def test_elimination_and_rewards(self):
         m, you, opps, events, _ = make()
         m.start()
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         for o in opps:
             m.on_kill(o, you, "r7", reward=300, headshot=True)
         self.assertEqual(m.phase, "round_end")
@@ -69,7 +85,7 @@ class RoundFlowTests(unittest.TestCase):
     def test_attackers_dead_after_plant_round_continues(self):
         m, you, opps, events, _ = make()
         m.start()
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         m.on_bomb_planted(you)
         self.assertEqual(m.phase, "planted")
         m.on_kill(you, opps[0], "c9", reward=300)
@@ -83,7 +99,7 @@ class RoundFlowTests(unittest.TestCase):
     def test_defuse_win_and_planted_loss_bonus(self):
         m, you, opps, events, _ = make(human_side="defend")
         m.start()
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         m.on_bomb_planted(opps[0])
         m.on_bomb_defused(you)
         self.assertEqual(m.history[-1].reason, "bomb_defused")
@@ -97,14 +113,14 @@ class RoundFlowTests(unittest.TestCase):
         m.start()
         expected = 800
         for i in range(7):
-            run(m, T["freeze_time"] + 0.2)
+            run(m, PRE + 0.3)
             m.force_end_round("defend", "time")
             expected = min(expected + ECO["loss_bonus"][min(i + 1, 5) - 1], ECO["max_money"])
             self.assertEqual(you.money, expected, f"round {i + 1}")
             run(m, T["round_end_delay"] + 0.2)
             revive(m)
         # a win lowers the streak by one step
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         m.force_end_round("attack", "elimination")
         self.assertEqual(m.teams[0].loss_streak, 6)
 
@@ -112,7 +128,7 @@ class RoundFlowTests(unittest.TestCase):
         m, you, opps, events, _ = make()
         m.start()
         you.money = 15900
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         m.on_kill(opps[0], you, "knife", reward=1500)
         self.assertEqual(you.money, ECO["max_money"])
 
@@ -122,7 +138,7 @@ class RoundFlowTests(unittest.TestCase):
         self.assertFalse(m.allow_damage(mate, you))
         self.assertTrue(m.allow_damage(opps[0], you))
         m.start()
-        run(m, T["freeze_time"] + 0.2)
+        run(m, PRE + 0.3)
         m.on_damage(opps[0], mate, 60)
         m.on_kill(opps[0], you, "r7", reward=300)
         self.assertEqual(mate.stats.assists, 1)
@@ -132,7 +148,7 @@ class RoundFlowTests(unittest.TestCase):
         m.start()
         half = RULES["rounds"]["halftime_after"]
         for r in range(half):
-            run(m, T["freeze_time"] + 0.2)
+            run(m, PRE + 0.3)
             m.force_end_round("attack" if r % 2 == 0 else "defend")
             run(m, T["round_end_delay"] + 0.2)
             revive(m)
@@ -150,7 +166,7 @@ class RoundFlowTests(unittest.TestCase):
         m, you, opps, events, _ = make()
         m.start()
         while m.phase != "match_end":
-            run(m, T["freeze_time"] + 0.2)
+            run(m, PRE + 0.3)
             m.force_end_round(you.side)
             run(m, max(T["round_end_delay"], T["halftime_delay"]) + 0.3)
             revive(m)

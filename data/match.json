@@ -11,7 +11,8 @@
              "uniform": "uniform_slate"}
  },
  "timers": {
-  "freeze_time": 12.0,
+  "freeze_time": 8.0,
+  "prep_time": 20.0,
   "buy_time": 20.0,
   "round_time": 115.0,
   "round_end_delay": 6.0,

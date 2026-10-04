@@ -44,8 +44,7 @@ class PlayerAgent(Participant):
         return self.team is not None
 
     def eye(self) -> Point3:
-        c = self.game.player.char
-        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
+        return self.game.player.eye()
 
     def head_pos(self) -> Point3:
         return self.eye() - Vec3(0, 0, 0.04)

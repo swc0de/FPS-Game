@@ -428,6 +428,59 @@ class NavMesh:
                              for a, b, w, h in r[:, :4].tolist()]
         self._rect_crouch = self.rects[:, 4].astype(bool).tolist() if len(self.rects) else []
         self._rect_area = (self.rects[:, 2] * self.rects[:, 3]).astype(float) if len(self.rects) else np.zeros(0)
+        self._base_portals = len(self._portal_list)
+        self._dyn: dict = {}
+
+    # ------------------------------------------------- dynamic links (destruction)
+    def add_link(self, tag, ra: int, rb: int, a, b, two_way: bool = True) -> None:
+        """Off-mesh connection between two rects through the segment a-b (2D):
+        a hole blown through a wall (two-way) or an open hatch (one-way drop).
+        It behaves like a portal for A* and the funnel."""
+        ks = self._dyn.setdefault(tag, [])
+        for r0, r1 in ((ra, rb), (rb, ra)) if two_way else ((ra, rb),):
+            k = len(self._portal_list)
+            self._portal_list.append([float(r0), float(r1), float(a[0]), float(a[1]), float(b[0]), float(b[1])])
+            self.adj[r0].append(k)
+            ks.append(k)
+
+    def remove_links(self, tag) -> None:
+        for k in self._dyn.pop(tag, []):
+            r0 = int(self._portal_list[k][0])
+            if k in self.adj[r0]:
+                self.adj[r0].remove(k)
+
+    def clear_links(self) -> None:
+        if len(self._portal_list) != self._base_portals or self._dyn:
+            self._make_adjacency()
+
+    def rect_at(self, pos, search: int = 3, max_dz: float = 0.6) -> int:
+        """Rect of the walkable node at pos (feet height within max_dz), or -1."""
+        n = self.locate(pos, search)
+        if n < 0 or abs(self._z[n] - float(pos[2])) > max_dz:
+            return -1
+        return int(self.rect_of[n])
+
+    def rect_below(self, x: float, y: float, z: float, search: int = 2) -> int:
+        """Rect of the highest walkable node below height z around (x, y), or -1."""
+        cs = self.cfg.cell
+        i0 = int((x - self.x0) // cs)
+        j0 = int((y - self.y0) // cs)
+        for r in range(search + 1):
+            best, best_z = -1, -1e9
+            for i in range(i0 - r, i0 + r + 1):
+                for j in range(j0 - r, j0 + r + 1):
+                    if not (0 <= i < self.nx and 0 <= j < self.ny):
+                        continue
+                    col = j * self.nx + i
+                    first = self._first[col]
+                    if first < 0:
+                        continue
+                    for n in range(first, first + self._count[col]):
+                        if best_z < self._z[n] < z:
+                            best, best_z = n, self._z[n]
+            if best >= 0:
+                return int(self.rect_of[best])
+        return -1
 
     # --------------------------------------------------------------- cache
     def save(self, path) -> None:

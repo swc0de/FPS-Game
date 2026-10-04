@@ -15,8 +15,10 @@ Each script is a list of steps executed on fixed ticks:
   ("goto", x, y)                           run toward a waypoint (fails if stuck for 2 s)
   ("expect_z", zmin, zmax)                 check the player's feet height
   ("end_route",)                           print PASS/FAIL for the route
+  ("call", fn)                             run fn(game)
 
     python main.py --map compound --demo routes   # walk every lane of the map
+    python main.py --mode sandbox --demo m6        # destruction (milestone 6)
 """
 from __future__ import annotations
 
@@ -152,8 +154,79 @@ def round_script(game) -> list:
     return s
 
 
+def _panel_report(game, label: str) -> None:
+    lines = [f"[demo] --- {label}"]
+    for p in game.destruction.panels:
+        f = p.destroyed_fraction()
+        if f > 0 or p.reinforced:
+            lines.append(f"[demo]   panel {p.spec.name or p.index:16s} #{p.index:3d} destroyed {f * 100:5.1f}%"
+                         + (" reinforced" if p.reinforced else ""))
+    game.log("\n".join(lines))
+
+
+def _frag_at(game, x, y, z, fuse=0.05):
+    from weapons.grenades import Grenade
+    g = Grenade(game, game.weapon_db.grenades["frag"], Point3(x, y, z), Vec3(0, 0, 0), game.player)
+    g.age = g.d.fuse - fuse
+    game.spawn_grenade(g)
+
+
+def _panel_named(game, name: str, near=None):
+    best, bd = None, 1e9
+    for p in game.destruction.panels:
+        if p.spec.name != name:
+            continue
+        d = 0.0 if near is None else float(sum((p.center[i] - near[i]) ** 2 for i in range(len(near))))
+        if d < bd:
+            best, bd = p, d
+    return best
+
+
+def m6_script(game) -> list:
+    """Milestone 6: soft walls (rifle, shotgun, frag, melee), the roof hatch,
+    reinforcement and the round reset."""
+    s = [("call", lambda g: setattr(g.player.damageable, "damage_filter", lambda d, info: False)),
+         ("pose", -39.5, -14.0, EYE, 180, 0), ("select", "primary"), ("wait", 40)]
+    # rifle: a tight group chips a murder hole through the barracks hallway wall
+    for k in range(9):
+        s += [("aim", -39.5 + (k % 3) * 0.1, -15.5, 1.5 + (k // 3) * 0.1), ("press", "fire"), ("wait", 14)]
+    s += [("wait", 4), ("shot", "m6_rifle_hole"), ("call", lambda g: _panel_report(g, "after 9 rifle rounds"))]
+    # shotgun at 2 m: one blast opens a hole
+    s += [("give", "s12"), ("pose", -35.0, -13.6, EYE, 180, 0), ("wait", 50), ("aim", -35.0, -15.5, 1.2),
+          ("press", "fire"), ("wait", 3), ("shot", "m6_shotgun_burst"), ("wait", 50), ("aim", -35.0, -15.5, 1.0),
+          ("press", "fire"), ("wait", 40), ("aim", -35.0, -15.5, 1.3), ("shot", "m6_shotgun_hole"),
+          ("call", lambda g: _panel_report(g, "after 2 shotgun blasts"))]
+    # frag against the wall: a big hole, debris flying
+    s += [("pose", -41.0, -13.0, EYE, 220, -5), ("call", lambda g: _frag_at(g, -43.0, -15.3, 0.9)), ("wait", 6),
+          ("shot", "m6_frag_blast"), ("wait", 30), ("shot", "m6_frag_debris"), ("wait", 120),
+          ("aim", -43.0, -15.5, 1.1), ("shot", "m6_frag_hole"),
+          ("call", lambda g: _panel_report(g, "after a frag against the wall"))]
+    # walk through the hole into the room behind
+    s += [("route", "frag_hole", -43.0, -13.8, 0.02, 180), ("goto", -43.0, -18.0), ("expect_z", -0.1, 0.2),
+          ("end_route",), ("aim", -43.0, -12.0, 1.4), ("wait", 4), ("shot", "m6_through_hole")]
+    # knife a hole
+    s += [("select", "melee"), ("pose", -33.5, -13.4, EYE, 180, 0), ("wait", 40), ("aim", -33.5, -15.5, 1.3)]
+    for _ in range(6):
+        s += [("press", "aim"), ("wait", 70)]
+    s += [("shot", "m6_knife"), ("call", lambda g: _panel_report(g, "after 6 heavy knife hits"))]
+    # roof hatch over site A: blow it open from the roof and look down, then up from inside
+    s += [("pose", -43.5, 27.5, 4.5 + EYE, 90, -40), ("wait", 20), ("shot", "m6_hatch_closed"),
+          ("call", lambda g: _frag_at(g, -41.5, 27.5, 4.6)), ("wait", 150), ("aim", -41.5, 27.5, 4.4),
+          ("shot", "m6_hatch_open"), ("pose", -41.5, 24.5, EYE, 0, 45), ("wait", 10), ("shot", "m6_hatch_below"),
+          ("call", lambda g: _panel_report(g, "after a frag on the hatch"))]
+    # reinforcement: the armory office wall takes no bullet or frag damage
+    s += [("call", lambda g: _panel_named(g, "armory_office", (-47.0, 32.0)).reinforce()), ("select", "primary"),
+          ("pose", -47.0, 29.0, EYE, 0, 0), ("wait", 40), ("aim", -47.0, 32.0, 1.5), ("hold", "fire", 30),
+          ("call", lambda g: _frag_at(g, -47.0, 31.7, 0.6)), ("wait", 150), ("aim", -47.0, 32.0, 1.5),
+          ("shot", "m6_reinforced"), ("call", lambda g: _panel_report(g, "reinforced office wall after 30 shots + frag"))]
+    # round reset rebuilds everything
+    s += [("call", lambda g: g.destruction.reset()), ("pose", -38.0, -14.0, EYE, 180, 0), ("wait", 10),
+          ("shot", "m6_reset"), ("call", lambda g: _panel_report(g, "after reset (expect nothing listed)"))]
+    return s
+
+
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script, "routes": routes_script, "round": round_script, "bots": None}
+           "flash": flash_script, "routes": routes_script, "round": round_script, "m6": m6_script, "bots": None}
 
 
 def make_demo(game, name: str):
@@ -506,6 +579,8 @@ class DemoRunner:
                 self.wait = 1
             elif kind == "report":
                 self.report(st[1])
+            elif kind == "call":
+                st[1](g)
             elif kind == "route":
                 _, name, x, y, z, h = st
                 g.player.set_pose((x, y, z + g.player.char.eye_height), (h, 0))

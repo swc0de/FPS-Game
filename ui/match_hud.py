@@ -168,6 +168,8 @@ class MatchHUD:
             self.clock.setFg((1, 0.45, 0.35, 1) if m.phase == "live" and clock < 10 else W.TEXT)
             if m.phase == "freeze":
                 self.phase.setText("FREEZE TIME")
+            elif m.phase == "prep":
+                self.phase.setText("PREPARATION")
             elif m.phase == "live" and m.can_buy():
                 self.phase.setText(f"BUY TIME {m.buy_time_left():.0f}")
             elif m.phase == "halftime":

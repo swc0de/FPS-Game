@@ -7,6 +7,9 @@ reacts to its callbacks (round reset, HUD/audio events).
 Round phases::
 
     freeze  (players locked at spawn, buying allowed)
+      -> prep     (Siege-style preparation, ``prep_time`` > 0: defenders move,
+                   reinforce walls and place gadgets, attackers stay at spawn
+                   and scout with drones; nobody can be hurt; buying allowed)
       -> live     (round timer runs; buy time continues for a while)
       -> planted  (round timer replaced by the bomb timer)
       -> round_end (winner shown, money paid)
@@ -102,7 +105,7 @@ class RoundResult:
 
 
 class Match:
-    PHASES = ("waiting", "freeze", "live", "planted", "round_end", "halftime", "match_end")
+    PHASES = ("waiting", "freeze", "prep", "live", "planted", "round_end", "halftime", "match_end")
 
     def __init__(self, rules: dict, participants: list[Participant], human_side: str = "attack",
                  on_event: Callable | None = None, on_round_reset: Callable | None = None):
@@ -151,16 +154,20 @@ class Match:
         return self.phase == "freeze"
 
     @property
+    def in_prep(self) -> bool:
+        return self.phase == "prep"
+
+    @property
     def is_live(self) -> bool:
         return self.phase in ("live", "planted")
 
     def can_buy(self) -> bool:
-        if self.phase == "freeze":
+        if self.phase in ("freeze", "prep"):
             return True
         return self.phase in ("live", "planted") and self.round_clock < float(self.timers["buy_time"])
 
     def buy_time_left(self) -> float:
-        if self.phase == "freeze":
+        if self.phase in ("freeze", "prep"):
             return float(self.timers["buy_time"])
         if self.phase in ("live", "planted"):
             return max(float(self.timers["buy_time"]) - self.round_clock, 0.0)
@@ -170,6 +177,8 @@ class Match:
         """The number shown at the top of the HUD."""
         if self.phase == "freeze":
             return max(float(self.timers["freeze_time"]) - self.phase_time, 0.0)
+        if self.phase == "prep":
+            return max(self.prep_time - self.phase_time, 0.0)
         if self.phase == "live":
             return max(float(self.timers["round_time"]) - self.round_clock, 0.0)
         if self.phase == "planted":
@@ -181,12 +190,16 @@ class Match:
         return 0.0
 
     def round_time_left(self) -> float:
-        """Seconds until the round timer runs out (full time during freeze)."""
-        if self.phase == "freeze":
+        """Seconds until the round timer runs out (full time during freeze and prep)."""
+        if self.phase in ("freeze", "prep"):
             return float(self.timers["round_time"])
         if self.phase in ("live", "planted"):
             return max(float(self.timers["round_time"]) - self.round_clock, 0.0)
         return 0.0
+
+    @property
+    def prep_time(self) -> float:
+        return float(self.timers.get("prep_time", 0.0))
 
     def is_halftime_round(self) -> bool:
         return self.round == int(self.round_rules["halftime_after"])
@@ -230,6 +243,13 @@ class Match:
         self.phase_time += dt
         if self.phase == "freeze":
             if self.phase_time >= float(self.timers["freeze_time"]):
+                if self.prep_time > 0:
+                    self._set_phase("prep")
+                else:
+                    self._set_phase("live")
+                    self.on_event("live")
+        elif self.phase == "prep":
+            if self.phase_time >= self.prep_time:
                 self._set_phase("live")
                 self.on_event("live")
         elif self.phase == "live":
@@ -253,6 +273,8 @@ class Match:
             return True
         if victim.team is attacker.team and not self.rules.get("friendly_fire", False):
             return False
+        if self.phase in ("freeze", "prep"):
+            return False                # nobody fights before the round goes live
         return True
 
     def on_damage(self, victim: Participant, attacker: Participant | None, amount: float) -> None:
@@ -343,7 +365,7 @@ class Match:
 
     # -------------------------------------------------------- round end
     def _end_round(self, winner_side: str, reason: str) -> None:
-        if self.phase not in ("live", "planted", "freeze"):
+        if self.phase not in ("live", "planted", "freeze", "prep"):
             return
         winner = self.team_of_side(winner_side)
         loser = self.team_of_side(other_side(winner_side))
@@ -410,7 +432,7 @@ class Match:
     # ---------------------------------------------------------- helpers
     def force_end_round(self, winner_side: str, reason: str = "elimination") -> None:
         """Developer console / tests."""
-        if self.phase == "freeze":
+        if self.phase in ("freeze", "prep"):
             self._set_phase("live")
         self._end_round(winner_side, reason)
 

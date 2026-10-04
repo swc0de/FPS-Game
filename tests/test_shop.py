@@ -123,7 +123,10 @@ class ShopTests(unittest.TestCase):
         d.zone = False
         self.assertFalse(shop.check(d.agent, item("attack", "r7"))[0])
         d.zone = True
-        d.match.update(RULES["timers"]["freeze_time"])      # freeze -> live
+        d.match.update(RULES["timers"]["freeze_time"])      # freeze -> prep
+        self.assertTrue(shop.check(d.agent, item("attack", "r7"))[0])
+        d.match.update(RULES["timers"].get("prep_time", 0.0))  # prep -> live
+        self.assertEqual(d.match.phase, "live")
         self.assertTrue(shop.check(d.agent, item("attack", "r7"))[0])
         d.match.update(RULES["timers"]["buy_time"] + 1.0)
         ok, why = shop.check(d.agent, item("attack", "r7"))

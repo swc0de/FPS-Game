@@ -42,6 +42,8 @@ class LevelContext:
         self.props: list[tuple[str, dict]] = []  # game objects created after geometry
         self.zones: list[dict] = []          # bomb sites etc. {"name", "kind", "min", "max"}
         self.callouts: list[dict] = []       # named areas (radio callouts, bot navigation)
+        self.panels: list = []               # destructible soft walls / floors (gameplay/destruction.py)
+        self.cameras: list[dict] = []        # defender security cameras
         self._stack = [((0.0, 0.0, 0.0), 0.0)]
 
     # ---------------------------------------------------------- transforms
@@ -104,6 +106,17 @@ class LevelContext:
     def sphere(self, center, radius, mat):
         c, _ = self._xf(center)
         self.builder(mat).add_sphere(c, radius, uv_scale=self.uv_scale(mat))
+
+    def panel(self, center, size, mat, mat2=None, hpr=(0, 0, 0), reinforce=False, breach=False, kind="wall",
+              name="", occlude=True, surface=None):
+        """A destructible piece: built at runtime by the destruction system
+        (mesh + collision), still occluding sky light in the bake."""
+        from gameplay.destruction import PanelSpec
+        c, r = self._xf(center, hpr)
+        self.panels.append(PanelSpec(tuple(c), tuple(size), tuple(r), mat, mat2 or mat, surface or self.surface(mat),
+                                     bool(reinforce), bool(breach), kind, name))
+        if occlude:
+            self.occluders.append(sky_visibility.Occluder(c, size, r))
 
     def collider(self, center, size, hpr=(0, 0, 0), surface="concrete"):
         c, r = self._xf(center, hpr)
@@ -168,6 +181,13 @@ class Level:
         self.lights: list[LocalLight] = []
         self.props: list[tuple[str, dict]] = []
         self.colliders: list[tuple] = []
+        self.panel_specs: list = []
+        self.cameras: list[dict] = []
+
+    def nav_colliders(self) -> list[tuple]:
+        """Static colliders plus every destructible panel as a solid box: bots
+        path around intact walls; holes become navmesh links at runtime."""
+        return self.colliders + [(p.center, p.size, p.hpr, p.surface) for p in self.panel_specs]
 
     def build(self) -> None:
         t0 = time.time()
@@ -197,6 +217,8 @@ class Level:
         self.renderer.lights.finalize()
         self.spawns = ctx.spawns
         self.colliders = ctx.colliders            # navmesh generation (ai/navmesh.py)
+        self.panel_specs = ctx.panels
+        self.cameras = ctx.cameras
         self.zones = ctx.zones
         self.callouts = ctx.callouts
         self.props = ctx.props

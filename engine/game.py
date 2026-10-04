@@ -64,6 +64,9 @@ class Game(ShowBase):
         self.ballistics = Ballistics(self.physics, self.weapon_db)
         self.audio = AudioSystem(self, settings.audio, self.weapon_db.weapons, log=self.log)
         self.effects = Effects(self)
+        from gameplay.destruction import DestructionManager
+        self.destruction = DestructionManager(self, self.level.panel_specs)
+        self.ballistics.destruction = self.destruction
         self.pickups = PickupManager(self)
         self.dummies: list[TargetDummy] = []
         self.grenades = []
@@ -210,9 +213,11 @@ class Game(ShowBase):
         if getattr(self, "_nav", None) is None:
             from ai.navmesh import NavConfig, NavMesh
             seeds = [s["pos"] for s in self.level.spawns]
-            self._nav = NavMesh.cached(self.level.colliders, self.level.data["bounds"], seeds,
+            self._nav = NavMesh.cached(self.level.nav_colliders(), self.level.data["bounds"], seeds,
                                        paths.CACHE_DIR / "nav", self.level.path.stem,
                                        NavConfig.from_movement(self.player.char.cfg), log=self.log)
+            from ai.navlinks import NavLinks
+            self.nav_links = NavLinks(self._nav, self.destruction)
         return self._nav
 
     # ---------------------------------------------------- match services
@@ -221,7 +226,7 @@ class Game(ShowBase):
         return self.director.player_agent if self.director is not None else None
 
     def combat_locked(self) -> bool:
-        return self.director is not None and self.director.combat_locked()
+        return self.director is not None and self.director.combat_locked(self.player_agent)
 
     def drop_bomb(self, agent) -> None:
         if self.director is not None:
@@ -237,6 +242,7 @@ class Game(ShowBase):
         self.grenades = []
         self.effects.clear_world()
         self.pickups.clear_dropped()
+        self.destruction.reset()
 
     def spawn_grenade(self, g) -> None:
         self.grenades.append(g)
@@ -475,7 +481,8 @@ class Game(ShowBase):
         self.weapons.fixed_update(dt, now)
         if self.director is not None:
             self.director.fixed_update(dt)
-        elif not self.player.damageable.alive:
+        self.destruction.flush()
+        if self.director is None and not self.player.damageable.alive:
             self._respawn_timer -= dt
             if self._respawn_timer <= 0:
                 self.player.damageable.reset(armor=0, helmet=False)
@@ -499,6 +506,7 @@ class Game(ShowBase):
         if self.director is not None:
             self.director.frame_update(dt, alpha)
         self.pickups.update(dt)
+        self.destruction.update(dt)
         self.effects.update(dt)
         self.renderer.update(dt)
         self.hud.update(dt)

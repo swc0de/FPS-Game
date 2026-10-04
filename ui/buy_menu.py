@@ -152,4 +152,4 @@ class BuyMenu(DirectObject):
             self.close()
             return
         self.money["text"] = f"$ {d.player_agent.money}"
-        self.timer["text"] = "freeze time" if m.phase == "freeze" else f"buy time {m.buy_time_left():.0f} s"
+        self.timer["text"] = {"freeze": "freeze time", "prep": "preparation"}.get(m.phase, f"buy time {m.buy_time_left():.0f} s")

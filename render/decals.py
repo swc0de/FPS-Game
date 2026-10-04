@@ -219,6 +219,7 @@ class DecalSystem:
         node.setBounds(OmniBoundingVolume())
         node.setFinal(True)
         self.np = base.render.attachNewNode(node)
+        self.positions = np.full((capacity, 3), 1e9, np.float32)   # for removal (destroyed walls)
         self.set_defines(defines)
         alb, nrm, orm = make_atlases()
         self.np.setShaderInput("u_albedo", alb)
@@ -274,6 +275,7 @@ class DecalSystem:
             rows[i, 12:14] = (uu, vv)
         slot = self.next
         self.next = (self.next + 1) % self.capacity
+        self.positions[slot] = (p.x, p.y, p.z)
         stride = FLOATS_PER_VERTEX * 4
         handle = self.geom.modifyVertexData().modifyArray(0).modifyHandle()
         handle.setSubdata(slot * 4 * stride, 4 * stride, rows.tobytes())
@@ -281,4 +283,20 @@ class DecalSystem:
     def clear(self) -> None:
         memoryview(self.geom.modifyVertexData().modifyArray(0)).cast("B")[:] = \
             bytes(self.capacity * 4 * FLOATS_PER_VERTEX * 4)
+        self.positions[:] = 1e9
         self.next = 0
+
+    def remove_where(self, predicate) -> int:
+        """Delete decals whose position satisfies predicate(positions (N,3)) -> bool mask
+        (e.g. bullet holes on a chunk of wall that was just blown away)."""
+        mask = predicate(self.positions.astype(np.float64))
+        slots = np.nonzero(mask)[0]
+        if len(slots) == 0:
+            return 0
+        stride = FLOATS_PER_VERTEX * 4
+        handle = self.geom.modifyVertexData().modifyArray(0).modifyHandle()
+        zero = bytes(4 * stride)
+        for s in slots.tolist():
+            handle.setSubdata(s * 4 * stride, 4 * stride, zero)
+        self.positions[slots] = 1e9
+        return len(slots)

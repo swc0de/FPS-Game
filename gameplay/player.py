@@ -12,6 +12,7 @@ from panda3d.core import Point3, Vec3
 
 from gameplay.character import KinematicCharacter, MoveInput, StepEvent
 from gameplay.damage import Damageable, DamageResult
+from gameplay.lean import Lean, clearance, right_of
 
 # Mouse sensitivity uses the same scale as CS: degrees = counts * 0.022 * sens
 YAW_PER_COUNT = 0.022
@@ -22,7 +23,9 @@ class PlayerController:
         self.app = app
         self.input = inp
         self.settings = settings
+        self.physics = physics
         self.char = KinematicCharacter(physics)
+        self.lean = Lean()
         self.char.on_event = self._on_step_event
         self.yaw = 0.0
         self.pitch = 0.0
@@ -50,6 +53,7 @@ class PlayerController:
         self.char.teleport(pos)
         self.yaw = heading
         self.pitch = 0.0
+        self.lean.reset()
 
     def set_pose(self, pos, hpr) -> None:
         """Debug: place the eye at pos with the given heading/pitch."""
@@ -64,6 +68,21 @@ class PlayerController:
         forward = Vec3(-math.sin(h), math.cos(h), 0)
         right = Vec3(math.cos(h), math.sin(h), 0)
         return forward, right
+
+    def eye(self) -> Point3:
+        """Eye position at the current tick, including the lean (bullets start here)."""
+        c = self.char
+        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height) + right_of(self.yaw) * self.lean.offset()
+
+    def _update_lean(self, dt: float) -> None:
+        inp = self.input
+        target = 0.0
+        if self.damageable.alive and not self.noclip and not getattr(self, "lean_lock", False):
+            target = float(inp.is_down("lean_right")) - float(inp.is_down("lean_left"))
+        c = self.char
+        free_l, free_r = clearance(self.physics, Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height), self.yaw) \
+            if target != 0.0 or self.lean.amount != 0.0 else (1.0, 1.0)
+        self.lean.update(dt, target, free_l, free_r)
 
     def _on_step_event(self, ev: StepEvent) -> None:
         self.step_events.append(ev)
@@ -102,6 +121,7 @@ class PlayerController:
         self.char.step(dt, move)
         if move.jump and was_ground and not self.char.on_ground:
             self._jump_buffer = 0.0
+        self._update_lean(dt)
 
     def _noclip_move(self, dt: float, wish: Vec3) -> None:
         c = self.char
@@ -147,11 +167,12 @@ class PlayerController:
         self._land_offset = max(min(self._land_offset, 0.05), -0.25)
 
         forward, right = self._basis()
-        cam = Point3(pos.x, pos.y, pos.z + eye + bob_z + self._land_offset) + right * bob_x
+        cam = Point3(pos.x, pos.y, pos.z + eye + bob_z + self._land_offset) + right * (bob_x + self.lean.offset(alpha))
         self.camera_pos = cam
         self.app.camera.setPos(cam)
         vy, vp, vr = self.view_offset
-        self.app.camera.setHpr(self.yaw + vy, max(-89.9, min(89.9, self.pitch + vp)), self.roll + vr)
+        self.app.camera.setHpr(self.yaw + vy, max(-89.9, min(89.9, self.pitch + vp)),
+                               self.roll + vr + self.lean.roll(alpha))
 
     # ----------------------------------------------------- shared interface
     @property
@@ -183,6 +204,8 @@ class PlayerController:
         if self.noclip:
             return "noclip"
         parts = ["ground" if c.on_ground else "air"]
+        if abs(self.lean.amount) > 0.05:
+            parts.append("lean " + ("right" if self.lean.amount > 0 else "left"))
         if c.crouched:
             parts.append("crouch")
         elif c.walking:

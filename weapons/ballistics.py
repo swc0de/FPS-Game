@@ -70,6 +70,7 @@ class Ballistics:
         self.physics = physics
         self.db = weapon_db
         self.surfaces = surfaces or load_surfaces()
+        self.destruction = None          # gameplay.destruction.DestructionManager (soft walls)
 
     def surface(self, name: str) -> dict:
         return self.surfaces.get(name) or self.surfaces["default"]
@@ -149,6 +150,8 @@ class Ballistics:
             surf = self.surface(surface_of(iv.node))
             if entry_new:
                 result.impacts.append(Impact(iv.in_pos, iv.in_normal, surface_of(iv.node), distance=dist))
+                if self.destruction is not None and iv.node.getPythonTag("panel") is not None:
+                    self.destruction.bullet_hit(iv.node, iv.in_pos, d, damage, int(getattr(wdef, "pellets", 1)))
             seg_start = max(iv.t_in, cursor)
             seg_end = iv.t_out
             cost = (seg_end - seg_start) * length * 100.0 * surf["pen_cost"]

@@ -23,6 +23,7 @@ from engine.physics import MASK_BULLETS, surface_of
 from gameplay.body import CharacterBody
 from gameplay.character import KinematicCharacter, MoveInput
 from gameplay.damage import Damageable, DamageInfo, DamageResult
+from gameplay.lean import Lean, clearance, right_of
 from gameplay.match import Participant
 from weapons.grenades import Grenade
 from weapons.inventory import Inventory
@@ -48,6 +49,7 @@ class Intent:
     jump: bool = False
     trigger: bool = False
     pressed: bool = False
+    lean: float = 0.0               # -1 left .. +1 right (peeking)
 
 
 class BotWeapons:
@@ -184,6 +186,7 @@ class BotWeapons:
         else:
             self.game.effects.impact(pos, Vec3(res.getHitNormal()), surface_of(node), d)
             self.game.audio.play_at("knife_hit_wall", pos)
+            self.game.destruction.melee_hit(node, pos, d, ws.d.damage)
 
     def throw(self, key: str, velocity: Vec3) -> bool:
         """Throw a grenade with the given launch velocity (the brain solves the arc)."""
@@ -218,6 +221,7 @@ class BotAgent(Participant):
         self.body_side = side
         self.body = self._make_body(side)
         self.aim = AimController(self.profile, self.rng)
+        self.lean = Lean()
         self.perception = Perception(self, cfg.get("vision", {}), self.profile)
         self.weapons = BotWeapons(self)
         self.has_kit = False
@@ -255,7 +259,7 @@ class BotAgent(Participant):
 
     def eye(self) -> Point3:
         c = self.char
-        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
+        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height) + right_of(self.aim.yaw) * self.lean.offset()
 
     def head_pos(self) -> Point3:
         return self.body.parts["head"].getPos(self.game.render)
@@ -281,6 +285,7 @@ class BotAgent(Participant):
         self.aim.yaw = self.prev_yaw = yaw
         self.aim.pitch = 0.0
         self.aim.release()
+        self.lean.reset()
         self.body.reset()
         self.body.animate(0.0, self.char.pos, yaw, 0.0, 0.0, Vec3(0, 0, 0), True)
         self.perception.reset()
@@ -322,8 +327,15 @@ class BotAgent(Participant):
                                      speed_scale=scale))
         it.pressed = False
         c = self.char
+        target = 0.0 if locked else it.lean
+        if target != 0.0 or self.lean.amount != 0.0:
+            free = clearance(self.game.physics, Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height), self.aim.yaw)
+        else:
+            free = (1.0, 1.0)
+        self.lean.update(dt, target, *free)
         crouch = (c.stand_height - c.height) / max(c.stand_height - c.crouch_height, 1e-3)
-        self.body.animate(dt, c.pos, self.aim.yaw, self.aim.pitch, crouch, c.vel, c.on_ground, it.walk)
+        self.body.animate(dt, c.pos, self.aim.yaw, self.aim.pitch, crouch, c.vel, c.on_ground, it.walk,
+                          lean=self.lean.amount)
         self._auto_pickup()
 
     def frame_update(self, dt: float, alpha: float) -> None:

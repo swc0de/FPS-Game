@@ -322,7 +322,92 @@ def build_library(out_dir: Path, weapons: dict, seed: int = 21) -> dict[str, lis
         for kind, dur in (("tactical", w.reload_time), ("empty", w.reload_empty_time)):
             add(f"reload_{key}_{kind}", lambda w=w, kind=kind, dur=dur: sequence(dur + 0.2, reload_events(w.cls, kind, dur), rng))
     add("radio", lambda: radio_squelch(rng))
+    # Milestone 6: destruction and gadgets
+    add("wall_break", lambda: crumble(rng, "plaster"), 3)
+    add("wood_break", lambda: crumble(rng, "wood"), 2)
+    add("charge_place", lambda: sequence(0.4, [(0.0, "thump"), (0.08, "click"), (0.2, "click")], rng))
+    add("charge_beep", lambda: normalize(tone([1900, 3800], 0.07, 0.002, 0.03, square=0.3), 0.6))
+    add("thermal_burn", lambda: burn(rng))
+    add("hammer_hit", lambda: normalize(mix(impact("concrete", rng), crumble(rng, "plaster") * 0.6), 0.9), 2)
+    add("reinforce", lambda: clanks(rng))
+    add("pulse", lambda: normalize(mix(chord([660, 990], 0.9, 0.0, 0.5) * 0.6, tone([1320], 0.9, 0.3, 0.4) * 0.3), 0.6))
+    add("emp", lambda: emp_burst(rng))
+    add("wire_place", lambda: sequence(0.6, [(0.0, "cloth"), (0.1, "slide"), (0.3, "clack")], rng))
+    add("wire_rattle", lambda: rattle(rng), 2)
+    add("sensor_alert", lambda: normalize(tone([1500, 3000], 0.12, 0.002, 0.05, square=0.5), 0.5))
+    add("shield_deploy", lambda: normalize(mix(impact("metal", rng), sequence(0.45, [(0.1, "clack")], rng)), 0.8))
+    add("jammer", lambda: normalize(mix(tone([120, 240, 360], 1.0, 0.1, 0.8) * 0.5, band(noise(1.0, rng), 800, 3000)
+                                        * 0.1), 0.4))
+    add("drone_motor", lambda: drone_whine(rng))
+    add("camera_switch", lambda: normalize(mix(sequence(0.2, [(0.0, "click")], rng), band(noise(0.2, rng), 1500, 6000)
+                                               * env(_t(0.2), 0.001, 0.08) * 0.4), 0.6))
+    add("ping", lambda: normalize(tone([1760, 2640], 0.25, 0.002, 0.15), 0.55))
     return lib
+
+
+def mix(*parts) -> np.ndarray:
+    """Sum of sounds of different lengths (shorter ones are zero-padded)."""
+    n = max(len(p) for p in parts)
+    out = np.zeros(n, np.float64)
+    for p in parts:
+        out[:len(p)] += p
+    return out
+
+
+def crumble(rng, kind: str) -> np.ndarray:
+    """A chunk of wall breaking: a crack, then pieces hitting the floor."""
+    t = _t(0.9)
+    n = noise(0.9, rng)
+    x = band(n, 300, 6000) * env(t, 0.0005, 0.05)
+    for k in range(7):
+        at = 0.08 + rng.uniform(0.0, 0.6)
+        if kind == "wood":
+            x += modes(t, rng.uniform([300, 800], [450, 1100]), [0.03, 0.02], [0.5, 0.25], at) * rng.uniform(0.2, 0.6)
+        else:
+            x += band(n, 500, 5000) * env(t, 0.001, 0.02, at) * rng.uniform(0.2, 0.6)
+    x += band(n, 200, 1500) * env(t, 0.05, 0.4, 0.05) * 0.25
+    return normalize(x, 0.85)
+
+
+def burn(rng) -> np.ndarray:
+    t = _t(3.0)
+    n = noise(3.0, rng)
+    hiss = band(n, 1500, 9000) * env(t, 0.1, 2.2) * 0.6
+    crackle = np.zeros_like(t)
+    for _ in range(40):
+        crackle += band(n, 2000, 8000) * env(t, 0.0005, 0.01, rng.uniform(0.1, 2.8)) * rng.uniform(0.2, 0.8)
+    return normalize(hiss + crackle, 0.8)
+
+
+def clanks(rng) -> np.ndarray:
+    t = _t(2.4)
+    x = np.zeros_like(t)
+    for at in (0.0, 0.55, 1.1, 1.65, 2.1):
+        x += modes(t, rng.uniform([300, 700, 1400], [380, 820, 1600]), [0.2, 0.12, 0.06], [0.7, 0.4, 0.2], at)
+    return normalize(x, 0.8)
+
+
+def emp_burst(rng) -> np.ndarray:
+    t = _t(1.2)
+    n = noise(1.2, rng)
+    sweep = np.sin(2 * math.pi * (200 + 1800 * t) * t) * env(t, 0.005, 0.5) * 0.5
+    zap = band(n, 2000, 12000) * env(t, 0.0005, 0.15)
+    return normalize(sweep + zap, 0.85)
+
+
+def rattle(rng) -> np.ndarray:
+    t = _t(0.6)
+    x = np.zeros_like(t)
+    for _ in range(14):
+        x += modes(t, rng.uniform([2200, 3700], [2800, 4600]), [0.03, 0.02], [0.3, 0.2], rng.uniform(0.0, 0.45))
+    return normalize(x, 0.7)
+
+
+def drone_whine(rng) -> np.ndarray:
+    t = _t(1.0)
+    n = noise(1.0, rng)
+    whine = np.sin(2 * math.pi * 410 * t) * 0.3 + np.sin(2 * math.pi * 820 * t) * 0.15
+    return normalize(whine + band(n, 300, 2500) * 0.25, 0.4)
 
 
 def radio_squelch(rng) -> np.ndarray:

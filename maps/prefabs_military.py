@@ -58,6 +58,10 @@ def building(ctx, e):
               {"x" (south/north walls) or "y" (east/west walls), "width",
                "bottom" (0 = door), "top"} in absolute map coordinates
     frame_mat door/window trim material
+    soft      {"e": {"reinforce": true, "breach": true}, ...}: destructible sides
+    hatches   [{"x", "y", "size": [sx, sy]}]: destructible roof hatches
+              (reinforceable; attackers blow them open to drop in)
+    parapet_gaps [{"side": "w", "from": y0, "to": y1}] (x for s/n sides)
     """
     (x0, y0), (x1, y1) = e["min"], e["max"]
     z = e.get("z", 0.0)
@@ -88,25 +92,92 @@ def building(ctx, e):
         ("n", (x1, y1 - t / 2), (x0, y1 - t / 2), conv("n", x1, -1)),
         ("w", (x0 + t / 2, yn), (x0 + t / 2, ys), conv("w", yn, -1)),
     ]
+    soft = e.get("soft", {})
     for side, p0, p1, openings in sides:
         if side in open_sides:
             continue
-        wall(ctx, {"p0": p0, "p1": p1, "height": h, "thickness": t, "z": z, "mat": inn, "mat2": ext,
-                   "openings": openings, "frame_mat": frame})
+        w = {"p0": p0, "p1": p1, "height": h, "thickness": t, "z": z, "mat": inn, "mat2": ext,
+             "openings": openings, "frame_mat": frame}
+        if side in soft:
+            w.update(soft=True, reinforce=soft[side].get("reinforce", False),
+                     breach=soft[side].get("breach", False), name=soft[side].get("name", side),
+                     surface=soft[side].get("surface", ctx.surface(ext)))
+        wall(ctx, w)
     if e.get("floor_mat", "concrete_floor"):
         ctx.box(((x0 + x1) / 2, (y0 + y1) / 2, z - 0.03), (x1 - x0 - 2 * t + 0.02, y1 - y0 - 2 * t + 0.02, 0.1),
                 e.get("floor_mat", "concrete_floor"), collide=True, occlude=False)
     if e.get("roof", True):
-        _slab(ctx, x0, y0, x1, y1, z + h + roof_t, roof_t, e.get("roof_mat", "roof_membrane"),
-              e.get("ceiling_mat", inn), e.get("edge_mat", ext))
+        roof_mat, ceil_mat = e.get("roof_mat", "roof_membrane"), e.get("ceiling_mat", inn)
+        top = z + h + roof_t
+        holes = []
+        for hd in e.get("hatches", []):
+            sx, sy = hd.get("size", (1.2, 1.2))
+            hx0, hy0 = hd["x"] - sx / 2, hd["y"] - sy / 2
+            holes.append((hx0, hy0, hx0 + sx, hy0 + sy))
+            ctx.panel((hd["x"], hd["y"], top - roof_t / 2), (sx, sy, roof_t), roof_mat, ceil_mat,
+                      reinforce=hd.get("reinforce", True), breach=hd.get("breach", False), kind="floor",
+                      name=hd.get("name", "hatch"), surface=hd.get("surface", "wood"))
+            # steel rim around the opening
+            for (cx, cy, rx, ry) in ((hd["x"], hy0 - 0.04, sx + 0.16, 0.08), (hd["x"], hy0 + sy + 0.04, sx + 0.16, 0.08),
+                                     (hx0 - 0.04, hd["y"], 0.08, sy), (hx0 + sx + 0.04, hd["y"], 0.08, sy)):
+                ctx.box((cx, cy, top + 0.03), (rx, ry, 0.06), e.get("frame_mat") or "steel_painted",
+                        collide=False, occlude=False)
+        for (rx0, ry0, rx1, ry1) in _subtract_rects((x0, y0, x1, y1), holes):
+            _slab(ctx, rx0, ry0, rx1, ry1, top, roof_t, roof_mat, ceil_mat, e.get("edge_mat", ext))
         par = e.get("parapet", 0.0)
         if par > 0:
-            top = z + h + roof_t
             pt = 0.2
-            for (cx, cy, sx, sy) in (((x0 + x1) / 2, y0 + pt / 2, x1 - x0, pt), ((x0 + x1) / 2, y1 - pt / 2, x1 - x0, pt),
-                                     (x0 + pt / 2, (y0 + y1) / 2, pt, y1 - y0 - 2 * pt),
-                                     (x1 - pt / 2, (y0 + y1) / 2, pt, y1 - y0 - 2 * pt)):
-                ctx.box((cx, cy, top + par / 2), (sx, sy, par), ext, collide=True, occlude=True)
+            gaps = e.get("parapet_gaps", [])
+            for side, (cx, cy, sx, sy) in (("s", ((x0 + x1) / 2, y0 + pt / 2, x1 - x0, pt)),
+                                           ("n", ((x0 + x1) / 2, y1 - pt / 2, x1 - x0, pt)),
+                                           ("w", (x0 + pt / 2, (y0 + y1) / 2, pt, y1 - y0 - 2 * pt)),
+                                           ("e", (x1 - pt / 2, (y0 + y1) / 2, pt, y1 - y0 - 2 * pt))):
+                along_x = side in ("s", "n")
+                lo = cx - sx / 2 if along_x else cy - sy / 2
+                hi = cx + sx / 2 if along_x else cy + sy / 2
+                for (a, b) in _subtract_spans(lo, hi, [(g["from"], g["to"]) for g in gaps if g["side"] == side]):
+                    if along_x:
+                        ctx.box(((a + b) / 2, cy, top + par / 2), (b - a, sy, par), ext, collide=True, occlude=True)
+                    else:
+                        ctx.box((cx, (a + b) / 2, top + par / 2), (sx, b - a, par), ext, collide=True, occlude=True)
+
+
+def _subtract_spans(lo: float, hi: float, gaps) -> list[tuple[float, float]]:
+    spans = [(lo, hi)]
+    for g0, g1 in gaps:
+        out = []
+        for a, b in spans:
+            if g1 <= a or g0 >= b:
+                out.append((a, b))
+                continue
+            if g0 > a:
+                out.append((a, g0))
+            if g1 < b:
+                out.append((g1, b))
+        spans = out
+    return [(a, b) for a, b in spans if b - a > 1e-3]
+
+
+def _subtract_rects(rect, holes) -> list[tuple[float, float, float, float]]:
+    """Axis-aligned rectangle minus holes, as a few non-overlapping rectangles."""
+    rects = [rect]
+    for hx0, hy0, hx1, hy1 in holes:
+        out = []
+        for (x0, y0, x1, y1) in rects:
+            if hx1 <= x0 or hx0 >= x1 or hy1 <= y0 or hy0 >= y1:
+                out.append((x0, y0, x1, y1))
+                continue
+            if hy0 > y0:
+                out.append((x0, y0, x1, hy0))
+            if hy1 < y1:
+                out.append((x0, hy1, x1, y1))
+            my0, my1 = max(y0, hy0), min(y1, hy1)
+            if hx0 > x0:
+                out.append((x0, my0, hx0, my1))
+            if hx1 < x1:
+                out.append((hx1, my0, x1, my1))
+        rects = out
+    return [r for r in rects if r[2] - r[0] > 1e-3 and r[3] - r[1] > 1e-3]
 
 
 # ------------------------------------------------------------------ barriers
@@ -280,7 +351,8 @@ def canopy(ctx, e):
     """Open-sided hangar: steel columns, roof beams and a corrugated roof.
 
     walls: {"n": {...}, "e": {...}} adds full-height sheet walls on those
-    sides (with optional "openings" like the wall prefab, absolute x/y)."""
+    sides (with optional "openings" like the wall prefab, absolute x/y, and
+    the wall prefab's soft/reinforce/breach flags)."""
     (x0, y0), (x1, y1) = e["min"], e["max"]
     h = e.get("height", 6.0)
     spacing = e.get("spacing", 5.0)
@@ -313,7 +385,8 @@ def canopy(ctx, e):
         p0, p1, key, start, sign = defs[side]
         ops = [dict(op, at=(op[key] - start) * sign) for op in spec.get("openings", [])]
         wall(ctx, {"p0": p0, "p1": p1, "height": h + 0.12, "thickness": 0.12, "mat": wm, "openings": ops,
-                   "extend": True})
+                   "extend": True, "soft": spec.get("soft", False), "reinforce": spec.get("reinforce", False),
+                   "breach": spec.get("breach", False), "name": spec.get("name", side)})
 
 
 # --------------------------------------------------------------- comms mast
