@@ -1,24 +1,34 @@
 """Game: ShowBase subclass that owns every subsystem and runs the loop."""
 from __future__ import annotations
 
+import json
 import math
 import time
 
-from direct.showbase.ShowBase import ShowBase
 from direct.gui.OnscreenText import OnscreenText
+from direct.showbase.ShowBase import ShowBase
 from panda3d.core import ClockObject, Filename, Point3
 
+from audio.system import AudioSystem
 from engine import paths
 from engine.app import GAME_TITLE, TICK_RATE
 from engine.fixed_loop import FixedTimestep
 from engine.input import InputManager
 from engine.physics import PhysicsWorld
+from gameplay.dummy import TargetDummy
 from gameplay.player import PlayerController
 from maps.level import Level
+from render.effects import Effects
 from render.materials import MaterialLibrary
 from render.renderer import Renderer
-from ui.crosshair import Crosshair
 from ui.debug_hud import DebugHud
+from ui.hud import HUD
+from weapons.ballistics import Ballistics
+from weapons.defs import database
+from weapons.pickups import PickupManager
+from weapons.player_weapons import PlayerWeapons
+
+RESPAWN_TIME = 3.0
 
 
 class Game(ShowBase):
@@ -36,33 +46,51 @@ class Game(ShowBase):
             self.graphicsEngine.renderFrame()
 
         t0 = time.time()
+        self.zoom = 1.0
         self.camLens.setNearFar(0.05, 2000.0)
         self.apply_fov()
+        self.loop = FixedTimestep(TICK_RATE)
         self.physics = PhysicsWorld(self.render)
         self.renderer = Renderer(self, self.graphics, log=self.log)
         self.materials = MaterialLibrary(self.loader, self.graphics, procedural_size=args.texture_res)
+        self.materials.preload(self._weapon_materials())
         self.level = Level(self, self.renderer, self.physics, self.materials, args.map, log=self.log)
         self.renderer.setup_environment(self.level.data.get("environment", {}))
         self.level.build()
 
+        self.weapon_db = database()
+        self.ballistics = Ballistics(self.physics, self.weapon_db)
+        self.audio = AudioSystem(self, settings.audio, self.weapon_db.weapons, log=self.log)
+        self.effects = Effects(self)
+        self.pickups = PickupManager(self)
+        self.dummies: list[TargetDummy] = []
+        self.grenades = []
+        self.noise_events: list[tuple[float, Point3, float, float]] = []
+
         self.input = InputManager(self, settings.input["binds"])
         self.player = PlayerController(self, self.physics, self.input, settings)
+        self.player.on_damaged = self._player_damaged
+        self.player.on_step = self._player_step
         sp = self.level.spawn_point("attack")
+        self.spawn = sp
         self.player.spawn(sp["pos"], sp.get("heading", 0.0))
         if args.pose:
             x, y, z, h, p = (float(v) for v in args.pose.split(","))
             self.player.set_pose((x, y, z), (h, p))
+        self._respawn_timer = 0.0
 
-        self.hud = DebugHud(self)
-        self.crosshair = Crosshair(self, settings.data["gameplay"]["crosshair"])
-        self.loop = FixedTimestep(TICK_RATE)
+        self.hud = HUD(self)
+        self.debug_hud = DebugHud(self)
+        self.weapons = PlayerWeapons(self)
+        self.player.speed_scale = self.weapons.speed_scale
+        self._spawn_props()
         self._loading.destroy()
         self.log(f"[game] ready in {time.time() - t0:.1f}s - "
                  f"{self.win.getGsg().getDriverRenderer()} / GL {self.win.getGsg().getDriverVersion()}")
 
         self.accept("escape", self.toggle_capture)
         self.accept("mouse1", self._click_capture)
-        self.accept("f1", self.hud.toggle)
+        self.accept("f1", self.debug_hud.toggle)
         self.accept("f12", self.screenshot)
         self.accept("v", self.toggle_noclip)
         self.accept("window-event", self._on_window_event)
@@ -70,27 +98,115 @@ class Game(ShowBase):
 
         self._frame = 0
         self._shot_queue = []
+        self.demo = None
         if args.shots:
             self._prepare_shots(args.shots)
+        elif getattr(args, "demo", None):
+            from engine.demo import DemoRunner
+            self.demo = DemoRunner(self, args.demo)
         elif not args.offscreen and not args.frames:
             self.input.set_captured(True)
+        self.hud.on_resize()
 
-    # ------------------------------------------------------------------ util
+    # ------------------------------------------------------------- setup
+    def _weapon_materials(self) -> list[str]:
+        from weapons.models import model_defs
+        mats = {"glove", "sleeve_camo", "brass", "dummy_polymer", "canvas", "metal_olive", "pbr_red_plastic",
+                "pbr_white_rough", "steel", "metal_tan", "hazard"}
+        for d in model_defs().values():
+            for part in d["parts"]:
+                mats.add(part.get("mat", "gun_metal"))
+        return sorted(mats)
+
+    def _spawn_props(self) -> None:
+        for kind, e in self.level.props:
+            if kind == "dummy":
+                self.dummies.append(TargetDummy(self, e))
+            elif kind == "sign":
+                self._make_sign(e)
+            elif kind == "pickup":
+                item = e["item"]
+                if item in self.weapon_db.weapons:
+                    k, label = "weapon", self.weapon_db.weapons[item].name
+                elif item in self.weapon_db.grenades:
+                    k, label = "grenade", self.weapon_db.grenades[item].name
+                else:
+                    k, label = item, {"ammo": "ammo", "armor": "armour + helmet", "grenades": "grenades"}.get(item, item)
+                self.pickups.spawn(k, item, e["pos"], e.get("heading", 0.0), static=e.get("static", True),
+                                   respawn=float(e.get("respawn", 3.0)), label=e.get("label", label))
+
+    def _make_sign(self, e: dict) -> None:
+        from panda3d.core import TextNode
+        from render.renderer import SHADOW_CAMERA_MASK
+        tn = TextNode("sign")
+        tn.setText(e["text"])
+        tn.setAlign(TextNode.ACenter)
+        tn.setTextColor(*e.get("color", (0.95, 0.85, 0.5, 1)))
+        tn.setShadow(0.04, 0.04)
+        np_ = self.render.attachNewNode(tn)
+        np_.setPos(*e["pos"])
+        np_.setH(e.get("heading", 0.0))
+        np_.setScale(e.get("scale", 0.16))
+        np_.setShaderOff(10)
+        np_.setLightOff(10)
+        np_.setTwoSided(True)
+        np_.hide(SHADOW_CAMERA_MASK)
+
+    # -------------------------------------------------------- game services
     def log(self, msg: str) -> None:
         print(msg, flush=True)
 
+    def damageables(self) -> list:
+        return [d for d in self.dummies] + [self.player]
+
+    def spawn_grenade(self, g) -> None:
+        self.grenades.append(g)
+
+    def notify_noise(self, pos, loudness: float, radius: float) -> None:
+        """Gunshots, explosions and footsteps are recorded for AI hearing (milestone 5)."""
+        self.noise_events.append((self.loop.time, Point3(pos), loudness, radius))
+        if len(self.noise_events) > 64:
+            del self.noise_events[:-64]
+
+    def _player_step(self, ev) -> None:
+        if ev.kind == "land":
+            self.audio.play_ui("land", 0.4 * ev.loudness + 0.1)
+        else:
+            self.audio.footstep(ev.surface, ev.pos, ev.loudness, own=True)
+        if ev.loudness > 0:
+            self.notify_noise(ev.pos, ev.loudness, 28.0 * ev.loudness)
+
+    def _player_damaged(self, res) -> None:
+        self.hud.damage_taken(res.health)
+        if res.killed:
+            self._respawn_timer = RESPAWN_TIME
+            self.hud.flash_msg("killed by " + (res.info.weapon or "the world"), 2.5)
+
+    # ---------------------------------------------------------------- view
+    def base_vfov(self) -> float:
+        return float(self.settings.video.get("fov", 74.0))
+
+    def current_vfov(self) -> float:
+        return math.degrees(2 * math.atan(math.tan(math.radians(self.base_vfov()) * 0.5) * self.zoom))
+
     def apply_fov(self) -> None:
-        vfov = float(self.settings.video.get("fov", 74.0))
+        vfov = self.current_vfov()
         aspect = self.getAspectRatio() if self.win else 16 / 9
         hfov = math.degrees(2 * math.atan(math.tan(math.radians(vfov) / 2) * aspect))
         self.camLens.setFov(hfov, vfov)
+
+    def set_zoom(self, zoom: float) -> None:
+        if abs(zoom - self.zoom) > 1e-4:
+            self.zoom = zoom
+            self.apply_fov()
+        self.player.sens_scale = zoom
 
     def _on_window_event(self, win) -> None:
         self.windowEvent(win)
         if win == self.win:
             self.apply_fov()
-            if hasattr(self, "crosshair"):
-                self.crosshair.center()
+            if hasattr(self, "hud"):
+                self.hud.on_resize()
             props = win.getProperties()
             if props.getForeground() is False and self.input.captured:
                 self.input.set_captured(False)
@@ -98,11 +214,12 @@ class Game(ShowBase):
     def toggle_capture(self) -> None:
         self.input.set_captured(not self.input.captured)
         if not self.input.captured:
-            self.hud.flash("mouse released - click to play")
+            self.hud.flash_msg("mouse released - click to play")
 
     def _click_capture(self) -> None:
-        if not self.input.captured and not self._shot_queue:
+        if not self.input.captured and not self._shot_queue and self.demo is None:
             self.input.set_captured(True)
+            self.input.consume("fire")
 
     def toggle_noclip(self) -> None:
         if not self.input.captured:
@@ -110,7 +227,7 @@ class Game(ShowBase):
         self.player.noclip = not self.player.noclip
         if not self.player.noclip:
             self.player.char.teleport(self.player.char.pos)
-        self.hud.flash("noclip " + ("on" if self.player.noclip else "off"), 1.2)
+        self.hud.flash_msg("noclip " + ("on" if self.player.noclip else "off"), 1.2)
 
     def screenshot(self, path: str | None = None) -> str:
         if path is None:
@@ -128,13 +245,14 @@ class Game(ShowBase):
             shots = [s for s in shots if s["name"] in names]
         self._shot_queue = list(shots)
         self._shot_wait = 0
-        self.hud.toggle()
-        self.crosshair.set_visible(False)
+        self.debug_hud.toggle()
+        self.hud.set_visible(False)
         self._next_shot()
 
     def _next_shot(self) -> None:
         shot = self._shot_queue[0]
         self.player.set_pose(shot["pos"], shot["hpr"])
+        self.weapons.force_hide_vm = not shot.get("viewmodel", False)
         # local shadow maps update on a budget; give them a few frames
         self._shot_wait = 6
 
@@ -155,29 +273,66 @@ class Game(ShowBase):
         if self._shot_queue:
             self.player.char.prev_pos = Point3(self.player.char.pos)
             return
+        now = self.loop.time
+        if self.demo is not None:
+            self.demo.tick(dt)
         self.player.fixed_update(dt)
+        for d in self.dummies:
+            d.fixed_update(dt)
+        for g in self.grenades:
+            g.fixed_update(dt)
+        self.grenades = [g for g in self.grenades if not g.done]
         self.physics.step(dt)
+        self.weapons.fixed_update(dt, now)
+        if not self.player.damageable.alive:
+            self._respawn_timer -= dt
+            if self._respawn_timer <= 0:
+                self.player.damageable.reset(armor=0, helmet=False)
+                self.player.spawn(self.spawn["pos"], self.spawn.get("heading", 0.0))
+                self.weapons.inv.refill_ammo()
+                self.weapons.select(self.weapons.inv.best_slot(), force=True)
 
     def _update(self, task):
-        dt = ClockObject.getGlobalClock().getDt()
+        dt = min(ClockObject.getGlobalClock().getDt(), 0.25)
+        if self.demo is not None:
+            dt = 1.0 / 30.0   # deterministic: simulation and animation advance identically
         self.input.poll_mouse()
         alpha = self.loop.advance(dt, self._fixed_update)
+        self.weapons.pre_frame(dt)
         self.player.frame_update(dt, alpha)
+        self.weapons.frame_update(dt)
+        for d in self.dummies:
+            d.frame_update(dt)
+        for g in self.grenades:
+            g.frame_update()
+        self.pickups.update(dt)
+        self.effects.update(dt)
         self.renderer.update()
         self.hud.update(dt)
+        self.debug_hud.update(dt)
         self._frame += 1
         if self.args.trace:
             self._trace_t = getattr(self, "_trace_t", 0.0) + dt
             if self._trace_t >= 0.5:
                 self._trace_t = 0.0
                 c = self.player.char
+                ws = self.weapons.inv.current()
+                ammo = f"{ws.d.key}:{ws.ammo}/{ws.reserve}" if ws else self.weapons.inv.slot
                 self.log(f"[trace] t={self.loop.time:6.2f} pos=({c.pos.x:.2f},{c.pos.y:.2f},{c.pos.z:.2f}) "
                          f"yaw={self.player.yaw:.1f} pitch={self.player.pitch:.1f} speed={c.horizontal_speed:.2f} "
-                         f"h={c.height:.2f} {self.player.state_text} captured={self.input.captured}")
+                         f"h={c.height:.2f} {self.player.state_text} weapon={ammo} hp={self.player.damageable.health:.0f} "
+                         f"captured={self.input.captured}")
         if self._shot_queue:
             self._process_shots()
+        elif self.demo is not None:
+            if self.demo.frame():
+                self.userExit()
         elif self.args.frames and self._frame >= self.args.frames:
             if self.args.screenshot:
                 self.screenshot(self.args.screenshot)
             self.userExit()
         return task.cont
+
+    def save_json(self, name: str, data) -> None:
+        with open(paths.USER_DIR / name, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)

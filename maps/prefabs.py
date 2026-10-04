@@ -433,6 +433,12 @@ def pickup(ctx, e):
     ctx.prop("pickup", e)
 
 
+@prefab("sign")
+def sign(ctx, e):
+    """Floating 3D label (range distances, panel materials)."""
+    ctx.prop("sign", e)
+
+
 @prefab("group")
 def group(ctx, e):
     """Offset/rotate a list of child pieces (reusable building blocks)."""

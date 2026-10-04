@@ -6,14 +6,16 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 1 of 7** - player controller, movement, test level with
-> PBR materials, cascaded shadows, shadowed local lights, IBL and an HDR
-> post chain. See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: Milestone 2 of 7.** Milestone 2 adds weapons with fixed recoil patterns, hitbox-based hit
+> detection with wall penetration, grenades, pickups, a first-person viewmodel and impact effects
+> (decals, particles, muzzle flash, tracers, shell casings). Milestone 1 delivered the player
+> controller, the PBR test level, cascaded shadows, IBL and the HDR post chain.
+> See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 1 test range](docs/images/milestone1.jpg)
+![Milestone 2 shooting range](docs/images/milestone2.jpg)
 
-*Milestone 1 test range, rendered with the offline fallback (procedural textures and sky).
-Every rendering technique is explained in [docs/RENDERING.md](docs/RENDERING.md).*
+*The Milestone 2 shooting range, rendered with the offline fallback (procedural textures, sky and sounds).
+Each rendering technique is explained in [docs/RENDERING.md](docs/RENDERING.md).*
 
 ## Requirements
 
@@ -50,10 +52,11 @@ Useful options (`python main.py --help` lists them all):
 | `--gfx shadow_resolution=4096` | override any key from `data/graphics_presets.json` |
 | `--no-vsync` | uncapped frame rate (for benchmarking) |
 | `--shots` | render the map's predefined camera shots to `user/screenshots/` and exit |
-| `--pose x,y,z,heading,pitch` | start at a given eye position |
+| `--pose=x,y,z,heading,pitch` | start at a given eye position |
+| `--demo weapons` | scripted tour of the Milestone 2 features. It saves screenshots and prints the damage results |
 | `--save-settings` | persist the CLI overrides to `user/settings.json` |
 
-## Controls (Milestone 1)
+## Controls
 
 | Key | Action |
 |---|---|
@@ -62,6 +65,14 @@ Useful options (`python main.py --help` lists them all):
 | Shift (hold) | walk: quiet footsteps, slower |
 | Ctrl (hold) | crouch (crouch in the air = crouch-jump) |
 | Space | jump |
+| Left mouse | fire / knife slash / throw grenade (hold to prime, release to throw) |
+| Right mouse | aim down sights (hold) / sniper scope (click cycles 2 zoom levels) / knife stab / underhand grenade lob |
+| R | reload |
+| F | pick up the weapon or ammo you are looking at |
+| G | drop the current weapon |
+| Y | inspect weapon |
+| 1 2 3 4 | primary / pistol / knife / grenades (press 4 again to cycle grenade types) |
+| Mouse wheel, Z | next/previous weapon, last weapon |
 | V | noclip fly mode (debug) |
 | Esc | release / recapture the mouse (click also recaptures) |
 | F1 | toggle debug overlay |
@@ -69,9 +80,72 @@ Useful options (`python main.py --help` lists them all):
 
 Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
 
+## Milestone 2 - what to test
+
+You spawn at the **shooting range** (north end of the test level) with the R7 Halberd rifle, the P9
+pistol, a knife, one frag, two flashbangs and one smoke. The bench in front of you holds every gun
+(rifles and the SMG to the left; shotgun, sniper and pistol in the middle). Look at one and press **F**.
+The ammo, armour and grenade boxes are at the right end of the bench. Rack items come back after you
+take them. Ammo is limited, so reload and refill at the ammo box.
+
+1. **Targets.** The dummies are at 10 m (one armoured with a helmet, one unarmoured), 20 m (helmet + vest,
+   vest only), 30 m (unarmoured), and one moving left and right at about 18 m. Each one shows the
+   damage per hit, the hit group, the armour left and burst totals. A dummy topples at 0 HP and
+   stands up again after a few seconds.
+   - One R7 headshot kills the armoured, helmeted dummy. Body shots take 4 hits through armour.
+   - Hit markers: white for a hit, yellow for a headshot, red for a kill.
+   - Armour: armour absorbs part of each body hit and is used up as it does (CS-style; each weapon has its
+     own armour penetration). Legs are never armoured. Against a helmet, only the R7 and the sniper
+     kill with one headshot. The C9, SMG, pistol and shotgun need two. This is the CS-style rifle
+     trade-off: the R7 hits harder, the C9 fires faster and is easier to control.
+2. **Accuracy.** Shoot while standing still, then while running: running shots spray wildly. Then walk
+   (Shift), crouch and jump. The crosshair opens to show the current spread. The first shot when
+   standing still goes exactly where you aim. Tapping keeps your shots tight.
+3. **Recoil.** Stand about 10 m from the **SPRAY WALL** (the lone concrete wall with a sign, to the
+   right of the range past the end of the bench). Spray without pulling down. The bullet holes trace
+   the weapon's fixed pattern: up first, then left and right. Spray again and you get the same
+   pattern, so it can be learned and compensated. Every gun has its own pattern. Recoil recovers when
+   you stop firing.
+4. **Penetration.** The 5 panels left of the range (plywood, plaster, sheet steel, brick, concrete) each
+   have a dummy behind them. Bullets go through plywood, plaster and sheet steel (with reduced damage),
+   but not brick or concrete. Rifles penetrate more than the SMG or pistol.
+5. **Damage falloff.** The shotgun one-shots up close. At 10 m it takes one or two shots, and beyond
+   20 m it is weak, because pellets lose damage and spread out. The SMG and pistol lose noticeably more damage over range than the rifles.
+   A sniper body shot kills an unarmoured dummy at any range.
+6. **Weapons and animations.**
+   - Hold right mouse to aim down the sights (iron sights on every gun).
+   - SR-90: right-click for the scope overlay, right-click again for the 2nd zoom. It is a bolt action, so
+     watch the bolt cycle. The scope drops after each shot.
+   - S12 shotgun: loads one shell at a time and you can fire to interrupt.
+   - Reload from a partly full and from an empty magazine (the empty one also racks the bolt).
+   - Inspect with **Y**. Knife: left slash, right stab (backstab = more damage).
+7. **Grenades** (key 4, press again to cycle). Hold left mouse to pull the pin, release to throw.
+   Right mouse gives a short underhand lob. Grenades bounce off walls and floors.
+   - Frag: explosion, damage through line of sight only (hide behind a bench), crater decal, screen shake.
+   - Smoke: a volume cloud that blocks vision for about 18 s.
+   - Flashbang: blinds you if you look at it. Turning away shortens the effect.
+8. **Effects.** Look for:
+   - muzzle flash with a light pulse on nearby walls
+   - tracers on every 3rd rifle round (every 4th for the SMG; every sniper round)
+   - ejected brass that bounces
+   - per-surface bullet holes and particles: sparks on metal, dust on concrete, splinters on wood
+   - viewmodel sway and bob, and a landing dip. The viewmodel is drawn with its own FOV, so it never
+     clips into walls
+9. **Pickups.** Press **G** to drop a gun, then walk over it to pick it back up. When the slot is full,
+   **F** on a rack swaps your gun.
+10. **Audio.** Gunshots, impacts, reloads, footsteps and explosions are synthesised procedurally on the
+    first start (cached in `assets/cache/sounds`). They are positioned in 3D, so close your eyes and
+    turn. These are placeholders until the audio pass in Milestone 7.
+
+To see everything without playing, run `python main.py --demo weapons`. It shoots each target, prints the
+damage it did in the console and writes `user/screenshots/demo_*.png`.
+
+The Milestone 1 areas are still there: the movement course, the house, the container yard and the PBR gallery.
+Use `V` (noclip) to fly back to the road. The checklist from Milestone 1 is below.
+
 ## Milestone 1 - what to test
 
-Spawn is at the south end of the road, facing north.
+Use `--pose=0,-52,1.77,0,0` to start at the south end of the road, facing north (the Milestone 1 spawn).
 
 1. **Movement feel**
    - Run (5.4 m/s), walk with Shift (2.75 m/s) and crouch with Ctrl (1.85 m/s). Watch the speed readout in the overlay.
@@ -101,13 +175,16 @@ Spawn is at the south end of the road, facing north.
 ```
 main.py                 entry point
 engine/                 app/game loop, fixed timestep (64 Hz), settings, input, physics, mesh building
-gameplay/               kinematic character controller (shared by player & bots), player controller
+gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies
 render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility, post
 render/shaders/         GLSL (commented: every technique is explained in place)
 maps/                   modular level builder (prefabs) + map JSON files in maps/data/
-data/                   data-driven configs: materials, graphics presets, movement (weapons/specialists later)
-ui/                     HUD, crosshair, menus (more in later milestones)
-audio/ weapons/ ai/     filled in by milestones 2, 5, 7
+data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces
+weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
+render/ (M2)            particles.py, decals.py, effects.py (muzzle flash, tracers, casings, explosions, smoke)
+ui/                     HUD, crosshair, debug overlay (menus in later milestones)
+audio/                  procedural sound synthesis (placeholder library) + 3D audio system
+ai/                     filled in by milestone 5
 assets/                 downloaded / generated textures, HDRIs, caches (not committed)
 tools/                  download_assets.py, generate_textures.py
 tests/                  unit tests (python -m unittest discover -s tests -t .)
@@ -128,9 +205,14 @@ offset/rotated block of pieces). Run it with `python main.py --map <name>`.
 python -m unittest discover -s tests -t . -v
 ```
 
-The tests cover the character controller (stairs, slopes, ledges, crouch, crouch-jump,
-depenetration, footsteps), the fixed timestep, IBL maths and HDRI orientation, and the
-asset downloader (with mocked network).
+The tests cover:
+
+* the character controller: stairs, slopes, ledges, crouch, crouch-jump, depenetration, footsteps
+* the fixed timestep, IBL maths and HDRI orientation
+* the asset downloader (with a mocked network)
+* fire rates, recoil patterns and recovery, inaccuracy (first shot, moving, crouched, in the air)
+* reloads, including shell-by-shell; the armour and helmet damage model and falloff
+* hitbox raycasts, wall penetration per material, and the inventory and grenade maths
 
 ## Troubleshooting
 
@@ -140,3 +222,5 @@ asset downloader (with mocked network).
 * **Textures look procedural:** run `python tools/download_assets.py`. It prints which assets it
   fetched and writes `assets/CREDITS.md`.
 * **Stale lighting after changing a map:** delete `assets/cache/`.
+* **No sound:** the game runs muted if Panda3D finds no audio device (the console says so). To
+  regenerate the procedural sounds, delete `assets/cache/sounds/`.

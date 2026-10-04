@@ -28,6 +28,11 @@ MASK_MOVEMENT = GROUP_WORLD | GROUP_PLAYER_CLIP | GROUP_DESTRUCTIBLE
 MASK_BULLETS = GROUP_WORLD | GROUP_HITBOX | GROUP_DESTRUCTIBLE
 MASK_SIGHT = GROUP_WORLD | GROUP_DESTRUCTIBLE
 
+# Static level geometry also carries this bit so dynamic props (grenades,
+# dropped weapons, debris) collide with it, while bullets/movement queries
+# (which never include GROUP_DEBRIS) ignore those props.
+WORLD_COLLIDE = GROUP_DEBRIS
+
 GRAVITY = 20.0  # m/s^2 - slightly above real gravity for snappier jumps
 
 
@@ -63,7 +68,7 @@ class PhysicsWorld:
         node = BulletRigidBodyNode(name)
         node.addShape(BulletBoxShape(Vec3(*half_extents)))
         node.setTag("surface", surface)
-        node.setIntoCollideMask(group)
+        node.setIntoCollideMask(group | WORLD_COLLIDE if group == GROUP_WORLD else group)
         np = self.root.attachNewNode(node)
         np.setPos(Point3(*center))
         np.setHpr(*hpr)
@@ -76,7 +81,7 @@ class PhysicsWorld:
         node = BulletRigidBodyNode(name)
         node.addShape(BulletCylinderShape(radius, height, ZUp))
         node.setTag("surface", surface)
-        node.setIntoCollideMask(group)
+        node.setIntoCollideMask(group | WORLD_COLLIDE if group == GROUP_WORLD else group)
         np = self.root.attachNewNode(node)
         np.setPos(Point3(*center))
         self.world.attachRigidBody(node)
@@ -94,7 +99,7 @@ class PhysicsWorld:
         node = BulletRigidBodyNode(name)
         node.addShape(BulletTriangleMeshShape(mesh, dynamic=False))
         node.setTag("surface", surface)
-        node.setIntoCollideMask(group)
+        node.setIntoCollideMask(group | WORLD_COLLIDE if group == GROUP_WORLD else group)
         np = self.root.attachNewNode(node)
         np.setTransform(geom_np.getTransform(self.root))
         self.world.attachRigidBody(node)

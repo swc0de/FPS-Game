@@ -1,177 +1,2220 @@
 {
-  "name": "Range 07 (test level)",
-  "description": "Milestone 1 test range: movement course, two-storey house with shadowed interior lights, container yard, catwalk, PBR calibration spheres and a material sample wall.",
-  "environment": {
-    "hdri": "kloofendal_48d_partly_cloudy_puresky",
-    "hdri_candidates": ["kloppenheim_06_puresky", "syferfontein_1d_clear_puresky", "industrial_sunset_puresky"],
-    "sun_dir": [0.45, -0.55, 0.70],
-    "sun_intensity": 3.4,
-    "sun_color": [1.0, 0.92, 0.80],
-    "sky_target": 0.85,
-    "ground": [0.16, 0.14, 0.115],
-    "sun_clamp": 12.0,
-    "ibl_diffuse": 1.0,
-    "ibl_specular": 1.0,
-    "exposure": 1.0,
-    "ambient_floor": [0.004, 0.004, 0.005],
-    "fog": {"density": 0.0035, "height_falloff": 0.07, "base_height": 0.0, "max_opacity": 0.55, "sun_scatter": 0.35}
-  },
-  "bounds": [[-42, -56, -0.5], [48, 44, 10.5]],
-  "skyvis_spacing": [1.5, 1.5, 1.0],
-  "pieces": [
-    {"type": "floor", "min": [-70, -70], "max": [70, 70], "z": 0.0, "thickness": 1.0, "mat": "dirt"},
-    {"type": "floor", "min": [-4, -62], "max": [4, 62], "z": 0.03, "thickness": 0.2, "mat": "asphalt"},
-    {"type": "floor", "min": [20, -8], "max": [40, -1], "z": 0.02, "thickness": 0.2, "mat": "gravel"},
-    {"type": "floor", "min": [-30, 6], "max": [-10, 24], "z": 0.06, "thickness": 0.3, "mat": "concrete_floor"},
-
-    {"type": "wall", "p0": [-62, -62], "p1": [62, -62], "height": 4.0, "thickness": 0.5, "mat": "concrete_wall", "extend": true},
-    {"type": "wall", "p0": [62, 62], "p1": [-62, 62], "height": 4.0, "thickness": 0.5, "mat": "concrete_wall", "extend": true},
-    {"type": "wall", "p0": [-62, 62], "p1": [-62, -62], "height": 4.0, "thickness": 0.5, "mat": "concrete_wall", "extend": true},
-    {"type": "wall", "p0": [62, -62], "p1": [62, 62], "height": 4.0, "thickness": 0.5, "mat": "concrete_wall", "extend": true},
-
-    {"type": "group", "offset": [0, 0, 0], "heading": 0, "pieces": [
-      {"type": "wall", "p0": [-12, 8], "p1": [-28, 8], "z": 0.06, "height": 7.69, "thickness": 0.3, "extend": true,
-       "mat": "brick", "mat2": "plaster", "frame_mat": "concrete_dark",
-       "openings": [
-         {"at": 8, "width": 1.5, "bottom": 0, "top": 2.4},
-         {"at": 3, "width": 1.6, "bottom": 1.0, "top": 2.2},
-         {"at": 13, "width": 1.6, "bottom": 1.0, "top": 2.2},
-         {"at": 3, "width": 1.4, "bottom": 4.6, "top": 5.8},
-         {"at": 8, "width": 1.4, "bottom": 4.6, "top": 5.8},
-         {"at": 13, "width": 1.4, "bottom": 4.6, "top": 5.8}]},
-      {"type": "wall", "p0": [-28, 8], "p1": [-28, 22], "z": 0.06, "height": 7.69, "thickness": 0.3, "extend": true,
-       "mat": "brick", "mat2": "plaster", "frame_mat": "concrete_dark",
-       "openings": [
-         {"at": 4, "width": 1.6, "bottom": 1.0, "top": 2.2},
-         {"at": 10, "width": 1.6, "bottom": 1.0, "top": 2.2},
-         {"at": 7, "width": 1.4, "bottom": 4.6, "top": 5.8}]},
-      {"type": "wall", "p0": [-28, 22], "p1": [-12, 22], "z": 0.06, "height": 7.69, "thickness": 0.3, "extend": true,
-       "mat": "brick", "mat2": "plaster", "frame_mat": "concrete_dark",
-       "openings": [
-         {"at": 12, "width": 1.2, "bottom": 0, "top": 2.3},
-         {"at": 4, "width": 1.6, "bottom": 1.0, "top": 2.2},
-         {"at": 4, "width": 1.4, "bottom": 4.6, "top": 5.8},
-         {"at": 12, "width": 1.4, "bottom": 4.6, "top": 5.8}]},
-      {"type": "wall", "p0": [-12, 22], "p1": [-12, 8], "z": 0.06, "height": 7.69, "thickness": 0.3, "extend": true,
-       "mat": "brick", "mat2": "plaster", "frame_mat": "concrete_dark",
-       "openings": [
-         {"at": 4, "width": 1.3, "bottom": 3.64, "top": 5.94},
-         {"at": 10, "width": 1.6, "bottom": 1.0, "top": 2.2}]},
-
-      {"type": "floor", "min": [-27.85, 8.15], "max": [-12.15, 21.85], "z": 0.1, "thickness": 0.06, "mat": "floor_tiles"},
-      {"type": "wall", "p0": [-22, 8.15], "p1": [-22, 21.85], "z": 0.1, "height": 3.36, "thickness": 0.2,
-       "mat": "plaster", "frame_mat": "wood_planks",
-       "openings": [{"at": 7, "width": 1.2, "bottom": 0, "top": 2.3}]},
-
-      {"type": "stairs", "base": [-13.0, 9.0, 0.1], "heading": 0, "steps": 14, "rise": 3.6, "run": 0.3, "width": 1.4,
-       "mat": "concrete_dark"},
-
-      {"type": "floor", "min": [-28, 8], "max": [-13.8, 22], "z": 3.67, "thickness": 0.25, "mat": "concrete_dark"},
-      {"type": "floor", "min": [-13.8, 13.3], "max": [-12, 22], "z": 3.67, "thickness": 0.25, "mat": "concrete_dark"},
-      {"type": "floor", "min": [-27.85, 8.15], "max": [-13.8, 21.85], "z": 3.7, "thickness": 0.03, "mat": "wood_planks", "occlude": false},
-      {"type": "floor", "min": [-13.8, 13.3], "max": [-12.15, 21.85], "z": 3.7, "thickness": 0.03, "mat": "wood_planks", "occlude": false},
-      {"type": "railing", "p0": [-13.85, 8.2], "p1": [-13.85, 13.3], "z": 3.7, "mat": "steel"},
-
-      {"type": "floor", "min": [-27.86, 8.14], "max": [-12.14, 21.86], "z": 7.15, "thickness": 0.3, "mat": "concrete_dark"},
-
-      {"type": "crate_stack", "base": [-26.5, 20.4, 3.7], "size": 0.9, "layout": [[0, 0, 0], [1, 0, 0], [0, 0, 1]], "seed": 4},
-      {"type": "crate", "base": [-17.5, 10.2, 0.1], "size": 0.8, "heading": 12, "mat": "metal_olive", "frame_mat": "steel"},
-      {"type": "box", "base": [-25.0, 15.0, 0.1], "size": [2.0, 1.0, 0.78], "mat": "wood_planks"},
-      {"type": "barrel", "base": [-27.2, 9.0, 0.1]},
-      {"type": "barrel", "base": [-26.5, 9.1, 0.1], "mat": "metal_tan"},
-
-      {"type": "light", "kind": "point", "pos": [-25.0, 15.0, 3.25], "kelvin": 3200, "intensity": 45, "range": 11.0, "shadows": true},
-      {"type": "light", "kind": "point", "pos": [-17.0, 16.5, 3.25], "kelvin": 3600, "intensity": 45, "range": 12.0, "shadows": true},
-      {"type": "light", "kind": "spot", "pos": [-13.0, 11.5, 6.8], "dir": [0, 0, -1], "inner": 22, "outer": 38,
-       "kelvin": 4500, "intensity": 90, "range": 11.0, "shadows": true, "fixture": "flood"},
-      {"type": "light", "kind": "point", "pos": [-20.0, 15.0, 6.75], "kelvin": 5200, "intensity": 45, "range": 13.0,
-       "shadows": true, "fixture": "panel"}
-    ]},
-
-    {"type": "box", "pos": [-10.75, 18.0, 3.545], "size": [2.5, 4.0, 0.25], "mat": "diamond_plate"},
-    {"type": "railing", "p0": [-9.55, 16.05], "p1": [-11.9, 16.05], "z": 3.67, "mat": "steel"},
-    {"type": "railing", "p0": [-11.9, 19.95], "p1": [-9.55, 19.95], "z": 3.67, "mat": "steel"},
-    {"type": "catwalk", "p0": [-9.5, 18.0], "p1": [8.0, 18.0], "z": 3.67, "width": 1.6},
-    {"type": "box", "pos": [10.0, 18.0, 3.545], "size": [4.0, 4.0, 0.25], "mat": "diamond_plate"},
-    {"type": "pillar", "base": [8.2, 16.2, 0], "height": 3.42, "size": 0.2, "mat": "steel"},
-    {"type": "pillar", "base": [11.8, 16.2, 0], "height": 3.42, "size": 0.2, "mat": "steel"},
-    {"type": "pillar", "base": [8.2, 19.8, 0], "height": 3.42, "size": 0.2, "mat": "steel"},
-    {"type": "pillar", "base": [11.8, 19.8, 0], "height": 3.42, "size": 0.2, "mat": "steel"},
-    {"type": "railing", "p0": [12.0, 16.0], "p1": [12.0, 20.0], "z": 3.67, "mat": "steel"},
-    {"type": "railing", "p0": [8.0, 20.0], "p1": [12.0, 20.0], "z": 3.67, "mat": "steel"},
-    {"type": "stairs", "base": [10.0, 11.75, 0.0], "heading": 0, "steps": 14, "rise": 3.67, "run": 0.3, "width": 1.4,
-     "mat": "diamond_plate", "solid": false, "rails": true, "rail_mat": "steel"},
-
-    {"type": "container", "base": [18, 10, 0], "heading": 0, "mat": "container_red"},
-    {"type": "container", "base": [18, 10, 2.59], "heading": 0, "mat": "container_green"},
-    {"type": "container", "base": [25, 14, 0], "heading": 180, "mat": "container_green", "open": true},
-    {"type": "light", "kind": "point", "pos": [25, 15.2, 2.3], "kelvin": 4000, "intensity": 18, "range": 7.0, "shadows": true},
-    {"type": "container", "base": [31, 26, 0], "heading": 90, "mat": "container_red"},
-    {"type": "container", "base": [20, 29, 0], "heading": 15, "mat": "container_green"},
-    {"type": "crate_stack", "base": [26, 4, 0], "size": 1.1, "layout": [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], "seed": 9},
-    {"type": "barrel", "base": [14.5, 3.5, 0]},
-    {"type": "barrel", "base": [15.2, 3.9, 0], "mat": "metal_tan"},
-    {"type": "barrel", "base": [14.7, 4.4, 0]},
-    {"type": "pillar", "base": [34, 6, 0], "height": 6.2, "size": 0.25, "mat": "steel"},
-    {"type": "light", "kind": "spot", "pos": [33.6, 6.4, 6.0], "dir": [-0.45, 0.45, -0.77], "inner": 25, "outer": 42,
-     "kelvin": 5600, "intensity": 70, "range": 24.0, "shadows": true, "fixture": "flood"},
-
-    {"type": "sandbags", "p0": [-3, -15], "p1": [2.5, -15], "z": 0.03, "layers": 6},
-    {"type": "sandbags", "p0": [6, -20], "p1": [6, -14], "layers": 5},
-    {"type": "sandbags", "p0": [-14, -24], "p1": [-9, -26], "layers": 4},
-
-    {"type": "box", "base": [12, -30, 0], "size": [2.5, 2.5, 0.25], "mat": "concrete_dark"},
-    {"type": "box", "base": [16, -30, 0], "size": [2.5, 2.5, 0.42], "mat": "concrete_dark"},
-    {"type": "box", "base": [20, -30, 0], "size": [2.5, 2.5, 0.6], "mat": "concrete_dark"},
-    {"type": "box", "base": [24, -30, 0], "size": [2.5, 2.5, 0.9], "mat": "concrete_dark"},
-    {"type": "box", "base": [28, -30, 0], "size": [2.5, 2.5, 1.3], "mat": "concrete_dark"},
-    {"type": "box", "base": [32, -30, 0], "size": [2.5, 2.5, 1.7], "mat": "concrete_dark"},
-    {"type": "wall", "p0": [38, -34], "p1": [38, -26], "height": 2.2, "thickness": 0.4, "mat": "concrete_wall"},
-    {"type": "wall", "p0": [42, -26], "p1": [42, -34], "height": 2.2, "thickness": 0.4, "mat": "concrete_wall"},
-    {"type": "box", "pos": [40, -30, 1.55], "size": [4.4, 8.0, 0.4], "mat": "concrete_wall"},
-    {"type": "box", "pos": [40, -30, 2.0], "size": [4.4, 8.0, 0.5], "mat": "concrete_wall"},
-    {"type": "ramp", "base": [14, -50, 0], "heading": 0, "length": 6, "height": 2.18, "width": 2.5, "mat": "concrete_floor"},
-    {"type": "ramp", "base": [20, -50, 0], "heading": 0, "length": 6, "height": 4.2, "width": 2.5, "mat": "concrete_floor"},
-    {"type": "ramp", "base": [26, -50, 0], "heading": 0, "length": 3, "height": 3.58, "width": 2.5, "mat": "concrete_floor"},
-    {"type": "stairs", "base": [34, -50, 0], "heading": 0, "steps": 12, "rise": 3.0, "run": 0.3, "width": 2.0, "mat": "concrete_dark"},
-    {"type": "box", "base": [34, -45.2, 0], "size": [3.0, 2.4, 3.0], "mat": "concrete_dark"},
-
-    {"type": "pbr_gallery", "base": [-20, -6, 0], "heading": 0, "spacing": 1.6,
-     "mats": ["pbr_white_rough", "pbr_white_glossy", "pbr_red_plastic", "pbr_gold", "pbr_chrome", "pbr_copper_rough"]},
-
-    {"type": "box", "base": [-46.0, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "concrete_wall"},
-    {"type": "box", "base": [-43.8, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "concrete_floor"},
-    {"type": "box", "base": [-41.6, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "concrete_dark"},
-    {"type": "box", "base": [-39.4, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "asphalt"},
-    {"type": "box", "base": [-37.2, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "gravel"},
-    {"type": "box", "base": [-35.0, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "dirt"},
-    {"type": "box", "base": [-32.8, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "brick"},
-    {"type": "box", "base": [-30.6, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "wood_planks"},
-    {"type": "box", "base": [-28.4, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "plywood"},
-    {"type": "box", "base": [-26.2, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "metal_olive"},
-    {"type": "box", "base": [-24.0, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "metal_tan"},
-    {"type": "box", "base": [-21.8, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "container_red"},
-    {"type": "box", "base": [-19.6, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "container_green"},
-    {"type": "box", "base": [-17.4, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "diamond_plate"},
-    {"type": "box", "base": [-15.2, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "steel"},
-    {"type": "box", "base": [-13.0, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "plaster"},
-    {"type": "box", "base": [-10.8, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "sandbag"},
-    {"type": "box", "base": [-8.6, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "canvas"},
-    {"type": "box", "base": [-6.4, -12, 0], "size": [1.4, 1.4, 1.4], "mat": "floor_tiles"},
-    {"type": "box", "base": [-46.0, -9.5, 0], "size": [1.4, 1.4, 1.4], "mat": "hazard"},
-
-    {"type": "spawn", "team": "attack", "pos": [0, -52, 0.1], "heading": 0},
-    {"type": "spawn", "team": "defend", "pos": [-20, 15, 0.2], "heading": 180}
+ "name": "Range 07 (test level)",
+ "description": "Milestone 1 test range: movement course, two-storey house with shadowed interior lights, container yard, catwalk, PBR calibration spheres and a material sample wall. Milestone 2 adds a shooting range north of the house: weapon racks, target dummies (armoured and not, static and moving), penetration test panels and a spray-pattern wall.",
+ "environment": {
+  "hdri": "kloofendal_48d_partly_cloudy_puresky",
+  "hdri_candidates": [
+   "kloppenheim_06_puresky",
+   "syferfontein_1d_clear_puresky",
+   "industrial_sunset_puresky"
   ],
-  "camera_shots": [
-    {"name": "overview", "pos": [0, -56, 1.7], "hpr": [0, 0, 0]},
-    {"name": "house_exterior", "pos": [-6, -3, 1.7], "hpr": [38, 3, 0]},
-    {"name": "house_interior", "pos": [-13.4, 20.6, 1.65], "hpr": [130, -6, 0]},
-    {"name": "upstairs", "pos": [-26.5, 9.2, 5.4], "hpr": [-50, -8, 0]},
-    {"name": "container_yard", "pos": [12, -3, 1.7], "hpr": [-28, 2, 0]},
-    {"name": "pbr_gallery", "pos": [-20, -11.2, 1.45], "hpr": [0, -4, 0]},
-    {"name": "materials", "pos": [-26, -17.5, 1.7], "hpr": [0, -10, 0]},
-    {"name": "catwalk", "pos": [-9.0, 18.0, 5.37], "hpr": [-90, -6, 0]},
-    {"name": "movement_course", "pos": [22, -40, 2.2], "hpr": [180, -8, 0]}
+  "sun_dir": [
+   0.45,
+   -0.55,
+   0.7
+  ],
+  "sun_intensity": 3.4,
+  "sun_color": [
+   1.0,
+   0.92,
+   0.8
+  ],
+  "sky_target": 0.85,
+  "ground": [
+   0.16,
+   0.14,
+   0.115
+  ],
+  "sun_clamp": 12.0,
+  "ibl_diffuse": 1.0,
+  "ibl_specular": 1.0,
+  "exposure": 1.0,
+  "ambient_floor": [
+   0.004,
+   0.004,
+   0.005
+  ],
+  "fog": {
+   "density": 0.0035,
+   "height_falloff": 0.07,
+   "base_height": 0.0,
+   "max_opacity": 0.55,
+   "sun_scatter": 0.35
+  }
+ },
+ "bounds": [
+  [
+   -60,
+   -56,
+   -0.5
+  ],
+  [
+   48,
+   61,
+   10.5
   ]
+ ],
+ "skyvis_spacing": [
+  1.5,
+  1.5,
+  1.0
+ ],
+ "pieces": [
+  {
+   "type": "floor",
+   "min": [
+    -70,
+    -70
+   ],
+   "max": [
+    70,
+    70
+   ],
+   "z": 0.0,
+   "thickness": 1.0,
+   "mat": "dirt"
+  },
+  {
+   "type": "floor",
+   "min": [
+    -4,
+    -62
+   ],
+   "max": [
+    4,
+    62
+   ],
+   "z": 0.03,
+   "thickness": 0.2,
+   "mat": "asphalt"
+  },
+  {
+   "type": "floor",
+   "min": [
+    20,
+    -8
+   ],
+   "max": [
+    40,
+    -1
+   ],
+   "z": 0.02,
+   "thickness": 0.2,
+   "mat": "gravel"
+  },
+  {
+   "type": "floor",
+   "min": [
+    -30,
+    6
+   ],
+   "max": [
+    -10,
+    24
+   ],
+   "z": 0.06,
+   "thickness": 0.3,
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "wall",
+   "p0": [
+    -62,
+    -62
+   ],
+   "p1": [
+    62,
+    -62
+   ],
+   "height": 4.0,
+   "thickness": 0.5,
+   "mat": "concrete_wall",
+   "extend": true
+  },
+  {
+   "type": "wall",
+   "p0": [
+    62,
+    62
+   ],
+   "p1": [
+    -62,
+    62
+   ],
+   "height": 4.0,
+   "thickness": 0.5,
+   "mat": "concrete_wall",
+   "extend": true
+  },
+  {
+   "type": "wall",
+   "p0": [
+    -62,
+    62
+   ],
+   "p1": [
+    -62,
+    -62
+   ],
+   "height": 4.0,
+   "thickness": 0.5,
+   "mat": "concrete_wall",
+   "extend": true
+  },
+  {
+   "type": "wall",
+   "p0": [
+    62,
+    -62
+   ],
+   "p1": [
+    62,
+    62
+   ],
+   "height": 4.0,
+   "thickness": 0.5,
+   "mat": "concrete_wall",
+   "extend": true
+  },
+  {
+   "type": "group",
+   "offset": [
+    0,
+    0,
+    0
+   ],
+   "heading": 0,
+   "pieces": [
+    {
+     "type": "wall",
+     "p0": [
+      -12,
+      8
+     ],
+     "p1": [
+      -28,
+      8
+     ],
+     "z": 0.06,
+     "height": 7.69,
+     "thickness": 0.3,
+     "extend": true,
+     "mat": "brick",
+     "mat2": "plaster",
+     "frame_mat": "concrete_dark",
+     "openings": [
+      {
+       "at": 8,
+       "width": 1.5,
+       "bottom": 0,
+       "top": 2.4
+      },
+      {
+       "at": 3,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      },
+      {
+       "at": 13,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      },
+      {
+       "at": 3,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      },
+      {
+       "at": 8,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      },
+      {
+       "at": 13,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      }
+     ]
+    },
+    {
+     "type": "wall",
+     "p0": [
+      -28,
+      8
+     ],
+     "p1": [
+      -28,
+      22
+     ],
+     "z": 0.06,
+     "height": 7.69,
+     "thickness": 0.3,
+     "extend": true,
+     "mat": "brick",
+     "mat2": "plaster",
+     "frame_mat": "concrete_dark",
+     "openings": [
+      {
+       "at": 4,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      },
+      {
+       "at": 10,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      },
+      {
+       "at": 7,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      }
+     ]
+    },
+    {
+     "type": "wall",
+     "p0": [
+      -28,
+      22
+     ],
+     "p1": [
+      -12,
+      22
+     ],
+     "z": 0.06,
+     "height": 7.69,
+     "thickness": 0.3,
+     "extend": true,
+     "mat": "brick",
+     "mat2": "plaster",
+     "frame_mat": "concrete_dark",
+     "openings": [
+      {
+       "at": 12,
+       "width": 1.2,
+       "bottom": 0,
+       "top": 2.3
+      },
+      {
+       "at": 4,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      },
+      {
+       "at": 4,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      },
+      {
+       "at": 12,
+       "width": 1.4,
+       "bottom": 4.6,
+       "top": 5.8
+      }
+     ]
+    },
+    {
+     "type": "wall",
+     "p0": [
+      -12,
+      22
+     ],
+     "p1": [
+      -12,
+      8
+     ],
+     "z": 0.06,
+     "height": 7.69,
+     "thickness": 0.3,
+     "extend": true,
+     "mat": "brick",
+     "mat2": "plaster",
+     "frame_mat": "concrete_dark",
+     "openings": [
+      {
+       "at": 4,
+       "width": 1.3,
+       "bottom": 3.64,
+       "top": 5.94
+      },
+      {
+       "at": 10,
+       "width": 1.6,
+       "bottom": 1.0,
+       "top": 2.2
+      }
+     ]
+    },
+    {
+     "type": "floor",
+     "min": [
+      -27.85,
+      8.15
+     ],
+     "max": [
+      -12.15,
+      21.85
+     ],
+     "z": 0.1,
+     "thickness": 0.06,
+     "mat": "floor_tiles"
+    },
+    {
+     "type": "wall",
+     "p0": [
+      -22,
+      8.15
+     ],
+     "p1": [
+      -22,
+      21.85
+     ],
+     "z": 0.1,
+     "height": 3.36,
+     "thickness": 0.2,
+     "mat": "plaster",
+     "frame_mat": "wood_planks",
+     "openings": [
+      {
+       "at": 7,
+       "width": 1.2,
+       "bottom": 0,
+       "top": 2.3
+      }
+     ]
+    },
+    {
+     "type": "stairs",
+     "base": [
+      -13.0,
+      9.0,
+      0.1
+     ],
+     "heading": 0,
+     "steps": 14,
+     "rise": 3.6,
+     "run": 0.3,
+     "width": 1.4,
+     "mat": "concrete_dark"
+    },
+    {
+     "type": "floor",
+     "min": [
+      -28,
+      8
+     ],
+     "max": [
+      -13.8,
+      22
+     ],
+     "z": 3.67,
+     "thickness": 0.25,
+     "mat": "concrete_dark"
+    },
+    {
+     "type": "floor",
+     "min": [
+      -13.8,
+      13.3
+     ],
+     "max": [
+      -12,
+      22
+     ],
+     "z": 3.67,
+     "thickness": 0.25,
+     "mat": "concrete_dark"
+    },
+    {
+     "type": "floor",
+     "min": [
+      -27.85,
+      8.15
+     ],
+     "max": [
+      -13.8,
+      21.85
+     ],
+     "z": 3.7,
+     "thickness": 0.03,
+     "mat": "wood_planks",
+     "occlude": false
+    },
+    {
+     "type": "floor",
+     "min": [
+      -13.8,
+      13.3
+     ],
+     "max": [
+      -12.15,
+      21.85
+     ],
+     "z": 3.7,
+     "thickness": 0.03,
+     "mat": "wood_planks",
+     "occlude": false
+    },
+    {
+     "type": "railing",
+     "p0": [
+      -13.85,
+      8.2
+     ],
+     "p1": [
+      -13.85,
+      13.3
+     ],
+     "z": 3.7,
+     "mat": "steel"
+    },
+    {
+     "type": "floor",
+     "min": [
+      -27.86,
+      8.14
+     ],
+     "max": [
+      -12.14,
+      21.86
+     ],
+     "z": 7.15,
+     "thickness": 0.3,
+     "mat": "concrete_dark"
+    },
+    {
+     "type": "crate_stack",
+     "base": [
+      -26.5,
+      20.4,
+      3.7
+     ],
+     "size": 0.9,
+     "layout": [
+      [
+       0,
+       0,
+       0
+      ],
+      [
+       1,
+       0,
+       0
+      ],
+      [
+       0,
+       0,
+       1
+      ]
+     ],
+     "seed": 4
+    },
+    {
+     "type": "crate",
+     "base": [
+      -17.5,
+      10.2,
+      0.1
+     ],
+     "size": 0.8,
+     "heading": 12,
+     "mat": "metal_olive",
+     "frame_mat": "steel"
+    },
+    {
+     "type": "box",
+     "base": [
+      -25.0,
+      15.0,
+      0.1
+     ],
+     "size": [
+      2.0,
+      1.0,
+      0.78
+     ],
+     "mat": "wood_planks"
+    },
+    {
+     "type": "barrel",
+     "base": [
+      -27.2,
+      9.0,
+      0.1
+     ]
+    },
+    {
+     "type": "barrel",
+     "base": [
+      -26.5,
+      9.1,
+      0.1
+     ],
+     "mat": "metal_tan"
+    },
+    {
+     "type": "light",
+     "kind": "point",
+     "pos": [
+      -25.0,
+      15.0,
+      3.25
+     ],
+     "kelvin": 3200,
+     "intensity": 45,
+     "range": 11.0,
+     "shadows": true
+    },
+    {
+     "type": "light",
+     "kind": "point",
+     "pos": [
+      -17.0,
+      16.5,
+      3.25
+     ],
+     "kelvin": 3600,
+     "intensity": 45,
+     "range": 12.0,
+     "shadows": true
+    },
+    {
+     "type": "light",
+     "kind": "spot",
+     "pos": [
+      -13.0,
+      11.5,
+      6.8
+     ],
+     "dir": [
+      0,
+      0,
+      -1
+     ],
+     "inner": 22,
+     "outer": 38,
+     "kelvin": 4500,
+     "intensity": 90,
+     "range": 11.0,
+     "shadows": true,
+     "fixture": "flood"
+    },
+    {
+     "type": "light",
+     "kind": "point",
+     "pos": [
+      -20.0,
+      15.0,
+      6.75
+     ],
+     "kelvin": 5200,
+     "intensity": 45,
+     "range": 13.0,
+     "shadows": true,
+     "fixture": "panel"
+    }
+   ]
+  },
+  {
+   "type": "box",
+   "pos": [
+    -10.75,
+    18.0,
+    3.545
+   ],
+   "size": [
+    2.5,
+    4.0,
+    0.25
+   ],
+   "mat": "diamond_plate"
+  },
+  {
+   "type": "railing",
+   "p0": [
+    -9.55,
+    16.05
+   ],
+   "p1": [
+    -11.9,
+    16.05
+   ],
+   "z": 3.67,
+   "mat": "steel"
+  },
+  {
+   "type": "railing",
+   "p0": [
+    -11.9,
+    19.95
+   ],
+   "p1": [
+    -9.55,
+    19.95
+   ],
+   "z": 3.67,
+   "mat": "steel"
+  },
+  {
+   "type": "catwalk",
+   "p0": [
+    -9.5,
+    18.0
+   ],
+   "p1": [
+    8.0,
+    18.0
+   ],
+   "z": 3.67,
+   "width": 1.6
+  },
+  {
+   "type": "box",
+   "pos": [
+    10.0,
+    18.0,
+    3.545
+   ],
+   "size": [
+    4.0,
+    4.0,
+    0.25
+   ],
+   "mat": "diamond_plate"
+  },
+  {
+   "type": "pillar",
+   "base": [
+    8.2,
+    16.2,
+    0
+   ],
+   "height": 3.42,
+   "size": 0.2,
+   "mat": "steel"
+  },
+  {
+   "type": "pillar",
+   "base": [
+    11.8,
+    16.2,
+    0
+   ],
+   "height": 3.42,
+   "size": 0.2,
+   "mat": "steel"
+  },
+  {
+   "type": "pillar",
+   "base": [
+    8.2,
+    19.8,
+    0
+   ],
+   "height": 3.42,
+   "size": 0.2,
+   "mat": "steel"
+  },
+  {
+   "type": "pillar",
+   "base": [
+    11.8,
+    19.8,
+    0
+   ],
+   "height": 3.42,
+   "size": 0.2,
+   "mat": "steel"
+  },
+  {
+   "type": "railing",
+   "p0": [
+    12.0,
+    16.0
+   ],
+   "p1": [
+    12.0,
+    20.0
+   ],
+   "z": 3.67,
+   "mat": "steel"
+  },
+  {
+   "type": "railing",
+   "p0": [
+    8.0,
+    20.0
+   ],
+   "p1": [
+    12.0,
+    20.0
+   ],
+   "z": 3.67,
+   "mat": "steel"
+  },
+  {
+   "type": "stairs",
+   "base": [
+    10.0,
+    11.75,
+    0.0
+   ],
+   "heading": 0,
+   "steps": 14,
+   "rise": 3.67,
+   "run": 0.3,
+   "width": 1.4,
+   "mat": "diamond_plate",
+   "solid": false,
+   "rails": true,
+   "rail_mat": "steel"
+  },
+  {
+   "type": "container",
+   "base": [
+    18,
+    10,
+    0
+   ],
+   "heading": 0,
+   "mat": "container_red"
+  },
+  {
+   "type": "container",
+   "base": [
+    18,
+    10,
+    2.59
+   ],
+   "heading": 0,
+   "mat": "container_green"
+  },
+  {
+   "type": "container",
+   "base": [
+    25,
+    14,
+    0
+   ],
+   "heading": 180,
+   "mat": "container_green",
+   "open": true
+  },
+  {
+   "type": "light",
+   "kind": "point",
+   "pos": [
+    25,
+    15.2,
+    2.3
+   ],
+   "kelvin": 4000,
+   "intensity": 18,
+   "range": 7.0,
+   "shadows": true
+  },
+  {
+   "type": "container",
+   "base": [
+    31,
+    26,
+    0
+   ],
+   "heading": 90,
+   "mat": "container_red"
+  },
+  {
+   "type": "container",
+   "base": [
+    20,
+    29,
+    0
+   ],
+   "heading": 15,
+   "mat": "container_green"
+  },
+  {
+   "type": "crate_stack",
+   "base": [
+    26,
+    4,
+    0
+   ],
+   "size": 1.1,
+   "layout": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     1,
+     0,
+     0
+    ],
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     0,
+     0,
+     1
+    ]
+   ],
+   "seed": 9
+  },
+  {
+   "type": "barrel",
+   "base": [
+    14.5,
+    3.5,
+    0
+   ]
+  },
+  {
+   "type": "barrel",
+   "base": [
+    15.2,
+    3.9,
+    0
+   ],
+   "mat": "metal_tan"
+  },
+  {
+   "type": "barrel",
+   "base": [
+    14.7,
+    4.4,
+    0
+   ]
+  },
+  {
+   "type": "pillar",
+   "base": [
+    34,
+    6,
+    0
+   ],
+   "height": 6.2,
+   "size": 0.25,
+   "mat": "steel"
+  },
+  {
+   "type": "light",
+   "kind": "spot",
+   "pos": [
+    33.6,
+    6.4,
+    6.0
+   ],
+   "dir": [
+    -0.45,
+    0.45,
+    -0.77
+   ],
+   "inner": 25,
+   "outer": 42,
+   "kelvin": 5600,
+   "intensity": 70,
+   "range": 24.0,
+   "shadows": true,
+   "fixture": "flood"
+  },
+  {
+   "type": "sandbags",
+   "p0": [
+    -3,
+    -15
+   ],
+   "p1": [
+    2.5,
+    -15
+   ],
+   "z": 0.03,
+   "layers": 6
+  },
+  {
+   "type": "sandbags",
+   "p0": [
+    6,
+    -20
+   ],
+   "p1": [
+    6,
+    -14
+   ],
+   "layers": 5
+  },
+  {
+   "type": "sandbags",
+   "p0": [
+    -14,
+    -24
+   ],
+   "p1": [
+    -9,
+    -26
+   ],
+   "layers": 4
+  },
+  {
+   "type": "box",
+   "base": [
+    12,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.25
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    16,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.42
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    20,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.6
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    24,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.9
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    28,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    1.3
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    32,
+    -30,
+    0
+   ],
+   "size": [
+    2.5,
+    2.5,
+    1.7
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "wall",
+   "p0": [
+    38,
+    -34
+   ],
+   "p1": [
+    38,
+    -26
+   ],
+   "height": 2.2,
+   "thickness": 0.4,
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "wall",
+   "p0": [
+    42,
+    -26
+   ],
+   "p1": [
+    42,
+    -34
+   ],
+   "height": 2.2,
+   "thickness": 0.4,
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "box",
+   "pos": [
+    40,
+    -30,
+    1.55
+   ],
+   "size": [
+    4.4,
+    8.0,
+    0.4
+   ],
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "box",
+   "pos": [
+    40,
+    -30,
+    2.0
+   ],
+   "size": [
+    4.4,
+    8.0,
+    0.5
+   ],
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "ramp",
+   "base": [
+    14,
+    -50,
+    0
+   ],
+   "heading": 0,
+   "length": 6,
+   "height": 2.18,
+   "width": 2.5,
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "ramp",
+   "base": [
+    20,
+    -50,
+    0
+   ],
+   "heading": 0,
+   "length": 6,
+   "height": 4.2,
+   "width": 2.5,
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "ramp",
+   "base": [
+    26,
+    -50,
+    0
+   ],
+   "heading": 0,
+   "length": 3,
+   "height": 3.58,
+   "width": 2.5,
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "stairs",
+   "base": [
+    34,
+    -50,
+    0
+   ],
+   "heading": 0,
+   "steps": 12,
+   "rise": 3.0,
+   "run": 0.3,
+   "width": 2.0,
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    34,
+    -45.2,
+    0
+   ],
+   "size": [
+    3.0,
+    2.4,
+    3.0
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "pbr_gallery",
+   "base": [
+    -20,
+    -6,
+    0
+   ],
+   "heading": 0,
+   "spacing": 1.6,
+   "mats": [
+    "pbr_white_rough",
+    "pbr_white_glossy",
+    "pbr_red_plastic",
+    "pbr_gold",
+    "pbr_chrome",
+    "pbr_copper_rough"
+   ]
+  },
+  {
+   "type": "box",
+   "base": [
+    -46.0,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "box",
+   "base": [
+    -43.8,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "box",
+   "base": [
+    -41.6,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "box",
+   "base": [
+    -39.4,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "asphalt"
+  },
+  {
+   "type": "box",
+   "base": [
+    -37.2,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "gravel"
+  },
+  {
+   "type": "box",
+   "base": [
+    -35.0,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "dirt"
+  },
+  {
+   "type": "box",
+   "base": [
+    -32.8,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "brick"
+  },
+  {
+   "type": "box",
+   "base": [
+    -30.6,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "wood_planks"
+  },
+  {
+   "type": "box",
+   "base": [
+    -28.4,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "plywood"
+  },
+  {
+   "type": "box",
+   "base": [
+    -26.2,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "metal_olive"
+  },
+  {
+   "type": "box",
+   "base": [
+    -24.0,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "metal_tan"
+  },
+  {
+   "type": "box",
+   "base": [
+    -21.8,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "container_red"
+  },
+  {
+   "type": "box",
+   "base": [
+    -19.6,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "container_green"
+  },
+  {
+   "type": "box",
+   "base": [
+    -17.4,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "diamond_plate"
+  },
+  {
+   "type": "box",
+   "base": [
+    -15.2,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "steel"
+  },
+  {
+   "type": "box",
+   "base": [
+    -13.0,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "plaster"
+  },
+  {
+   "type": "box",
+   "base": [
+    -10.8,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "sandbag"
+  },
+  {
+   "type": "box",
+   "base": [
+    -8.6,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "canvas"
+  },
+  {
+   "type": "box",
+   "base": [
+    -6.4,
+    -12,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "floor_tiles"
+  },
+  {
+   "type": "box",
+   "base": [
+    -46.0,
+    -9.5,
+    0
+   ],
+   "size": [
+    1.4,
+    1.4,
+    1.4
+   ],
+   "mat": "hazard"
+  },
+  {
+   "type": "floor",
+   "min": [
+    -58,
+    26
+   ],
+   "max": [
+    -6,
+    60.5
+   ],
+   "z": 0.025,
+   "thickness": 0.2,
+   "mat": "concrete_floor"
+  },
+  {
+   "type": "wall",
+   "p0": [
+    -58,
+    60.6
+   ],
+   "p1": [
+    -6,
+    60.6
+   ],
+   "height": 4.0,
+   "thickness": 0.5,
+   "mat": "concrete_dark"
+  },
+  {
+   "type": "wall",
+   "p0": [
+    -58.2,
+    26
+   ],
+   "p1": [
+    -58.2,
+    60.6
+   ],
+   "height": 3.0,
+   "thickness": 0.4,
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "box",
+   "base": [
+    -44,
+    29.4,
+    0.025
+   ],
+   "size": [
+    8.0,
+    0.8,
+    0.9
+   ],
+   "mat": "wood_planks"
+  },
+  {
+   "type": "box",
+   "base": [
+    -32,
+    29.4,
+    0.025
+   ],
+   "size": [
+    8.0,
+    0.8,
+    0.9
+   ],
+   "mat": "wood_planks"
+  },
+  {
+   "type": "box",
+   "base": [
+    -20,
+    29.4,
+    0.025
+   ],
+   "size": [
+    8.0,
+    0.8,
+    0.9
+   ],
+   "mat": "wood_planks"
+  },
+  {
+   "type": "box",
+   "base": [
+    -44,
+    31.0,
+    0.025
+   ],
+   "size": [
+    0.12,
+    0.12,
+    1.4
+   ],
+   "mat": "steel",
+   "collide": false
+  },
+  {
+   "type": "box",
+   "base": [
+    -32,
+    31.0,
+    0.025
+   ],
+   "size": [
+    0.12,
+    0.12,
+    1.4
+   ],
+   "mat": "steel",
+   "collide": false
+  },
+  {
+   "type": "box",
+   "base": [
+    -20,
+    31.0,
+    0.025
+   ],
+   "size": [
+    0.12,
+    0.12,
+    1.4
+   ],
+   "mat": "steel",
+   "collide": false
+  },
+  {
+   "type": "pickup",
+   "item": "r7",
+   "pos": [
+    -47.0,
+    29.4,
+    0.96
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "c9",
+   "pos": [
+    -45.0,
+    29.4,
+    0.96
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "mx5",
+   "pos": [
+    -42.8,
+    29.4,
+    0.95
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "s12",
+   "pos": [
+    -35.0,
+    29.4,
+    0.96
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "sr90",
+   "pos": [
+    -32.6,
+    29.4,
+    0.96
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "p9",
+   "pos": [
+    -29.8,
+    29.4,
+    0.94
+   ],
+   "heading": 90
+  },
+  {
+   "type": "pickup",
+   "item": "ammo",
+   "pos": [
+    -23.0,
+    29.4,
+    1.08
+   ]
+  },
+  {
+   "type": "pickup",
+   "item": "armor",
+   "pos": [
+    -20.5,
+    29.4,
+    1.05
+   ]
+  },
+  {
+   "type": "pickup",
+   "item": "grenades",
+   "pos": [
+    -18.0,
+    29.4,
+    1.08
+   ]
+  },
+  {
+   "type": "sign",
+   "text": "RIFLES / SMG",
+   "pos": [
+    -45,
+    29.0,
+    1.45
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "SHOTGUN / SNIPER / PISTOL",
+   "pos": [
+    -32.5,
+    29.0,
+    1.45
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "AMMO / ARMOUR / GRENADES",
+   "pos": [
+    -20.5,
+    29.0,
+    1.45
+   ],
+   "heading": 0
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -44,
+    39.5,
+    0.025
+   ],
+   "heading": 180,
+   "name": "10m"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -44,
+    49.5,
+    0.025
+   ],
+   "heading": 180,
+   "armor": 100,
+   "helmet": true,
+   "name": "20m armoured"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -32,
+    39.5,
+    0.025
+   ],
+   "heading": 180,
+   "armor": 100,
+   "helmet": true,
+   "name": "10m armoured"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -32,
+    45.0,
+    0.025
+   ],
+   "heading": 180,
+   "move": {
+    "axis": [
+     1,
+     0,
+     0
+    ],
+    "distance": 7.0,
+    "speed": 2.6
+   },
+   "name": "moving"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -24,
+    49.5,
+    0.025
+   ],
+   "heading": 180,
+   "armor": 100,
+   "name": "20m vest"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -22,
+    58.8,
+    0.025
+   ],
+   "heading": 180,
+   "name": "30m"
+  },
+  {
+   "type": "sign",
+   "text": "10 m",
+   "pos": [
+    -38,
+    39.5,
+    0.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "20 m",
+   "pos": [
+    -38,
+    49.5,
+    0.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "30 m",
+   "pos": [
+    -38,
+    58.8,
+    0.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "wall",
+   "p0": [
+    -12,
+    40.5
+   ],
+   "p1": [
+    -6.5,
+    40.5
+   ],
+   "height": 3.2,
+   "thickness": 0.3,
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "sign",
+   "text": "SPRAY WALL (10 m)",
+   "pos": [
+    -9.2,
+    40.3,
+    3.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "box",
+   "base": [
+    -56.0,
+    35.0,
+    0.025
+   ],
+   "size": [
+    1.2,
+    0.04,
+    2.2
+   ],
+   "mat": "plywood"
+  },
+  {
+   "type": "box",
+   "base": [
+    -54.7,
+    35.0,
+    0.025
+   ],
+   "size": [
+    1.2,
+    0.2,
+    2.2
+   ],
+   "mat": "plaster"
+  },
+  {
+   "type": "box",
+   "base": [
+    -53.4,
+    35.0,
+    0.025
+   ],
+   "size": [
+    1.2,
+    0.06,
+    2.2
+   ],
+   "mat": "container_green"
+  },
+  {
+   "type": "box",
+   "base": [
+    -52.1,
+    35.0,
+    0.025
+   ],
+   "size": [
+    1.2,
+    0.24,
+    2.2
+   ],
+   "mat": "brick"
+  },
+  {
+   "type": "box",
+   "base": [
+    -50.8,
+    35.0,
+    0.025
+   ],
+   "size": [
+    1.2,
+    0.25,
+    2.2
+   ],
+   "mat": "concrete_wall"
+  },
+  {
+   "type": "sign",
+   "text": "plywood",
+   "pos": [
+    -56.0,
+    34.85,
+    2.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "plaster",
+   "pos": [
+    -54.7,
+    34.85,
+    2.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "sheet steel",
+   "pos": [
+    -53.4,
+    34.85,
+    2.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "brick",
+   "pos": [
+    -52.1,
+    34.85,
+    2.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "sign",
+   "text": "concrete",
+   "pos": [
+    -50.8,
+    34.85,
+    2.4
+   ],
+   "heading": 0
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -56.0,
+    37.4,
+    0.025
+   ],
+   "heading": 180,
+   "name": "behind plywood"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -54.7,
+    37.4,
+    0.025
+   ],
+   "heading": 180,
+   "name": "behind plaster"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -53.4,
+    37.4,
+    0.025
+   ],
+   "heading": 180,
+   "name": "behind steel"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -52.1,
+    37.4,
+    0.025
+   ],
+   "heading": 180,
+   "name": "behind brick"
+  },
+  {
+   "type": "dummy",
+   "pos": [
+    -50.8,
+    37.4,
+    0.025
+   ],
+   "heading": 180,
+   "name": "behind concrete"
+  },
+  {
+   "type": "pillar",
+   "base": [
+    -32,
+    24.85,
+    0.025
+   ],
+   "height": 4.55,
+   "size": 0.16,
+   "mat": "steel"
+  },
+  {
+   "type": "light",
+   "kind": "spot",
+   "pos": [
+    -32,
+    25.0,
+    4.6
+   ],
+   "dir": [
+    0,
+    0.75,
+    -0.65
+   ],
+   "inner": 30,
+   "outer": 55,
+   "kelvin": 5200,
+   "intensity": 30,
+   "range": 16.0,
+   "shadows": true,
+   "fixture": "flood"
+  },
+  {
+   "type": "spawn",
+   "team": "attack",
+   "pos": [
+    -32,
+    26.5,
+    0.1
+   ],
+   "heading": 0
+  },
+  {
+   "type": "spawn",
+   "team": "defend",
+   "pos": [
+    -20,
+    15,
+    0.2
+   ],
+   "heading": 180
+  }
+ ],
+ "camera_shots": [
+  {
+   "name": "overview",
+   "pos": [
+    0,
+    -56,
+    1.7
+   ],
+   "hpr": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "house_exterior",
+   "pos": [
+    -6,
+    -3,
+    1.7
+   ],
+   "hpr": [
+    38,
+    3,
+    0
+   ]
+  },
+  {
+   "name": "house_interior",
+   "pos": [
+    -13.4,
+    20.6,
+    1.65
+   ],
+   "hpr": [
+    130,
+    -6,
+    0
+   ]
+  },
+  {
+   "name": "upstairs",
+   "pos": [
+    -26.5,
+    9.2,
+    5.4
+   ],
+   "hpr": [
+    -50,
+    -8,
+    0
+   ]
+  },
+  {
+   "name": "container_yard",
+   "pos": [
+    12,
+    -3,
+    1.7
+   ],
+   "hpr": [
+    -28,
+    2,
+    0
+   ]
+  },
+  {
+   "name": "pbr_gallery",
+   "pos": [
+    -20,
+    -11.2,
+    1.45
+   ],
+   "hpr": [
+    0,
+    -4,
+    0
+   ]
+  },
+  {
+   "name": "materials",
+   "pos": [
+    -26,
+    -17.5,
+    1.7
+   ],
+   "hpr": [
+    0,
+    -10,
+    0
+   ]
+  },
+  {
+   "name": "catwalk",
+   "pos": [
+    -9.0,
+    18.0,
+    5.37
+   ],
+   "hpr": [
+    -90,
+    -6,
+    0
+   ]
+  },
+  {
+   "name": "movement_course",
+   "pos": [
+    22,
+    -40,
+    2.2
+   ],
+   "hpr": [
+    180,
+    -8,
+    0
+   ]
+  },
+  {
+   "name": "shooting_range",
+   "pos": [
+    -32,
+    27.5,
+    1.7
+   ],
+   "hpr": [
+    0,
+    -2,
+    0
+   ],
+   "viewmodel": true
+  },
+  {
+   "name": "penetration_wall",
+   "pos": [
+    -53.4,
+    31.5,
+    1.6
+   ],
+   "hpr": [
+    0,
+    -4,
+    0
+   ]
+  }
+ ]
 }

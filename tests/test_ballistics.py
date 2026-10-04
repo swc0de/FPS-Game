@@ -29,7 +29,7 @@ def world():
 class BallisticsTests(unittest.TestCase):
     def test_headshot_and_hitgroups(self):
         phys = world()
-        t = Target(phys, (0, 10, 0))
+        Target(phys, (0, 10, 0))
         bal = Ballistics(phys, DB)
         w = DB.weapons["p9"]
         res = bal.fire((0, 0, 1.635), (0, 1, 0), w)

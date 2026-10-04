@@ -29,12 +29,12 @@ from panda3d.core import (
 from engine.geometry import FLOATS_PER_VERTEX, vertex_format
 from render import shader_loader
 
-CELL = 128
+CELL = 256
 GRID = 4
 STYLES = {"concrete": 0, "brick": 1, "plaster": 2, "wood": 3, "metal": 4, "fabric": 5, "dirt": 6, "glass": 7,
           "scorch": 8, "blood": 9, "concrete2": 10, "metal2": 11}
-SIZES = {"concrete": 0.11, "brick": 0.11, "plaster": 0.13, "wood": 0.1, "metal": 0.07, "fabric": 0.06,
-         "dirt": 0.14, "glass": 0.16, "scorch": 2.6, "blood": 0.55, "concrete2": 0.12, "metal2": 0.07}
+SIZES = {"concrete": 0.22, "brick": 0.22, "plaster": 0.22, "wood": 0.16, "metal": 0.13, "fabric": 0.12,
+         "dirt": 0.24, "glass": 0.25, "scorch": 2.6, "blood": 0.55, "concrete2": 0.24, "metal2": 0.13}
 
 
 def _noise(n, rng, beta=2.0):
@@ -65,12 +65,17 @@ def _cell(style: str, rng) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     orm[..., 1] = 0.9
 
     def crater(hole_r, rim_r, dust_rgb, hole_rgb, chip_amount=0.0, cracks=0.0):
-        hole = np.clip((hole_r - rough_r) / 0.04, 0, 1)
-        rim = np.clip((rim_r - rough_r) / 0.25, 0, 1)
-        a = np.maximum(hole, rim * 0.85)
-        col = np.asarray(dust_rgb)[None, None, :] * (1 + 0.15 * nz[..., None])
-        col = col * (1 - hole[..., None]) + np.asarray(hole_rgb)[None, None, :] * hole[..., None]
-        h = -hole * 1.0 - rim * 0.25
+        """Dark core, a chipped darker crater around it and a faint dust halo."""
+        core = np.clip((hole_r - rough_r) / 0.025, 0, 1)
+        crater_r = hole_r * 2.3
+        crater_m = np.clip((crater_r - rough_r) / 0.035, 0, 1) * (1 - core)
+        halo = np.clip((rim_r - rough_r) / 0.3, 0, 1) * (1 - core) * (1 - crater_m)
+        a = np.clip(core + crater_m * 0.95 + halo * 0.55, 0, 1)
+        dust = np.asarray(dust_rgb)[None, None, :] * (1 + 0.15 * nz[..., None])
+        crater_col = np.asarray(dust_rgb)[None, None, :] * 0.55 * (1 + 0.25 * nz[..., None])
+        col = dust * halo[..., None] + crater_col * crater_m[..., None] + np.asarray(hole_rgb)[None, None, :] * core[..., None]
+        col = col / np.maximum(halo + crater_m + core, 1e-3)[..., None]
+        h = -core * 1.0 - crater_m * 0.45 - halo * 0.05
         if cracks > 0:
             crack = np.zeros_like(r)
             for k in range(rng.integers(3, 6)):
@@ -84,24 +89,25 @@ def _cell(style: str, rng) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         if chip_amount > 0:
             chips = (np.clip(_noise(n, rng, 1.0), 0, None) > 1.6) * (rough_r < rim_r * 1.2)
             a = np.maximum(a, chips * chip_amount)
+            col = col * (1 - 0.3 * chips[..., None])
         return col, a, h
 
     if style in ("concrete", "concrete2"):
-        col, a, h = crater(0.13, 0.62 if style == "concrete" else 0.7, (0.72, 0.7, 0.66), (0.08, 0.08, 0.08), 0.8, 0.8)
+        col, a, h = crater(0.17, 0.75 if style == "concrete" else 0.85, (0.66, 0.64, 0.6), (0.05, 0.05, 0.05), 0.8, 0.8)
     elif style == "brick":
-        col, a, h = crater(0.14, 0.6, (0.62, 0.38, 0.3), (0.1, 0.06, 0.05), 0.7, 0.4)
+        col, a, h = crater(0.17, 0.72, (0.6, 0.36, 0.28), (0.06, 0.04, 0.03), 0.7, 0.4)
     elif style == "plaster":
-        col, a, h = crater(0.12, 0.75, (0.92, 0.9, 0.86), (0.18, 0.17, 0.16), 0.5, 1.0)
+        col, a, h = crater(0.16, 0.8, (0.9, 0.88, 0.84), (0.1, 0.1, 0.09), 0.5, 1.0)
     elif style == "dirt":
-        col, a, h = crater(0.18, 0.75, (0.25, 0.2, 0.15), (0.06, 0.05, 0.04), 0.3, 0.0)
+        col, a, h = crater(0.2, 0.8, (0.22, 0.18, 0.14), (0.04, 0.03, 0.03), 0.3, 0.0)
     elif style == "wood":
-        col, a, h = crater(0.15, 0.4, (0.75, 0.6, 0.42), (0.08, 0.05, 0.03), 0.0, 0.0)
+        col, a, h = crater(0.17, 0.5, (0.78, 0.62, 0.42), (0.05, 0.03, 0.02), 0.0, 0.0)
         fibre = np.exp(-(u * 3) ** 2) * np.clip(1 - np.abs(v) * 1.2, 0, 1) * (0.5 + 0.5 * _noise(n, rng, 0.8))
         a = np.maximum(a, np.clip(fibre, 0, 1) * 0.9)
         col = col * (1 - 0.0 * fibre[..., None]) + np.array([0.82, 0.68, 0.48]) * fibre[..., None] * 0.2
     elif style in ("metal", "metal2"):
-        hole = np.clip((0.16 - rough_r) / 0.03, 0, 1)
-        ring = np.exp(-((r - 0.24) ** 2) / 0.006) * (1 - hole)
+        hole = np.clip((0.2 - rough_r) / 0.03, 0, 1)
+        ring = np.exp(-((r - 0.3) ** 2) / 0.008) * (1 - hole)
         scorch = np.clip(1 - r / 0.55, 0, 1) * (1 - hole)
         a = np.clip(hole + ring + scorch * 0.6, 0, 1)
         col = np.ones((n, n, 3), np.float32) * 0.2
@@ -265,8 +271,8 @@ class DecalSystem:
         slot = self.next
         self.next = (self.next + 1) % self.capacity
         stride = FLOATS_PER_VERTEX * 4
-        mv = memoryview(self.geom.modifyVertexData().modifyArray(0)).cast("B")
-        mv[slot * 4 * stride:(slot + 1) * 4 * stride] = rows.tobytes()
+        handle = self.geom.modifyVertexData().modifyArray(0).modifyHandle()
+        handle.setSubdata(slot * 4 * stride, 4 * stride, rows.tobytes())
 
     def clear(self) -> None:
         memoryview(self.geom.modifyVertexData().modifyArray(0)).cast("B")[:] = \

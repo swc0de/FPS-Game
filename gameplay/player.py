@@ -11,6 +11,7 @@ import math
 from panda3d.core import Point3, Vec3
 
 from gameplay.character import KinematicCharacter, MoveInput, StepEvent
+from gameplay.damage import Damageable, DamageResult
 
 # Mouse sensitivity uses the same scale as CS: degrees = counts * 0.022 * sens
 YAW_PER_COUNT = 0.022
@@ -32,8 +33,15 @@ class PlayerController:
         self._bob_weight = 0.0
         self._land_offset = 0.0
         self._land_vel = 0.0
-        self.step_events: list[StepEvent] = []   # consumed by audio/AI later
+        self.step_events: list[StepEvent] = []   # consumed by audio/AI
         self.camera_pos = Point3()
+        self.view_offset = (0.0, 0.0, 0.0)       # recoil/punch/shake (yaw, pitch, roll) set by weapons
+        self.last_mouse = (0.0, 0.0)
+        self.speed_scale = lambda: 1.0           # weapon weight / ADS (set by the weapon controller)
+        self.damageable = Damageable(name="player", team="player")
+        self.on_damaged = None                   # callback(DamageResult)
+        self.on_step = None                      # callback(StepEvent) -> audio / AI noise
+        self.sens_scale = 1.0                    # zoomed scopes slow the mouse down
 
     # ------------------------------------------------------------- spawning
     def spawn(self, pos, heading: float = 0.0) -> None:
@@ -57,6 +65,8 @@ class PlayerController:
 
     def _on_step_event(self, ev: StepEvent) -> None:
         self.step_events.append(ev)
+        if self.on_step is not None and not self.noclip:
+            self.on_step(ev)
         if len(self.step_events) > 64:
             del self.step_events[:-64]
         if ev.kind == "land":
@@ -80,7 +90,9 @@ class PlayerController:
             self._noclip_move(dt, wish)
             return
         move = MoveInput(wish_dir=wish, walk=inp.is_down("walk"), crouch=inp.is_down("crouch"),
-                         jump=self._jump_buffer > 0.0)
+                         jump=self._jump_buffer > 0.0, speed_scale=self.speed_scale())
+        if not self.damageable.alive:
+            move = MoveInput(crouch=True)
         was_ground = self.char.on_ground
         self.char.step(dt, move)
         if move.jump and was_ground and not self.char.on_ground:
@@ -101,8 +113,9 @@ class PlayerController:
 
     # --------------------------------------------------------------- frame
     def frame_update(self, dt: float, alpha: float) -> None:
-        sens = float(self.settings.input.get("sensitivity", 2.0))
+        sens = float(self.settings.input.get("sensitivity", 2.0)) * self.sens_scale
         dx, dy = self.input.mouse_delta()
+        self.last_mouse = (dx, dy)
         invert = -1.0 if self.settings.input.get("invert_y", False) else 1.0
         self.yaw = (self.yaw - dx * YAW_PER_COUNT * sens) % 360.0
         self.pitch = max(-89.0, min(89.0, self.pitch - dy * YAW_PER_COUNT * sens * invert))
@@ -132,7 +145,32 @@ class PlayerController:
         cam = Point3(pos.x, pos.y, pos.z + eye + bob_z + self._land_offset) + right * bob_x
         self.camera_pos = cam
         self.app.camera.setPos(cam)
-        self.app.camera.setHpr(self.yaw, self.pitch, self.roll)
+        vy, vp, vr = self.view_offset
+        self.app.camera.setHpr(self.yaw + vy, max(-89.9, min(89.9, self.pitch + vp)), self.roll + vr)
+
+    # ----------------------------------------------------- shared interface
+    @property
+    def bob_phase(self) -> float:
+        return self._bob_phase
+
+    @property
+    def bob_weight(self) -> float:
+        return self._bob_weight if self.settings.input.get("head_bob", True) else self._bob_weight * 0.6
+
+    @property
+    def land_offset(self) -> float:
+        return self._land_offset
+
+    def center_of_mass(self) -> Point3:
+        c = self.char
+        return Point3(c.pos.x, c.pos.y, c.pos.z + c.height * 0.55)
+
+    def forward(self) -> Vec3:
+        return self._basis()[0]
+
+    def on_hit(self, res: DamageResult, pos, direction) -> None:
+        if self.on_damaged:
+            self.on_damaged(res)
 
     @property
     def state_text(self) -> str:

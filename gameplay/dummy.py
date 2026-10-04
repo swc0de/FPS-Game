@@ -38,6 +38,7 @@ class TargetDummy:
         self.burst_damage = 0.0
         self.burst_hits = 0
         self._last_hit_time = -10.0
+        self._rig_dirty = False
         self.update_rig()
 
     def _make_label(self) -> NodePath:
@@ -56,6 +57,12 @@ class TargetDummy:
         from render.renderer import SHADOW_CAMERA_MASK
         np_.hide(SHADOW_CAMERA_MASK)
         return np_
+
+    def center_of_mass(self) -> Point3:
+        return self.root.getPos(self.game.render) + Vec3(0, 0, 1.1)
+
+    def forward(self) -> Vec3:
+        return self.game.render.getRelativeVector(self.root, Vec3(0, 1, 0))
 
     # ------------------------------------------------------------- damage
     def on_hit(self, res: DamageResult, pos, direction) -> None:
@@ -95,8 +102,10 @@ class TargetDummy:
                 self.body.setP(0)
                 self.body.setZ(0)
                 self.rig.set_enabled(True)
-        if self.damageable.alive:
+                self._rig_dirty = True
+        if self.damageable.alive and (self.move_axis is not None or self._rig_dirty):
             self.update_rig()
+            self._rig_dirty = False
 
     def frame_update(self, dt: float) -> None:
         if self.flash > 0:

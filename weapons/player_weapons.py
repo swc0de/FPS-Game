@@ -41,6 +41,7 @@ class PlayerWeapons:
         self.grenade_lob = False
         self.grenade_timer = 0.0
         self.switch_lock = 0.0
+        self.force_hide_vm = False         # camera-shot mode hides the hands
         self.sandbox = sandbox
         self.now = 0.0
         self.give_loadout(["r7", "p9", "knife"], {"frag": 1, "flash": 2, "smoke": 1})
@@ -225,7 +226,9 @@ class PlayerWeapons:
                     if ev.data.get("kind") == "empty" and cls in ("rifle", "smg", "pistol"):
                         name += "_empty"
                     self.vm.play(name, 1.0, driver=lambda w=ws: w.reload_progress(self.now))
-                self.game.audio.play_ui(f"reload_{cls}")
+                if cls != "shotgun":
+                    kind = "empty" if ev.data.get("kind") == "empty" else "tactical"
+                    self.game.audio.play_ui(f"reload_{ws.d.key}_{kind}")
             elif k == "shell":
                 self.vm.play("shotgun_shell", float(ws.d.raw.get("reload_shell_time", 0.5)), hold=True)
                 self.game.audio.play_ui("shell_insert")
@@ -264,7 +267,7 @@ class PlayerWeapons:
         self.melee_next = now + 60.0 / rpm
         self.melee_pending = (now + (0.25 if heavy else 0.1), heavy)
         self.vm.play("knife_stab" if heavy else "knife_slash", 60.0 / rpm * 0.9)
-        self.game.audio.play_ui("knife_swing")
+        self.game.audio.play_ui("knife_swing", 0.5)
 
     def _melee_hit(self, ws, heavy: bool) -> None:
         eye = self.eye()
@@ -439,7 +442,7 @@ class PlayerWeapons:
             scoped = blend > 0.85
             cur_zoom = zoom if scoped else 1.0 + (zoom - 1.0) * blend
         self.game.set_zoom(cur_zoom)
-        self.vm.set_hidden(scoped or not self.player.damageable.alive)
+        self.vm.set_hidden(scoped or not self.player.damageable.alive or self.force_hide_vm)
         self.game.hud.set_scope(scoped)
         p = self.player
         self.vm.update(dt, {

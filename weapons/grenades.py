@@ -21,6 +21,21 @@ from gameplay.damage import DamageInfo
 from weapons.models import build_weapon_model, model_defs
 
 
+def blast_damage(distance: float, radius: float, max_damage: float, power: float) -> float:
+    """Explosion damage at a distance: max * (1 - d/r)^power, zero beyond the radius."""
+    if distance >= radius:
+        return 0.0
+    return max_damage * (1.0 - distance / radius) ** power
+
+
+def flash_duration(distance: float, radius: float, cos_angle: float, max_blind: float) -> float:
+    """Blind time: scaled by distance and by how directly the victim looked at the flash."""
+    if distance >= radius:
+        return 0.0
+    facing = 1.0 if cos_angle > 0.6 else (0.55 if cos_angle > 0.0 else 0.25)
+    return max_blind * facing * (1.0 - distance / radius) ** 0.6
+
+
 class Grenade:
     def __init__(self, game, gdef, pos: Point3, vel: Vec3, thrower):
         self.game = game
@@ -37,7 +52,6 @@ class Grenade:
         node.setMass(0.4)
         node.setRestitution(gdef.restitution)
         node.setFriction(gdef.friction)
-        node.setRollingFriction(0.08)
         node.setAngularDamping(0.4)
         node.setLinearDamping(0.05)
         node.setCcdMotionThreshold(radius * 0.5)
@@ -117,7 +131,7 @@ class Grenade:
             hit = self.game.physics.ray_cast(p + Vec3(0, 0, 0.15), center, MASK_SIGHT)
             if hit is not None and (hit.pos - center).length() > 0.3:
                 continue
-            dmg = dmg_max * (1.0 - dist / r) ** power
+            dmg = blast_damage(dist, r, dmg_max, power)
             info = DamageInfo(dmg, float(self.d.get("armor_penetration", 0.5)), "chest", "explosion",
                               self.thrower, "frag", tuple(center), tuple((center - p).normalized()))
             res = target.damageable.take_damage(info)
@@ -141,9 +155,9 @@ class Grenade:
             return
         fwd = self.game.camera.getQuat(self.game.render).getForward()
         cos_a = fwd.dot(to / max(dist, 1e-3))
-        facing = 1.0 if cos_a > 0.6 else (0.55 if cos_a > 0.0 else 0.25)
-        strength = facing * (1.0 - dist / r) ** 0.6
-        duration = float(self.d.get("max_blind", 4.6)) * strength
+        max_blind = float(self.d.get("max_blind", 4.6))
+        duration = flash_duration(dist, r, cos_a, max_blind)
+        strength = duration / max_blind
         if duration > 0.15:
             self.game.hud.blind(duration, strength)
 

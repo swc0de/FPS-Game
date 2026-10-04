@@ -4,15 +4,17 @@ This document explains every rendering technique used by the game and points
 to the code. The GLSL sources in `render/shaders/` carry the same explanations
 as comments next to the implementation.
 
-Frame overview (Milestone 1):
+Frame overview (Milestones 1-2):
 
 ```
  shadow passes          scene pass (HDR, RGBA16F)               post
  ─────────────          ─────────────────────────               ────
  CSM atlas (4 tiles) ─┐
  local light atlas  ──┼─> PBR forward shader ──> scene_hdr ──> tonemap (ACES) ──> FXAA ──> screen
- sky-visibility 3D  ──┤        + sky dome                         + dither
- IBL (SH + cube)    ──┘
+ sky-visibility 3D  ──┤        + sky dome           ↑             + dither
+ IBL (SH + cube)    ──┘        + decals (1 draw)    │
+                               + particles (2 draws)│
+                               viewmodel camera ────┘ (own FOV, depth cleared, same HDR buffer)
 ```
 
 ## 1. Physically based materials (`pbr.frag`, `brdf.glsl`, `render/materials.py`)
@@ -154,10 +156,113 @@ noise. Normals come from height via central differences; AO from a cavity
 term (blurred height minus height). Grime on metals is modelled as a
 dielectric dust layer (lower metalness, higher roughness).
 
+## 9. Viewmodel (`weapons/viewmodel.py`, `weapons/models.py`, `data/weapon_models.json`)
+
+* **Separate camera, same lighting.** The arms and gun hang under the main
+  camera in the scene graph, so they get exactly the sun, IBL, local lights
+  and shadows at the player's position. They are hidden from the world and
+  shadow cameras through camera masks. A second camera with its own lens
+  (viewmodel FOV, default 54° vertical) draws them into the same HDR buffer
+  after the world, through a display region that clears depth first. The gun
+  therefore never clips into walls and keeps its proportions when the player
+  changes FOV or zooms.
+* **Procedural, data-driven models.** Each weapon is a list of chamfered
+  boxes, cylinders and spheres in `data/weapon_models.json` with PBR
+  materials (gun metal, polymer, wood, brass, gloves, sleeves). Named groups
+  (magazine, bolt, slide, pump) can move on their own, and anchors mark the
+  muzzle, ejection port, sight and hand grips. Arms are two segments solved
+  from the grip anchors and a per-weapon elbow hint. Real meshes can replace
+  them later without touching gameplay code.
+* **Animation layers** (all procedural, summed every frame):
+  * hip/ADS pose: ADS places the sight anchor on the screen centre
+  * draw
+  * mouse sway: a critically damped spring
+  * idle breathing
+  * a figure-eight walk bob tied to the footstep phase
+  * crouch and landing offsets
+  * a per-shot kick spring
+  * keyframe tracks (`weapons/anim_data.py`): reload (partly full and empty),
+    bolt and pump cycles, shell-by-shell loading, inspect, knife and grenade
+    throws. Tracks use smoothstep interpolation, and the left hand follows
+    the magazine.
+* **Camera punch vs. aim.** Recoil moves the true aim point along the
+  weapon's fixed pattern. The camera follows only part of it
+  (`view_follow`), and a separate visual punch spring adds a short kick.
+  That kick never changes where bullets land.
+
+## 10. Particles (`render/particles.py`, `particle.vert`, `particle.frag`)
+
+* Two systems: alpha-blended (smoke, dust, debris) and additive (sparks,
+  fire, flashes, tracers). Each draws in **one call**: the live particles
+  are simulated with numpy (structure of arrays) and written into one dynamic
+  vertex buffer, 4 vertices per particle.
+* The **vertex shader** expands each particle into a quad in world space. A
+  normal particle is a rotated, camera-facing billboard. A *stretched*
+  particle (sparks, tracers) has its long axis along the screen-projected
+  velocity and is lengthened by its speed, which acts as a cheap motion blur.
+* Textures come from a procedural 4×4 atlas: soft puffs, three smoke shapes,
+  spark, glow, star, side-on muzzle flash, chunk, splinter, mist, fire, ring,
+  dust, streak and shard.
+* Alpha particles are **lit**: sky SH irradiance plus a share of the sun,
+  scaled by the baked sky-visibility volume, so smoke indoors is darker than
+  smoke outside. Additive particles output HDR values (muzzle flashes reach
+  about 8× white), so they will drive bloom in Milestone 3.
+* Alpha particles are depth-sorted back to front every frame. Soft fading
+  with age and size curves keeps them from popping.
+
+## 11. Decals (`render/decals.py`, `pbr.frag` with `DECAL`)
+
+* All bullet holes, blast scorches and blood splats share **one draw call**:
+  one dynamic vertex buffer used as a ring (640 quads by default). The
+  oldest decal is overwritten when the buffer is full, and only the 4
+  changed vertices are uploaded (`setSubdata`).
+* Decals use the **same PBR shader** compiled with `DECAL`, with procedural
+  albedo/alpha, normal and ORM atlases. Holes are therefore lit, shadowed,
+  fogged and reflect the IBL exactly like the surface they sit on:
+  * concrete and brick: a dark core, a chipped crater with normal-mapped
+    walls and a pale dust halo
+  * metal: a bright scraped ring, low roughness and high metalness
+  * wood: splintered fibres
+  * glass: a radial crack star
+* Each quad is aligned to the hit normal with a random roll and lifted 4 mm
+  to avoid z-fighting. Size and style come from the surface entry in
+  `data/surfaces.json`.
+
+## 12. Gameplay effects (`render/effects.py`)
+
+* **Impacts:** each surface type has its own recipe for dust colour, debris
+  (chips, splinters, sparks), a decal style and an impact sound. Metal
+  throws stretched sparks with gravity, wood throws splinters, and flesh
+  (the dummies) gets a mist of blood plus a splat decal on the wall behind.
+* **Muzzle flash:** three additive sprites (a star, two stretched side
+  flames and a glow) drawn at the viewmodel's muzzle anchor in viewmodel
+  space, so they line up with the barrel at any FOV. There is also a wisp of
+  lit world-space smoke. A 60 ms **point light pulse** goes into the local
+  light list, so nearby walls, the floor and the gun itself light up for a
+  few frames.
+* **Tracers:** stretched additive particles that fly at 420 m/s from the
+  muzzle to the impact point. Each weapon sets its own tracer cadence.
+* **Shell casings:** small instanced meshes with ballistic motion, spin and
+  a floor bounce found with one ray cast when they spawn. They are kept out
+  of the shadow pass, and at most 28 exist at once.
+* **Explosions:** a fireball (additive), a dark smoke column (alpha),
+  radial debris and sparks, a scorch decal, a 0.4 s light pulse of 260
+  intensity units, and camera shake that falls off with distance.
+* **Smoke grenade:** about 70 large lit smoke particles grow outward to the
+  cloud radius over 2 s, live for the smoke's duration (18 s) and fade out.
+  `SmokeCloud.density` and `Effects.smoke_between(a, b)` let gameplay test
+  line of sight through smoke (bots use it in Milestone 5).
+* **Flashbang:** a very bright light pulse and a glow sprite. Gameplay
+  blinds the player with a full-screen white card whose duration depends on
+  distance and viewing angle.
+
 ## Performance notes
 
 * Level geometry is batched per material: about 26 draw calls for the
-  test range's main pass.
+  test range's main pass, plus 1 for all decals and 2 for all particles.
+* The viewmodel has about 20-60 small parts per weapon. Only the equipped
+  weapon is shown, and models are built once and cached, so switching
+  weapons costs nothing.
 * Per-frame Python work (camera, cascades, light packing) is ~1 ms; all
   heavy lifting is on the GPU or precomputed and cached.
 * Quality knobs per preset (`data/graphics_presets.json`): cascade count and

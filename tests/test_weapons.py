@@ -114,7 +114,7 @@ class WeaponModelTests(unittest.TestCase):
         ws = WeaponState(DB.weapons["s12"], random.Random(5))
         offs = ws.shot_offsets(AimContext())
         self.assertEqual(len(offs), 9)
-        self.assertTrue(all(math.hypot(*o) < 3.2 + 0.6 + 1e-6 for o in offs))
+        self.assertTrue(all(math.hypot(*o) < 2.6 + 0.6 + 1e-6 for o in offs))
 
     def test_angles(self):
         d = angles_to_dir(0, 0)

@@ -69,6 +69,8 @@ def main(argv=None) -> int:
     parser.add_argument("--pose", help="start pose x,y,z,heading,pitch (eye position)")
     parser.add_argument("--offscreen", action="store_true", help="render without a window (testing)")
     parser.add_argument("--trace", action="store_true", help="print player state twice per second (testing)")
+    parser.add_argument("--demo", help="run a scripted demo (e.g. 'weapons') that drives the player and "
+                                       "saves screenshots to user/screenshots, then exits")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
     args = parser.parse_args(argv)
 

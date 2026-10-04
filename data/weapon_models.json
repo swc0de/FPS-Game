@@ -9,15 +9,17 @@
   "rifle_r7": {
     "parts": [
       {"shape": "box", "pos": [0, 0.06, 0.035], "size": [0.055, 0.32, 0.075], "bevel": 0.006, "mat": "gun_metal"},
-      {"shape": "box", "pos": [0, 0.05, 0.08], "size": [0.05, 0.27, 0.02], "bevel": 0.008, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0, 0.05, 0.076], "size": [0.05, 0.27, 0.016], "bevel": 0.007, "mat": "gun_metal"},
       {"shape": "box", "pos": [0.0285, 0.08, 0.045], "size": [0.003, 0.07, 0.022], "bevel": 0.001, "mat": "gun_polymer"},
       {"shape": "box", "pos": [0, 0.34, 0.03], "size": [0.062, 0.24, 0.072], "bevel": 0.014, "mat": "gun_polymer_od"},
       {"shape": "cyl", "pos": [0, 0.34, 0.078], "radius": 0.012, "length": 0.23, "axis": "y", "mat": "gun_polymer_od"},
       {"shape": "cyl", "pos": [0, 0.585, 0.025], "radius": 0.0105, "length": 0.31, "axis": "y", "mat": "gun_metal"},
       {"shape": "cyl", "pos": [0, 0.765, 0.025], "radius": 0.016, "length": 0.07, "axis": "y", "mat": "gun_metal"},
-      {"shape": "box", "pos": [0, 0.70, 0.045], "size": [0.022, 0.025, 0.035], "bevel": 0.004, "mat": "gun_metal"},
-      {"shape": "box", "pos": [0, 0.70, 0.088], "size": [0.007, 0.01, 0.034], "bevel": 0.001, "mat": "gun_metal"},
-      {"shape": "box", "pos": [0, 0.19, 0.098], "size": [0.03, 0.025, 0.018], "bevel": 0.003, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0, 0.70, 0.052], "size": [0.022, 0.025, 0.05], "bevel": 0.004, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0, 0.70, 0.1], "size": [0.006, 0.01, 0.05], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [-0.011, 0.19, 0.103], "size": [0.008, 0.025, 0.044], "bevel": 0.002, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.011, 0.19, 0.103], "size": [0.008, 0.025, 0.044], "bevel": 0.002, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0, 0.19, 0.088], "size": [0.03, 0.025, 0.014], "bevel": 0.002, "mat": "gun_metal"},
       {"shape": "box", "pos": [0, -0.03, -0.045], "size": [0.034, 0.05, 0.11], "hpr": [0, -15, 0], "bevel": 0.008, "mat": "gun_polymer_od"},
       {"shape": "box", "pos": [0, 0.035, -0.02], "size": [0.01, 0.07, 0.008], "bevel": 0.002, "mat": "gun_metal"},
       {"shape": "box", "pos": [0, 0.03, -0.005], "size": [0.006, 0.008, 0.024], "bevel": 0.001, "mat": "gun_metal"},
@@ -27,9 +29,9 @@
       {"shape": "box", "pos": [0, 0.128, -0.128], "size": [0.03, 0.062, 0.09], "hpr": [0, 26, 0], "bevel": 0.005, "mat": "gun_metal", "group": "mag"},
       {"shape": "box", "pos": [0.04, 0.13, 0.052], "size": [0.025, 0.02, 0.014], "bevel": 0.003, "mat": "gun_metal_light", "group": "bolt"}
     ],
-    "anchors": {"muzzle": [0, 0.80, 0.025], "eject": [0.032, 0.08, 0.05], "sight": [0, 0.19, 0.105],
+    "anchors": {"muzzle": [0, 0.80, 0.025], "eject": [0.032, 0.08, 0.05], "sight": [0, 0.19, 0.127],
                 "grip_r": [0, -0.03, -0.04], "grip_l": [0, 0.36, -0.01], "mag": [0, 0.11, -0.09]},
-    "viewmodel": {"offset": [0.135, 0.30, -0.155], "ads_distance": 0.22, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
+    "viewmodel": {"offset": [0.125, 0.35, -0.15], "ads_distance": 0.36, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
   },
   "rifle_c9": {
     "parts": [
@@ -57,7 +59,7 @@
     ],
     "anchors": {"muzzle": [0, 0.645, 0.045], "eject": [0.03, 0.06, 0.06], "sight": [0, 0.045, 0.125],
                 "grip_r": [0, -0.03, -0.045], "grip_l": [0, 0.30, 0.005], "mag": [0, 0.085, -0.09]},
-    "viewmodel": {"offset": [0.13, 0.29, -0.16], "ads_distance": 0.17, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
+    "viewmodel": {"offset": [0.12, 0.34, -0.155], "ads_distance": 0.32, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
   },
   "smg_mx5": {
     "parts": [
@@ -79,7 +81,7 @@
     ],
     "anchors": {"muzzle": [0, 0.325, 0.035], "eject": [0.03, 0.06, 0.055], "sight": [0, -0.04, 0.101],
                 "grip_r": [0, -0.02, -0.045], "grip_l": [0, 0.17, -0.04], "mag": [0, 0.085, -0.09]},
-    "viewmodel": {"offset": [0.13, 0.27, -0.15], "ads_distance": 0.2, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.2, 0.0, -0.40]}
+    "viewmodel": {"offset": [0.12, 0.32, -0.145], "ads_distance": 0.32, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.2, 0.0, -0.40]}
   },
   "pistol_p9": {
     "parts": [
@@ -96,7 +98,7 @@
     ],
     "anchors": {"muzzle": [0, 0.142, 0.032], "eject": [0.016, 0.06, 0.045], "sight": [0, -0.04, 0.056],
                 "grip_r": [0, -0.02, -0.05], "grip_l": [-0.012, -0.015, -0.06], "mag": [0, -0.03, -0.09]},
-    "viewmodel": {"offset": [0.12, 0.30, -0.13], "ads_distance": 0.30, "elbow_r": [0.24, -0.1, -0.35], "elbow_l": [-0.10, -0.08, -0.38]}
+    "viewmodel": {"offset": [0.11, 0.34, -0.13], "ads_distance": 0.42, "elbow_r": [0.24, -0.1, -0.35], "elbow_l": [-0.10, -0.08, -0.38]}
   },
   "sniper_sr90": {
     "parts": [
@@ -122,7 +124,7 @@
     ],
     "anchors": {"muzzle": [0, 1.0, 0.045], "eject": [0.03, 0.05, 0.06], "sight": [0, -0.09, 0.115],
                 "grip_r": [0, -0.04, -0.045], "grip_l": [0, 0.40, -0.02], "mag": [0, 0.1, -0.04]},
-    "viewmodel": {"offset": [0.14, 0.32, -0.17], "ads_distance": 0.12, "elbow_r": [0.28, -0.14, -0.38], "elbow_l": [-0.22, 0.04, -0.40]}
+    "viewmodel": {"offset": [0.13, 0.37, -0.165], "ads_distance": 0.14, "elbow_r": [0.28, -0.14, -0.38], "elbow_l": [-0.22, 0.04, -0.40]}
   },
   "shotgun_s12": {
     "parts": [
@@ -139,9 +141,9 @@
       {"shape": "box", "pos": [0, 0.30, 0.02], "size": [0.056, 0.16, 0.056], "bevel": 0.014, "mat": "gun_polymer", "group": "pump"},
       {"shape": "box", "pos": [0, 0.30, -0.008], "size": [0.05, 0.14, 0.006], "bevel": 0.002, "mat": "gun_metal", "group": "pump"}
     ],
-    "anchors": {"muzzle": [0, 0.645, 0.05], "eject": [0.03, 0.05, 0.05], "sight": [0, 0.0, 0.07],
+    "anchors": {"muzzle": [0, 0.645, 0.05], "eject": [0.03, 0.05, 0.05], "sight": [0, -0.02, 0.088],
                 "grip_r": [0, -0.04, -0.045], "grip_l": [0, 0.30, -0.012], "mag": [0, 0.08, -0.01]},
-    "viewmodel": {"offset": [0.135, 0.30, -0.16], "ads_distance": 0.22, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
+    "viewmodel": {"offset": [0.125, 0.35, -0.155], "ads_distance": 0.38, "elbow_r": [0.28, -0.12, -0.38], "elbow_l": [-0.22, 0.02, -0.40]}
   },
   "knife_k3": {
     "parts": [

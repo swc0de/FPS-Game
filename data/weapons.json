@@ -79,8 +79,8 @@
     "s12": {
       "name": "S12 Breacher", "class": "shotgun", "slot": "primary", "model": "shotgun_s12", "price": 1200,
       "fire_mode": "pump", "rpm": 70, "magazine": 8, "reserve": 32,
-      "damage": 24, "pellets": 9, "pellet_spread": 3.2, "head_multiplier": 3.0, "armor_penetration": 0.6,
-      "range_modifier": 0.55, "max_range": 45, "penetration": 6,
+      "damage": 24, "pellets": 9, "pellet_spread": 2.6, "head_multiplier": 3.0, "armor_penetration": 0.6,
+      "range_modifier": 0.72, "max_range": 45, "penetration": 6,
       "inaccuracy": {"stand": 0.6, "crouch": 0.5, "move": 1.0, "air": 3.0, "fire_add": 1.0, "fire_recovery": 0.5, "ads": 0.85},
       "recoil": {"view_follow": 0.6, "recovery": 3.0, "punch": 3.2, "pattern": [[0,0],[0.0,2.2],[0.2,3.6],[-0.1,4.4]]},
       "reload_shell_time": 0.5, "reload_start_time": 0.35, "reload_time": 4.5, "reload_empty_time": 4.5,

@@ -36,6 +36,9 @@ DEFAULT_KEYBINDS = {
     "slot4": "4",
     "slot5": "5",
     "gadget": "x",
+    "last_weapon": "z",
+    "wheel_up": "wheel_up",
+    "wheel_down": "wheel_down",
 }
 
 DEFAULTS: dict[str, Any] = {

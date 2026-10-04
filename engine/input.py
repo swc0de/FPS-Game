@@ -45,6 +45,8 @@ class InputManager(DirectObject):
         self._dy = 0.0
         self.captured = False
         self._skip_frames = 0
+        self.virtual: set[str] = set()      # scripted input (demo mode / tests)
+        self.virtual_mode = False
         self.set_binds(binds)
 
     # --------------------------------------------------------------- binds
@@ -67,6 +69,8 @@ class InputManager(DirectObject):
             self._pressed.update(actions)
 
     def is_down(self, action: str) -> bool:
+        if self.virtual_mode:
+            return action in self.virtual
         if not self.captured:
             return False
         handle = self._handles.get(action)
@@ -74,6 +78,10 @@ class InputManager(DirectObject):
             return False
         mw = self.base.mouseWatcherNode
         return bool(mw is not None and mw.isButtonDown(handle))
+
+    def press(self, action: str) -> None:
+        """Inject an edge-triggered press (demo mode / tests)."""
+        self._pressed.add(action)
 
     def consume(self, action: str) -> bool:
         if action in self._pressed:
