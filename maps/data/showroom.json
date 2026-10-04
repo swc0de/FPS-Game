@@ -1,0 +1,33 @@
+{
+  "name": "Showroom",
+  "description": "Weapon model viewer: every weapon on a table under studio lights.",
+  "environment": {
+    "hdri": "kloofendal_48d_partly_cloudy_puresky",
+    "sun_dir": [0.45, -0.55, 0.70], "sun_intensity": 3.4, "sun_color": [1.0, 0.92, 0.80],
+    "sky_target": 0.85, "ground": [0.16, 0.14, 0.115], "exposure": 1.0,
+    "fog": {"density": 0.0, "height_falloff": 0.07, "base_height": 0.0, "max_opacity": 0.0, "sun_scatter": 0.0}
+  },
+  "bounds": [[-8, -8, -0.5], [8, 8, 5]],
+  "pieces": [
+    {"type": "floor", "min": [-20, -20], "max": [20, 20], "z": 0.0, "thickness": 1.0, "mat": "concrete_floor"},
+    {"type": "box", "base": [0, 0, 0], "size": [3.2, 1.4, 0.9], "mat": "plywood"},
+    {"type": "weapon_display", "model": "rifle_r7", "pos": [-0.75, 0.35, 0.94], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "rifle_c9", "pos": [-0.75, -0.25, 0.94], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "sniper_sr90", "pos": [0.55, 0.42, 0.94], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "shotgun_s12", "pos": [0.55, -0.15, 0.94], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "smg_mx5", "pos": [0.95, -0.5, 0.94], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "pistol_p9", "pos": [-1.3, -0.5, 0.92], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "knife_k3", "pos": [-0.15, -0.55, 0.92], "heading": 90, "pr": [0, 90]},
+    {"type": "weapon_display", "model": "grenade_frag", "pos": [1.25, 0.05, 0.935], "heading": 0},
+    {"type": "weapon_display", "model": "grenade_smoke", "pos": [1.38, 0.18, 0.955], "heading": 0},
+    {"type": "weapon_display", "model": "grenade_flash", "pos": [1.38, -0.08, 0.955], "heading": 0},
+    {"type": "light", "kind": "spot", "pos": [0.0, -1.2, 2.6], "dir": [0, 0.45, -0.9], "inner": 30, "outer": 50,
+     "kelvin": 5000, "intensity": 30, "range": 6.0, "shadows": true, "fixture": false},
+    {"type": "spawn", "team": "attack", "pos": [0, -2.0, 0.1], "heading": 0}
+  ],
+  "camera_shots": [
+    {"name": "table", "pos": [0, -1.15, 1.85], "hpr": [0, -48, 0]},
+    {"name": "rifles", "pos": [-0.75, -0.55, 1.25], "hpr": [0, -55, 0]},
+    {"name": "side", "pos": [-2.2, -1.2, 1.4], "hpr": [-55, -22, 0]}
+  ]
+}

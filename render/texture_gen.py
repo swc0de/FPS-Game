@@ -522,6 +522,58 @@ def gen_hazard(g: TexGen, p: dict) -> dict:
                 ao=g.cavity(height, 2.0, 2.0))
 
 
+def gen_plastic(g: TexGen, p: dict) -> dict:
+    """Moulded polymer: fine texture stipple, scuffs and light edge-less wear."""
+    base = _rgb(p.get("color", (60, 62, 58)))
+    stipple = g.fbm(1.0, 128)
+    col = _tint(base, g.fbm(2.2, 1, 16) * 0.04 + stipple * 0.02, 1.0)
+    scuffs = g.smooth(2.0, 2.8, g.fbm(1.5, 16, 256, aniso=(12.0, 1.0)))
+    col = _mix(col, col * 1.35 + 0.03, scuffs * p.get("wear", 0.5))
+    dirt = g.smooth(0.2, 1.8, g.fbm(2.4, 1, 16)) * 0.25
+    col = col * (1 - dirt[..., None] * 0.4)
+    r0 = p.get("roughness", 0.55)
+    rough = g.sat(r0 + stipple * 0.04 + scuffs * 0.15 + dirt * 0.2)
+    height = 0.5 + stipple * 0.06 - scuffs * 0.02
+    return dict(albedo=col, height=height, roughness=rough, metallic=np.zeros_like(rough),
+                ao=np.ones_like(rough))
+
+
+def gen_gunmetal(g: TexGen, p: dict) -> dict:
+    """Parkerised / anodised gun steel: dark, fine-grained, slightly worn."""
+    base = _rgb(p.get("color", (52, 54, 56)))
+    grain = g.fbm(1.0, 96)
+    col = _tint(base, grain * 0.05 + g.fbm(2.2, 2, 32) * 0.05, 1.0)
+    wear = g.smooth(2.1, 2.7, g.fbm(1.6, 8, 256, aniso=(6.0, 1.0)))
+    col = _mix(col, np.array([0.48, 0.48, 0.47]), wear * p.get("wear", 0.4))
+    rough = g.sat(p.get("roughness", 0.5) + grain * 0.05 - wear * 0.2)
+    metal = g.sat(np.full_like(rough, p.get("metallic", 0.8)) + wear * 0.2)
+    height = 0.5 + grain * 0.03
+    return dict(albedo=col, height=height, roughness=rough, metallic=metal, ao=np.ones_like(rough))
+
+
+def gen_camo(g: TexGen, p: dict) -> dict:
+    """Woven fabric with a multi-tone disruptive camouflage print."""
+    palette = [_rgb(c) for c in p.get("palette", [(120, 112, 84), (86, 92, 62), (62, 56, 42), (150, 136, 104)])]
+    col = np.ones((g.n, g.n, 3), np.float32) * palette[0][None, None, :]
+    for i, c in enumerate(palette[1:]):
+        blob = g.fbm(2.6, 2, 24)
+        blob = g.warp(blob, g.fbm(2.0, 4, 64) * 0.02, g.fbm(2.0, 4, 64) * 0.02)
+        mask = g.smooth(0.35 + 0.15 * i, 0.45 + 0.15 * i, blob)
+        col = _mix(col, c[None, None, :] * np.ones_like(col), mask)
+    threads = int(p.get("threads", 160))
+    wu = np.abs(np.sin(g.u * threads * np.pi))
+    wv = np.abs(np.sin(g.v * threads * np.pi))
+    over = (np.floor(g.u * threads) + np.floor(g.v * threads)) % 2
+    weave = np.where(over > 0, wv, wu)
+    col = col * (0.88 + 0.12 * weave[..., None]) * (1 + 0.05 * g.fbm(1.2, 32)[..., None])
+    dirt = g.smooth(0.2, 1.8, g.fbm(2.4, 1, 12)) * p.get("dirt", 0.4)
+    col = _mix(col, col * np.array([0.7, 0.65, 0.58]), dirt)
+    height = 0.4 + weave * 0.3
+    rough = g.sat(0.9 - weave * 0.05)
+    return dict(albedo=col, height=height, roughness=rough, metallic=np.zeros_like(rough),
+                ao=g.cavity(height, 1.2, 2.0))
+
+
 GENERATORS = {
     "concrete": gen_concrete,
     "asphalt": gen_asphalt,
@@ -539,6 +591,9 @@ GENERATORS = {
     "brushed_metal": gen_brushed_metal,
     "flat": gen_flat,
     "hazard": gen_hazard,
+    "plastic": gen_plastic,
+    "gunmetal": gen_gunmetal,
+    "camo": gen_camo,
 }
 
 

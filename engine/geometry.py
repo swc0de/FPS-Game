@@ -123,6 +123,75 @@ class MeshBuilder:
             uvs = uvs + np.asarray(uv_offset)
             self.add_quad(world, nw, tw, bw, uvs)
 
+    # ------------------------------------------------- chamfered boxes
+    def add_chamfer_box(self, center, size, bevel: float = 0.01, hpr=(0, 0, 0), uv_scale: float = 1.0,
+                        uv_space: str = "local") -> None:
+        """Box with 45-degree bevelled edges and corners (26 faces).
+
+        Bevels catch specular highlights, which makes hard-surface props
+        (weapons, mannequins, crates) read far better than sharp boxes.
+        uv_space "local" maps UVs from the box's own coordinates (for moving
+        objects), "world" from world coordinates (for level pieces)."""
+        h = np.asarray(size, np.float64) * 0.5
+        b = min(bevel, *(h * 0.49))
+        rot = hpr_matrix(hpr)
+        c = np.asarray(center, np.float64)
+        # 24 vertices: each corner x 3 axes (full along that axis, inset on the other two)
+        verts = {}
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                for sz in (-1, 1):
+                    s_ = np.array([sx, sy, sz], np.float64)
+                    for axis in range(3):
+                        p = s_ * (h - b)
+                        p[axis] = s_[axis] * h[axis]
+                        verts[(sx, sy, sz, axis)] = p
+        for nx in (-1, 0, 1):
+            for ny in (-1, 0, 1):
+                for nz in (-1, 0, 1):
+                    n = (nx, ny, nz)
+                    k = sum(1 for v in n if v)
+                    if k == 0:
+                        continue
+                    nz_axes = [a for a in range(3) if n[a] != 0]
+                    pts = []
+                    for (sx, sy, sz, axis), p in verts.items():
+                        sv = (sx, sy, sz)
+                        if axis not in nz_axes:
+                            continue
+                        if any(sv[a] != n[a] for a in nz_axes):
+                            continue
+                        pts.append(p)
+                    # dedupe (corners share nothing, but keep safe)
+                    uniq = []
+                    for p in pts:
+                        if not any(np.allclose(p, q) for q in uniq):
+                            uniq.append(p)
+                    nn = np.array(n, np.float64)
+                    nn /= np.linalg.norm(nn)
+                    up = np.array([0, 0, 1.0]) if abs(nn[2]) < 0.9 else np.array([0, 1.0, 0])
+                    t = np.cross(up, nn)
+                    t /= np.linalg.norm(t)
+                    bt = np.cross(nn, t)
+                    cen = np.mean(uniq, axis=0)
+                    ang = [np.arctan2(np.dot(p - cen, bt), np.dot(p - cen, t)) for p in uniq]
+                    ordered = [uniq[i] for i in np.argsort(ang)]
+                    local = np.array(ordered)
+                    world = local @ rot + c
+                    tw, bw, nw = t @ rot, bt @ rot, nn @ rot
+                    src = world if uv_space == "world" else local
+                    v = np.zeros((len(world), FLOATS_PER_VERTEX), np.float32)
+                    v[:, 0:3] = world
+                    v[:, 3:6] = nw
+                    v[:, 6:9] = tw
+                    v[:, 9:12] = bw
+                    v[:, 12] = src @ (tw if uv_space == "world" else t) / uv_scale
+                    v[:, 13] = src @ (bw if uv_space == "world" else bt) / uv_scale
+                    idx = []
+                    for i in range(1, len(world) - 1):
+                        idx += [0, i, i + 1]
+                    self.add(v, np.array(idx))
+
     # ------------------------------------------------------------ polygons
     def add_polygon(self, points, normal, tangent, binormal, uv_scale: float = 1.0) -> None:
         """Convex planar polygon (CCW seen from the normal side), world UVs."""

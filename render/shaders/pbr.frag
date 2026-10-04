@@ -139,5 +139,10 @@ void main() {
     color = applyFog(color, u_camPos, v_worldPos, u_sunDir);
 #endif
 
+#ifdef DECAL
+    // decals blend over the surface they sit on using the atlas alpha
+    o_color = vec4(color, albedoSample.a);
+#else
     o_color = vec4(color, 1.0);
+#endif
 }

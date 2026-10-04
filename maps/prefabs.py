@@ -415,6 +415,24 @@ def spawn(ctx, e):
     ctx.spawns.append({"team": e.get("team", "attack"), "pos": e["pos"], "heading": e.get("heading", 0.0)})
 
 
+@prefab("weapon_display")
+def weapon_display(ctx, e):
+    """A weapon model resting on a surface (static prop; pickups are spawned by the game)."""
+    ctx.prop("weapon_model", e)
+
+
+@prefab("dummy")
+def dummy(ctx, e):
+    """Shooting-range target dummy (spawned by the game, not baked into geometry)."""
+    ctx.prop("dummy", e)
+
+
+@prefab("pickup")
+def pickup(ctx, e):
+    """Weapon / ammo / grenade pickup spawned by the game."""
+    ctx.prop("pickup", e)
+
+
 @prefab("group")
 def group(ctx, e):
     """Offset/rotate a list of child pieces (reusable building blocks)."""

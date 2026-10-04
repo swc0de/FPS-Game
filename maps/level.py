@@ -39,6 +39,7 @@ class LevelContext:
         self.lights: list[dict] = []
         self.spawns: list[dict] = []
         self.fixtures: list[tuple] = []      # (center, size, emission rgb)
+        self.props: list[tuple[str, dict]] = []  # game objects created after geometry
         self._stack = [((0.0, 0.0, 0.0), 0.0)]
 
     # ---------------------------------------------------------- transforms
@@ -117,6 +118,14 @@ class LevelContext:
             e["dir"] = self._xf_dir(e["dir"])
         self.lights.append(e)
 
+    def prop(self, kind: str, e: dict):
+        e = dict(e)
+        for key in ("pos", "base"):
+            if key in e:
+                e[key], hpr = self._xf(e[key], (e.get("heading", 0.0), 0, 0))
+                e["heading"] = hpr[0]
+        self.props.append((kind, e))
+
     def build_piece(self, e: dict):
         kind = e.get("type")
         fn = PREFABS.get(kind)
@@ -152,6 +161,7 @@ class Level:
         self.spawns: list[dict] = []
         self.camera_shots = self.data.get("camera_shots", [])
         self.lights: list[LocalLight] = []
+        self.props: list[tuple[str, dict]] = []
 
     def build(self) -> None:
         t0 = time.time()
@@ -180,6 +190,10 @@ class Level:
             self._add_light(e)
         self.renderer.lights.finalize()
         self.spawns = ctx.spawns
+        self.props = ctx.props
+        for kind, e in ctx.props:
+            if kind == "weapon_model":
+                self._weapon_model(e)
         self.log(f"[level] {self.name}: {len(ctx.builders)} material batches, {tris} triangles, "
                  f"{len(ctx.colliders)} colliders, {len(self.lights)} lights "
                  f"(textures: {self.materials.summary()}) in {time.time() - t0:.1f}s")
@@ -229,6 +243,13 @@ class Level:
         # fixtures must not block their own light
         from render.renderer import SHADOW_CAMERA_MASK
         np_.hide(SHADOW_CAMERA_MASK)
+
+    def _weapon_model(self, e: dict) -> None:
+        from weapons.models import build_weapon_model
+        m = build_weapon_model(self.materials, e["model"], self.root)
+        m.root.setPos(*e["pos"])
+        m.root.setHpr(e.get("heading", 0.0), *e.get("pr", (0.0, 0.0)))
+        m.root.setScale(e.get("scale", 1.0))
 
     def spawn_point(self, team: str | None = None) -> dict:
         for s in self.spawns:

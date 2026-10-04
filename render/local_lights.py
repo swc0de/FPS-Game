@@ -133,6 +133,9 @@ class LightManager:
         self.lights.append(light)
         return light
 
+    def remove(self, light: LocalLight) -> None:
+        self.lights = [l for l in self.lights if l is not light]
+
     def finalize(self) -> None:
         """Assign shadow tiles and create shadow cameras."""
         if not self.shadows_enabled:
