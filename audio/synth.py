@@ -321,4 +321,13 @@ def build_library(out_dir: Path, weapons: dict, seed: int = 21) -> dict[str, lis
             continue
         for kind, dur in (("tactical", w.reload_time), ("empty", w.reload_empty_time)):
             add(f"reload_{key}_{kind}", lambda w=w, kind=kind, dur=dur: sequence(dur + 0.2, reload_events(w.cls, kind, dur), rng))
+    add("radio", lambda: radio_squelch(rng))
     return lib
+
+
+def radio_squelch(rng) -> np.ndarray:
+    """Short team-radio squelch: a band-limited static burst and a key click."""
+    t = _t(0.16)
+    x = band(noise(0.16, rng), 900, 3200) * env(t, 0.004, 0.05) * 0.5
+    x += tone([1250], 0.16, 0.002, 0.03) * 0.25
+    return normalize(x, 0.4)

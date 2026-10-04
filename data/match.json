@@ -50,8 +50,14 @@
   "beep_fast": 0.12
  },
  "friendly_fire": false,
+ "bots": {
+  "_comment": "Default roster: the human plus bot teammates against a full bot team (5v5). Difficulty profiles: data/bots.json.",
+  "opponents": 5,
+  "teammates": 4,
+  "difficulty": "normal"
+ },
  "practice": {
-  "_comment": "Milestone 4: until bots exist (Milestone 5) the other team is played by stand-ins that hold positions.",
+  "_comment": "--bots off: the other team is played by stand-ins that hold positions and do not shoot back.",
   "opponents": 5,
   "teammates": 0
  },

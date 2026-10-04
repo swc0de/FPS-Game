@@ -68,6 +68,10 @@ class MatchHUD:
         self.feed_lines = [OnscreenText(text="", parent=a2.a2dTopRight, pos=(-0.05, -0.08 - i * 0.055), scale=0.036,
                                         fg=W.TEXT, shadow=SHADOW, align=TextNode.ARight, mayChange=True)
                            for i in range(6)]
+        # --- team radio (bot callouts)
+        self.radio_lines = [OnscreenText(text="", parent=a2.a2dLeftCenter, pos=(0.06, 0.16 - i * 0.048), scale=0.033,
+                                         fg=W.TEXT, shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
+                            for i in range(5)]
         # --- banners and progress
         self.banner = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.48), scale=0.085, fg=W.TEXT,
                                    shadow=SHADOW, mayChange=True)
@@ -106,7 +110,7 @@ class MatchHUD:
         elif kind == "round_end":
             r = data["result"]
             name = teams[r.winner_side]["name"].upper()
-            won = r.winner_side == d.player_agent.side
+            won = r.winner_side == d.player_agent.side or d.spectate_only
             sub = REASONS.get(r.reason, r.reason) + (f"   -   MVP {r.mvp}" if r.mvp else "")
             self.show_banner(f"{name} WIN", sub, self.colors[r.winner_side] if won else (1, 0.45, 0.4, 1), 5.5)
         elif kind == "bomb_planted":
@@ -119,6 +123,9 @@ class MatchHUD:
             a, b = d.match.teams[0].score, d.match.teams[1].score
             if w is None:
                 self.show_banner("DRAW", f"{a} : {b}", seconds=30.0)
+            elif d.spectate_only:
+                self.show_banner(f"{teams[w.side]['name'].upper()} WIN THE MATCH", f"{a} : {b}",
+                                 self.colors[w.side], 30.0)
             elif w is mine:
                 self.show_banner("VICTORY", f"{a} : {b}   -   console 'restart' for a new match", GREEN, 30.0)
             else:
@@ -135,7 +142,7 @@ class MatchHUD:
     def set_visible(self, v: bool) -> None:
         self.visible = v
         nodes = [self.bar, self.clock, self.phase, self.money, self.buy, self.bomb_icon, self.hint, self.banner,
-                 self.sub] + list(self.score.values()) + list(self.name.values()) + self.feed_lines
+                 self.sub] + list(self.score.values()) + list(self.name.values()) + self.feed_lines + self.radio_lines
         nodes += [p for row in self.pips.values() for p in row]
         for n in nodes:
             n.show() if v else n.hide()
@@ -179,7 +186,16 @@ class MatchHUD:
                 else:
                     pip.hide()
         # money and pop-ups
-        self.money.setText(f"$ {human.money}")
+        self.money.setText("" if d.spectate_only else f"$ {human.money}")
+        # radio
+        for i, line in enumerate(self.radio_lines):
+            if i < len(d.radio_log):
+                r = d.radio_log[-1 - i]
+                line.setText(f"{r['who']}: {r['text']}")
+                c = self.colors.get(r["side"], W.TEXT)
+                line.setFg((c[0], c[1], c[2], min(1.0, (6.0 - (g.loop.time - r["t"])) / 1.0)))
+            else:
+                line.setText("")
         y = 0.36
         keep = []
         for t, left in self.popups:
@@ -218,18 +234,36 @@ class MatchHUD:
             if self._banner_t <= 0:
                 self.banner.setText("")
                 self.sub.setText("")
-        # progress (plant / defuse)
-        if d.progress is not None:
-            kind, frac = d.progress
+        # progress (plant / defuse): yours, or the spectated bot's
+        progress = d.progress
+        spec = d.spectator.target if d.spectator.active and not d.spectator.free else None
+        if progress is None and spec is not None and spec.brain is not None:
+            b = spec.brain
+            timers = self.rules["timers"]
+            if b.plant_t > 0:
+                progress = ("plant", min(b.plant_t / float(timers["plant_time"]), 1.0))
+            elif b.defuse_t > 0:
+                total = float(timers["defuse_time_kit" if spec.has_kit else "defuse_time"])
+                progress = ("defuse", min(b.defuse_t / total, 1.0))
+        if progress is not None:
+            kind, frac = progress
             self.prog_bg.show()
             self.prog_fill["frameSize"] = (0, 0.62 * frac, -0.011, 0.011)
-            label = "PLANTING" if kind == "plant" else ("DEFUSING (kit)" if human.has_kit else "DEFUSING")
+            kit = (spec or human).has_kit
+            label = "PLANTING" if kind == "plant" else ("DEFUSING (kit)" if kit else "DEFUSING")
             self.prog_label.setText(label)
         else:
             self.prog_bg.hide()
             self.prog_label.setText("")
         dead = not human.alive and m.phase not in ("waiting",)
-        self.hint.setText("You are dead - spectating (fly with WASD, Space/Ctrl up/down)" if dead else d.hint)
+        spectating = dead and d.spectator.active
+        self.hint.setPos(0, -0.86 if spectating else -0.5)
+        if spectating:
+            self.hint.setText(d.spectator.status())
+        elif dead and not d.use_bots:
+            self.hint.setText("You are dead - spectating (fly with WASD, Space/Ctrl up/down)")
+        else:
+            self.hint.setText("" if dead else d.hint)
         # buy indicator / bomb carrier
         if m.can_buy() and human.alive and d.in_buy_zone(human):
             self.buy.setText(f"[B] BUY   {m.buy_time_left():.0f} s")

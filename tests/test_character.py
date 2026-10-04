@@ -4,7 +4,7 @@ Run:  python -m unittest discover -s tests -v
 """
 import unittest
 
-from panda3d.core import NodePath, Vec3
+from panda3d.core import NodePath, Point3, Vec3
 
 from engine.physics import PhysicsWorld
 from gameplay.character import KinematicCharacter, MoveInput
@@ -156,6 +156,32 @@ class CharacterTests(unittest.TestCase):
         c.teleport((0.6, 0, 0.05))   # overlapping the box
         run(c, 5, MoveInput())
         self.assertGreaterEqual(c.pos.x - c.radius, 0.5 - 0.02)
+
+    def test_head_in_ceiling_does_not_sink_through_thin_floor(self):
+        """A box-box overlap reports four equal manifold points; the push must
+        not add them up (it used to shove bots through 12 cm platforms)."""
+        phys = PhysicsWorld(NodePath("root"))
+        phys.add_static_box((0, 0, 4.44), (2, 2, 0.06))          # thin platform, top at 4.5
+        phys.add_static_box((0, 0, 5.9), (2, 2, 0.06))           # overhang: underside at 5.84
+        c = KinematicCharacter(phys)
+        c.teleport((0, 0, 4.55))
+        run(c, 8, MoveInput())
+        self.assertTrue(c.on_ground)
+        # force the head into the overhang (as a step up under a low edge would)
+        c.pos.z = 4.5 + 0.3
+        for _ in range(16):
+            c._depenetrate(2)
+            run(c, 1, MoveInput())
+        self.assertGreater(c.pos.z, 4.3)
+
+    def test_deep_overlap_push_is_capped(self):
+        phys = make_world()
+        phys.add_static_box((0, 0, 1.0), (1.0, 1.0, 1.0))
+        c = KinematicCharacter(phys)
+        c.pos = Point3(0.2, 0, 0.5)
+        before = Point3(c.pos)
+        c._depenetrate(1)
+        self.assertLessEqual((c.pos - before).length(), 0.1 + 1e-6)
 
     def test_footstep_events(self):
         phys = make_world()

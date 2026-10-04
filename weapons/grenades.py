@@ -105,13 +105,13 @@ class Grenade:
             self.game.effects.explosion(p, float(self.d.get("radius", 9.0)))
             self.game.audio.play_at("explosion", p, volume=1.0)
             self._apply_blast(p)
-            self.game.notify_noise(p, 1.0, 60.0)
+            self.game.notify_noise(p, 1.0, 60.0, source=self.thrower)
             self.destroy()
         elif kind == "flash":
             self.game.effects.flashbang(p)
             self.game.audio.play_at("flashbang", p, volume=1.0)
             self._apply_flash(p)
-            self.game.notify_noise(p, 1.0, 45.0)
+            self.game.notify_noise(p, 1.0, 45.0, source=self.thrower)
             self.destroy()
         elif kind == "smoke":
             self.cloud = self.game.effects.smoke_grenade(p, float(self.d.get("radius", 3.7)),
@@ -141,7 +141,12 @@ class Grenade:
                 self.game.hud.hit_marker(res.killed)
 
     def _apply_flash(self, p: Point3) -> None:
+        director = getattr(self.game, "director", None)
+        if director is not None:
+            director.apply_flash(p, float(self.d.get("radius", 28.0)), float(self.d.get("max_blind", 4.6)))
         player = self.game.player
+        if not player.damageable.alive:
+            return
         eye = player.camera_pos
         to = p - eye
         dist = to.length()

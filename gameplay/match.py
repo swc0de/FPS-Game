@@ -180,6 +180,14 @@ class Match:
             return max(float(self.timers["halftime_delay"]) - self.phase_time, 0.0)
         return 0.0
 
+    def round_time_left(self) -> float:
+        """Seconds until the round timer runs out (full time during freeze)."""
+        if self.phase == "freeze":
+            return float(self.timers["round_time"])
+        if self.phase in ("live", "planted"):
+            return max(float(self.timers["round_time"]) - self.round_clock, 0.0)
+        return 0.0
+
     def is_halftime_round(self) -> bool:
         return self.round == int(self.round_rules["halftime_after"])
 

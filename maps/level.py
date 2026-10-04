@@ -167,6 +167,7 @@ class Level:
         self.camera_shots = self.data.get("camera_shots", [])
         self.lights: list[LocalLight] = []
         self.props: list[tuple[str, dict]] = []
+        self.colliders: list[tuple] = []
 
     def build(self) -> None:
         t0 = time.time()
@@ -195,6 +196,7 @@ class Level:
             self._add_light(e)
         self.renderer.lights.finalize()
         self.spawns = ctx.spawns
+        self.colliders = ctx.colliders            # navmesh generation (ai/navmesh.py)
         self.zones = ctx.zones
         self.callouts = ctx.callouts
         self.props = ctx.props

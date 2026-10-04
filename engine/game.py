@@ -93,7 +93,11 @@ class Game(ShowBase):
             if mode == "match" or map_supports_match(self.level):
                 side = args.team if getattr(args, "team", None) in ("attack", "defend") else "attack"
                 self.director = MatchDirector(self, side, getattr(args, "opponents", None),
-                                              getattr(args, "teammates", None), seed=getattr(args, "seed", None))
+                                              getattr(args, "teammates", None), seed=getattr(args, "seed", None),
+                                              difficulty=getattr(args, "difficulty", None) or
+                                              settings.data.get("gameplay", {}).get("bot_difficulty"),
+                                              standins=getattr(args, "bots", "on") == "off",
+                                              spectate=bool(getattr(args, "spectate", False)))
         self.paused = False
         self.menu = PauseMenu(self)
         self.console = Console(self)
@@ -134,8 +138,8 @@ class Game(ShowBase):
         if args.shots:
             self._prepare_shots(args.shots)
         elif getattr(args, "demo", None):
-            from engine.demo import DemoRunner
-            self.demo = DemoRunner(self, args.demo)
+            from engine.demo import make_demo
+            self.demo = make_demo(self, args.demo)
         elif not args.offscreen and not args.frames:
             self.input.set_captured(True)
         if self.director is not None and not args.shots:
@@ -198,7 +202,18 @@ class Game(ShowBase):
         out = [d for d in self.dummies] + [self.player]
         if self.director is not None:
             out += [a for a in self.director.standins if a.root.isHidden() is False]
+            out += [b for b in self.director.bots if b.active]
         return out
+
+    def navmesh(self):
+        """Navigation mesh of the current level (built once, cached on disk)."""
+        if getattr(self, "_nav", None) is None:
+            from ai.navmesh import NavConfig, NavMesh
+            seeds = [s["pos"] for s in self.level.spawns]
+            self._nav = NavMesh.cached(self.level.colliders, self.level.data["bounds"], seeds,
+                                       paths.CACHE_DIR / "nav", self.level.path.stem,
+                                       NavConfig.from_movement(self.player.char.cfg), log=self.log)
+        return self._nav
 
     # ---------------------------------------------------- match services
     @property
@@ -226,11 +241,15 @@ class Game(ShowBase):
     def spawn_grenade(self, g) -> None:
         self.grenades.append(g)
 
-    def notify_noise(self, pos, loudness: float, radius: float) -> None:
-        """Gunshots, explosions and footsteps are recorded for AI hearing (milestone 5)."""
-        self.noise_events.append((self.loop.time, Point3(pos), loudness, radius))
-        if len(self.noise_events) > 64:
-            del self.noise_events[:-64]
+    def notify_noise(self, pos, loudness: float, radius: float, source=None) -> None:
+        """Gunshots, explosions and footsteps, recorded with their source for AI hearing."""
+        if source is self.player:
+            source = self.player_agent
+        elif source is not None and self.director is not None:
+            source = self.director.agent_of(source)
+        self.noise_events.append((self.loop.time, Point3(pos), loudness, radius, source))
+        if len(self.noise_events) > 96:
+            del self.noise_events[:-96]
 
     def _player_step(self, ev) -> None:
         if ev.kind == "land":
@@ -238,7 +257,7 @@ class Game(ShowBase):
         else:
             self.audio.footstep(ev.surface, ev.pos, ev.loudness, own=True)
         if ev.loudness > 0:
-            self.notify_noise(ev.pos, ev.loudness, 28.0 * ev.loudness)
+            self.notify_noise(ev.pos, ev.loudness, 28.0 * ev.loudness, source=self.player)
 
     def _player_damaged(self, res) -> None:
         self.hud.damage_taken(res.health)
@@ -299,7 +318,10 @@ class Game(ShowBase):
 
     def _choose_side(self, side: str) -> None:
         self.team_select = None
-        self.director.restart(side)
+        if side == "spectate":
+            self.director.set_spectate()
+        else:
+            self.director.restart(side)
         self.input.set_captured(True)
 
     def _toggle_buy(self) -> None:
@@ -475,7 +497,7 @@ class Game(ShowBase):
         for g in self.grenades:
             g.frame_update()
         if self.director is not None:
-            self.director.frame_update(dt)
+            self.director.frame_update(dt, alpha)
         self.pickups.update(dt)
         self.effects.update(dt)
         self.renderer.update(dt)

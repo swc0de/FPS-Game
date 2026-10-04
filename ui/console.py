@@ -6,7 +6,10 @@
     endround [attack|defend]  end the round with that side winning
     restart                   restart the match
     team <attack|defend>      switch side and restart
-    bots <opponents> [mates]  stand-in roster size, restarts the match
+    bots <opponents> [mates]  roster size (bots or stand-ins), restarts the match
+    difficulty <level>        bot difficulty: easy normal hard expert
+    botinfo                   what every bot is doing
+    spectate                  leave the match and watch ten bots play
     give <weapon>             e.g. give sr90 (r7 c9 mx5 s12 p9 frag smoke flash)
     god / noclip / kill       invulnerable / fly / suicide
     freeze|buytime|roundtime <s>   change match timers
@@ -133,7 +136,16 @@ class Console:
             return f"you are now on {args[0]}"
         if cmd == "bots" and args:
             d.set_opponents(int(args[0]), int(args[1]) if len(args) > 1 else 0)
-            return f"{len(d.standins)} stand-ins, match restarted"
+            n = len(d.bots) if d.use_bots else len(d.standins)
+            return f"{n} {'bots' if d.use_bots else 'stand-ins'}, match restarted"
+        if cmd == "difficulty" and args:
+            d.set_difficulty(args[0])
+            return f"bot difficulty: {d.difficulty}"
+        if cmd == "spectate":
+            d.set_spectate()
+            return "watching a bot match (start the game again to play)"
+        if cmd == "botinfo":
+            return "\n".join(b.describe() for b in d.bots if b.active) or "no bots"
         if cmd == "god":
             d.god = not d.god
             return f"god {'on' if d.god else 'off'}"

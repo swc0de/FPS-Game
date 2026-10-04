@@ -68,6 +68,7 @@ DEFAULTS: dict[str, Any] = {
     "gameplay": {
         "crosshair": {"style": "classic", "size": 6, "gap": 3, "thickness": 2,
                       "color": [0.3, 1.0, 0.4, 1.0], "dynamic": True, "dot": False},
+        "bot_difficulty": "normal",
     },
 }
 

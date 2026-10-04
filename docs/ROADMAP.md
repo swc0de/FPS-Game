@@ -6,9 +6,146 @@
 | 2 | Weapons, recoil, hit detection, impact effects | **done** |
 | 3 | Full map, post-processing pipeline, graphics settings | **done** |
 | 4 | Rounds, economy, buy menu, bomb objective | **done** |
-| 5 | AI bots | next |
-| 6 | Destructible walls, lean, gadgets, specialists | |
+| 5 | AI bots | **done** |
+| 6 | Destructible walls, lean, gadgets, specialists | next |
 | 7 | HUD polish, audio, menus, performance pass | |
+
+## Milestone 5 - delivered
+
+* **Navigation mesh** (`ai/navmesh.py`), generated from the level's collision
+  boxes with numpy (a small Recast-style pipeline), with no new dependency:
+  * 0.25 m columns; thin walls are rasterised conservatively, so a 10 cm wall
+    is never missed
+  * several floors per column (tunnel under the yard, open stairs), linked
+    when the step is climbable
+  * erosion by the 0.30 m hull radius; low ceilings marked crouch-only
+  * only areas reachable from the spawns are kept
+  * the result is merged into about 1,900 rectangles with portals
+  * A* over the rectangles, then "simple stupid funnel" string pulling
+    gives shortest corner-to-corner paths
+  * built in about 1 s and cached in `assets/cache/nav`
+  * the tests drive the real character controller along navmesh paths
+    through doors, up stairs and under a crouch-only beam, and check that
+    every compound lane and hold spot is on the mesh
+* **Path following** (`ai/steering.py`) with corner skipping, crouching for
+  low ceilings, stuck detection (a hop and sidestep, then a new path) and
+  per-bot route variety.
+* **Soldier bodies** (`gameplay/body.py`): a jointed, procedurally animated
+  mannequin with team uniform, helmet, goggles, vest, gloves and boots.
+  * Animations: walk and run cycles that follow the direction of travel,
+    crouch, aim pitch spread over spine, chest and weapon, two-bone arm IK
+    onto each weapon's grips, recoil kick, and a death fall away from the
+    killing shot.
+  * Characters block each other: overlapping bots are pushed apart, and
+    bots are pushed off the player.
+  * Hitboxes are children of the body parts, so they follow the pose (Bullet
+    syncs them in C++). The first-person player gets the same hitboxes.
+* **Bots play by the player's rules** (`ai/bot.py`): the same character
+  controller, inventory, gunplay model (recoil patterns, movement
+  inaccuracy, reloads, ammo) and ballistics, including wall penetration.
+  Effects and sounds play in 3D: muzzle flashes, tracers, impacts,
+  gunshots, footsteps and reloads.
+* **Perception** (`ai/perception.py`):
+  * Sight: a view cone (fov by difficulty) and a peripheral cone up close,
+    line-of-sight rays to head and chest, blocked by smoke; flashbangs blind
+    bots too.
+  * Hearing: footsteps (not when walking), gunshots and grenades, each tagged
+    with its source.
+  * Damage awareness, teammate callouts, and a memory of last known
+    positions.
+* **Aim** (`ai/aim.py`): turn-speed-limited view control. Aim error starts
+  with distance and movement and shrinks while the bot tracks the target.
+  Recoil control by difficulty, a reaction delay, and target leading.
+* **Brain** (`ai/brain.py`) with five modes: engage, seek, alert, retreat
+  and task.
+  * Combat micro: burst length by range, counter-strafing before shooting,
+    crouch-firing at range, strafing between bursts, switching to the pistol
+    when the primary is empty, falling back to cover to reload or when hurt
+    (back-pedalling, still facing the threat, and firing back if the enemy
+    shows while the gun is loaded), and holding fire with a teammate in the
+    way.
+  * Tasks: move along a lane, hold an angle, plant, defuse, pick up the
+    charge, guard, hunt, save.
+  * Pre-aim: toward a sound, a bot aims at the first doorway or corner on
+    the path to it, not through the wall.
+  * Grenades: solved ballistic arcs with an obstruction check.
+* **Team tactics** (`ai/tactics.py`), one brain per side:
+  * Attackers: execute (one or two lanes, staging, a synced entry with flash
+    and smoke), rush, or default (map control, then commit to the quieter
+    site). Carriers plant, the others clear the defenders' spots. After the
+    plant they guard with a view of the charge, then run before it blows.
+    The nearest bot fetches a dropped charge, and the bots follow a human
+    carrier's choice of site.
+  * Defenders: an A/B/Mid setup on the map's hold spots, and rotations when
+    two or more enemies are reported at a site (walking the last 12 m in).
+    Occasional repositioning and late hunting.
+  * Retakes: defenders regroup about 16 m out on their own way to the
+    charge and go in together, then choose a defuser (a kit first). They
+    save when the clock makes a defuse impossible.
+  * The bots announce what they do on the team radio.
+* **Bot economy** (`ai/buy.py`): pistol, eco, force and full buys decided by
+  the team, plus a designated sniper, defuse kits and grenades.
+* **Match integration**:
+  * a 5v5 default roster (`data/match.json` "bots") and four difficulty
+    profiles (`data/bots.json`)
+  * a difficulty choice on the side selection, saved in settings
+  * spectating teammates after death (over-the-shoulder chase camera, cycle
+    players, free camera); the HUD shows the spectated bot
+  * `--spectate` / "watch a bot match", `--bots off` for the stand-in
+    practice mode
+  * console `difficulty`, `botinfo`, `spectate`
+  * a dead player drops their gun, and anyone who falls out of the map dies
+* **Character controller fix** (affects the player too): depenetration used
+  to add up the four identical manifold points of a box-box contact, pushing
+  four times too far. With the head in a low ceiling that could shove a
+  character through a thin floor. It now uses the deepest point per object,
+  caps the step and never pushes a grounded character down.
+* **`--demo bots`**: a fast-forwarded spectated match that logs every kill
+  with context (distance, both bots' modes, whether the victim saw the
+  killer) and stuck detection, with a summary. A 6-round run went 3:3
+  (3 eliminations, 3 defuses), with 42 kills, 33% headshots and 39% of shots
+  hitting, and nobody stuck.
+* **Performance**: about 0.3 ms per bot per 64 Hz tick (vision at about
+  10 Hz staggered, decisions at about 7 Hz, team brains at 4 Hz, hearing
+  only on new noises, poses skipped when a bot stands still).
+* 121 unit tests. The new ones cover the navmesh and path following, aiming,
+  grenade arcs, buying, lanes, perception and the controller fix.
+
+### Milestone 5 decisions to confirm
+
+1. **Own navmesh generator** instead of a Recast binding. It is about 800
+   lines of numpy and Python, it needs no new dependency and is built from
+   the same boxes as the collision, so the map format did not change.
+   Destructible walls in Milestone 6 will need it to be updated when a wall
+   breaks; that is a local rebuild of the affected cells.
+2. **No cheating**: bots know where you are only from what they see, hear,
+   are shot by or are told by teammates. They obey the same recoil, spread,
+   movement and ammo rules. Difficulty only changes reaction time, aim
+   speed and error, recoil control, field of view, hearing range, strafing
+   and grenade use.
+3. **The bomb goes to a random attacker** (bot or human), as in CS. In
+   Milestone 4 it always went to the human. Bots follow a human carrier's
+   choice of site.
+4. **Third-person spectating** (over the shoulder) rather than CS's
+   first-person view: it shows the animated bodies and the situation
+   better. A first-person mode can be added in Milestone 7.
+5. **Bodies are procedural mannequins** (box limbs, helmet, vest,
+   balaclava). They read clearly at range and have exact hitboxes. Rigged
+   CC0 character models could replace them later.
+6. **Normal is the default difficulty.** Expert bots react in 0.14-0.22 s
+   and control sprays well; tell me if Normal is too hard or too easy.
+
+### Known issue
+
+**Bot-vs-bot balance leans towards the attackers.** In seeded 8-round
+spectated matches the attackers usually win about 6 rounds in 8. The
+results vary: one 6-round run went 3:3, and rounds end by detonation,
+elimination, defuse and time. With you on a team you decide many rounds
+yourself, but bot defenders still lose too many 2-vs-5 site fights. Next
+steps I would try:
+* defenders falling back from an executed site to wait for rotators;
+* defenders using utility;
+* tuning the defender setup.
 
 ## Milestone 4 - delivered
 

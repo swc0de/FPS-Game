@@ -1,8 +1,8 @@
 """Buying: the catalogue (from weapons.json + match.json) and the purchase
 rules (buy zone, buy time, team restrictions, carry limits, refunds).
 
-The catalogue is plain data so the buy menu, bots (Milestone 5) and tests
-all share it.
+The catalogue is plain data so the buy menu, bots (ai/buy.py) and tests
+all share it. Every agent buys into its own inventory (``agent.weapons``).
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def find_item(db, rules: dict, side: str, key: str) -> ShopItem | None:
 
 
 class Shop:
-    """Purchases for the human player (bots get their own buyer in Milestone 5)."""
+    """Purchases for the human and the bots (refunds: human only)."""
 
     def __init__(self, director):
         self.director = director
@@ -82,7 +82,7 @@ class Shop:
             return False, "not in the buy zone"
         if agent.side not in item.teams:
             return False, "not available to your team"
-        inv = self.game.weapons.inv
+        inv = _weapons(self.game, agent).inv
         dmg = agent.damageable
         if item.kind == "weapon":
             ws = inv.weapons.get(self.game.weapon_db.weapons[item.key].slot)
@@ -111,7 +111,7 @@ class Shop:
             return False, why
         price = self.price(agent, item)
         agent.money -= price
-        weapons = self.game.weapons
+        weapons = _weapons(self.game, agent)
         inv = weapons.inv
         bought = None
         if item.kind == "weapon":
@@ -133,8 +133,9 @@ class Shop:
                 agent.damageable.helmet = True
         elif item.key == "defuse_kit":
             agent.has_kit = True
-        self.bought.append((item.key, price, bought))
-        self.game.audio.play_ui("buy", 0.6)
+        if agent.is_human:
+            self.bought.append((item.key, price, bought))
+            self.game.audio.play_ui("buy", 0.6)
         return True, f"bought {item.name} (${price})"
 
     def can_refund(self, agent, item: ShopItem) -> bool:
@@ -172,3 +173,8 @@ class Shop:
             del self.bought[i]
             return True
         return False
+
+
+def _weapons(game, agent):
+    """The inventory owner of an agent (bots carry their own; the human uses the player's)."""
+    return getattr(agent, "weapons", None) or game.weapons

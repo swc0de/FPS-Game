@@ -77,13 +77,22 @@ def main(argv=None) -> int:
     parser.add_argument("--team", choices=["attack", "defend"], help="start the match on this side (skips team select)")
     parser.add_argument("--mode", choices=["auto", "match", "sandbox"], default="auto",
                         help="match (rounds/economy/bomb) or sandbox; auto = match on maps with bomb sites")
-    parser.add_argument("--opponents", type=int, help="number of stand-in opponents (default from data/match.json)")
-    parser.add_argument("--teammates", type=int, help="number of stand-in teammates")
-    parser.add_argument("--seed", type=int, help="random seed for spawns and stand-in positions")
+    parser.add_argument("--opponents", type=int, help="number of enemy bots (default 5, data/match.json)")
+    parser.add_argument("--teammates", type=int, help="number of bot teammates (default 4)")
+    parser.add_argument("--difficulty", choices=["easy", "normal", "hard", "expert"],
+                        help="bot difficulty (default from data/bots.json)")
+    parser.add_argument("--bots", choices=["on", "off"], default="on",
+                        help="off = practice against stand-ins that do not shoot back (Milestone 4)")
+    parser.add_argument("--spectate", action="store_true", help="watch a 5v5 bot match")
+    parser.add_argument("--seed", type=int, help="random seed for spawns, bot decisions and stand-in positions")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
     args = parser.parse_args(argv)
     if args.demo in ("routes",) and args.mode == "auto":
         args.mode = "sandbox"            # walking tests: no freeze time or round resets
+    if args.demo == "round":
+        args.bots = "off"                # the Milestone 4 demo shoots stand-ins
+    if args.demo == "bots":
+        args.spectate = True
     if args.map is None:
         # the weapon demos are scripted against the shooting range
         args.map = "test_range" if args.demo in ("weapons", "viewmodels", "impacts", "flash") else "compound"

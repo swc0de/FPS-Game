@@ -215,7 +215,7 @@ class PlayerWeapons:
             pos, side = self.vm.eject_world()
             game.effects.eject_shell(ws.d.shell, pos, side, self.player.char.vel)
         game.audio.play_shot(ws.d.sound, eye, own=True)
-        game.notify_noise(eye, 1.0, 70.0)
+        game.notify_noise(eye, 1.0, 70.0, source=self.player)
         self.inspecting = False
         if ws.d.scope and ws.d.scope.get("unscope_after_shot"):
             self.ads_held = False

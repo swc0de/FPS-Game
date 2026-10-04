@@ -169,21 +169,35 @@ class HUD:
     def update(self, dt: float) -> None:
         g = self.game
         p = g.player.damageable
+        spec = None
+        d = g.director
+        if d is not None and d.spectator.active and not d.spectator.free:
+            spec = d.spectator.target
+        if spec is not None:
+            p = spec.damageable
+        self.crosshair.set_visible(self.visible and not self.scoped and g.player.damageable.alive)
         self.health.setText(f"+ {int(math.ceil(p.health))}")
         self.health.setFg((1, 0.35, 0.3, 1) if p.health <= 25 else WHITE)
         self.armor.setText((f"[A] {int(p.armor)}" + ("  [H]" if p.helmet else "")) if p.armor > 0 else "")
-        c = g.player.char.pos
+        c = spec.char.pos if spec is not None else g.player.char.pos
         loc = g.level.callout_at(c.x, c.y)
         site = g.level.zone_at((c.x, c.y, c.z))
         self.location.setText(loc + (f"   [bomb site {site['name']}]" if site else ""))
         w = g.weapons
         mag, res = w.ammo_text()
+        name = w.current_name()
+        if spec is not None:
+            sws = spec.weapons.inv.current()
+            mag, res = (f"{sws.ammo}", f"/ {sws.reserve}") if sws is not None and sws.d.magazine > 0 else ("", "")
+            name = sws.d.name if sws is not None else ("Breach charge" if spec.weapons.inv.slot == "bomb" else "")
         self.ammo.setText(mag)
         self.reserve.setText(res)
-        self.weapon.setText(w.current_name())
+        self.weapon.setText(name)
         ws = w.inv.current()
         status = ""
-        if not p.alive:
+        if spec is not None:
+            pass
+        elif not p.alive:
             status = "YOU DIED" if g.director is not None else "YOU DIED - respawning..."
         elif ws is not None and ws.reloading:
             status = "reloading"

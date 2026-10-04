@@ -63,11 +63,17 @@ def part_transform(part: Part, crouch: float) -> TransformState:
 
 
 class HitboxRig:
-    def __init__(self, physics: PhysicsWorld, owner, surface: str = "flesh"):
+    """``parents`` (part name -> NodePath): attach each hit box under an
+    animated body part instead of posing it from ``update``; Panda3D's Bullet
+    integration then moves the kinematic boxes with the scene graph during
+    the physics step (no per-tick Python work)."""
+
+    def __init__(self, physics: PhysicsWorld, owner, surface: str = "flesh", parents: dict | None = None):
         self.physics = physics
         self.owner = owner
         self.parts: list[tuple[Part, NodePath]] = []
         self.enabled = False
+        self.parented = parents is not None
         for part in PARTS:
             node = BulletRigidBodyNode(f"hitbox:{part.name}")
             if part.shape == "sphere":
@@ -80,7 +86,7 @@ class HitboxRig:
             node.setTag("part", part.name)
             node.setTag("surface", surface)
             node.setPythonTag("owner", owner)
-            np_ = physics.root.attachNewNode(node)
+            np_ = (parents[part.name] if parents is not None else physics.root).attachNewNode(node)
             self.parts.append((part, np_))
         self.set_enabled(True)
 

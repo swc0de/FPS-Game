@@ -1,10 +1,9 @@
 """Match participants in the world.
 
 * ``PlayerAgent`` - the human: wraps the player controller and its weapons.
-* ``StandInAgent`` - Milestone 4 placeholder for the other team: a uniformed
-  mannequin with hitboxes that holds a position and can be killed (it does
-  not move or shoot). Milestone 5 replaces stand-ins with AI bots that use
-  the same ``Participant`` interface.
+* ``StandInAgent`` - practice target (Milestone 4, ``--bots off``): a
+  uniformed mannequin with hitboxes that holds a position and can be killed
+  (it does not move or shoot). AI bots live in ai/bot.py.
 """
 from __future__ import annotations
 
@@ -35,6 +34,27 @@ class PlayerAgent(Participant):
 
     def center_of_mass(self) -> Point3:
         return self.game.player.center_of_mass()
+
+    @property
+    def weapons(self):
+        return self.game.weapons
+
+    @property
+    def active(self) -> bool:
+        return self.team is not None
+
+    def eye(self) -> Point3:
+        c = self.game.player.char
+        return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
+
+    def head_pos(self) -> Point3:
+        return self.eye() - Vec3(0, 0, 0.04)
+
+    def velocity(self) -> Vec3:
+        return Vec3(self.game.player.char.vel)
+
+    def forward(self) -> Vec3:
+        return self.game.player.forward()
 
 
 class StandInAgent(Participant):
@@ -109,6 +129,12 @@ class StandInAgent(Participant):
 
     def center_of_mass(self) -> Point3:
         return self.position() + Vec3(0, 0, 0.7 if self.crouch > 0.5 else 1.1)
+
+    def head_pos(self) -> Point3:
+        return self.position() + Vec3(0, 0, 1.08 if self.crouch > 0.5 else 1.63)
+
+    def velocity(self) -> Vec3:
+        return Vec3(0, 0, 0)
 
     def forward(self) -> Vec3:
         return self.game.render.getRelativeVector(self.root, Vec3(0, 1, 0))

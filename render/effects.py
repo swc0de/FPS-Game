@@ -179,6 +179,16 @@ class Effects:
                         np.random.uniform(0.6, 1.0, n), 0.03, 0.18, (0.7, 0.7, 0.7, 0.25), (0.7, 0.7, 0.7, 0.0),
                         drag=2.0, grav=-0.4, frame=P.F_SMOKE2, lit=1.0)
 
+    def muzzle_flash_world(self, pos: Point3, direction: Vec3, scale: float = 1.0) -> None:
+        """Third-person muzzle flash (bots): a star and glow in the world plus a light pulse."""
+        d = Vec3(direction)
+        s = scale * random.uniform(0.85, 1.15)
+        self.add.emit(1, pos + d * 0.04, (0, 0, 0), 0.05, 0.13 * s, 0.17 * s, (8, 5.5, 2.5, 1.0), (4, 2, 0.6, 0.0),
+                      rot=random.uniform(0, 6.28), frame=P.F_STAR)
+        self.add.emit(1, pos + d * 0.12, d * 1.2, 0.04, 0.09 * s, 0.13 * s, (6, 3.5, 1.4, 0.9), (3, 1.2, 0.3, 0.0),
+                      stretch=0.12, frame=P.F_FLASH_SIDE)
+        self.muzzle_flash(None, pos, d, scale)
+
     def tracer(self, start: Point3, end: Point3, speed: float = 420.0) -> None:
         d = end - start
         dist = d.length()

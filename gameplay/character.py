@@ -36,6 +36,7 @@ from engine.physics import GRAVITY, MASK_MOVEMENT, PhysicsWorld, surface_of
 
 SKIN = 0.012          # gap kept between the capsule and surfaces
 MAX_BUMPS = 4
+MAX_DEPEN_STEP = 0.1  # metres per depenetration iteration
 # A capsule resting on an edge only counts as supported if the contact is
 # reasonably far under it (normal.z > this), otherwise we would "climb"
 # tall ledges by hanging on the side of the capsule.
@@ -100,6 +101,8 @@ class KinematicCharacter:
         self.on_event: Callable[[StepEvent], None] | None = None
 
         self._last_hit_pos = Point3()
+        self.depen_interval = 1                # bots: check for overlaps every N ticks only
+        self._depen_k = 0
         self._shapes: dict[int, object] = {}
         self._ghosts: dict[int, NodePath] = {}
 
@@ -185,13 +188,18 @@ class KinematicCharacter:
         return None
 
     def _depenetrate(self, iterations: int = 3) -> bool:
-        """Push the capsule out of any geometry it overlaps (spawns, crouch bugs)."""
+        """Push the capsule out of any geometry it overlaps (spawns, crouch bugs).
+
+        A box-box contact reports up to four manifold points with the same
+        depth, so only the deepest point per object counts (summing them
+        would push four times too far), and each step is capped so a deep
+        overlap can never shove the character through a thin floor."""
         moved = False
         for _ in range(iterations):
             ghost = self._ghost(self.height)
             ghost.setPos(self._center(self.pos))
             result = self.world.contactTest(ghost.node(), False)
-            push = Vec3(0, 0, 0)
+            deepest: dict[int, tuple[float, Vec3]] = {}
             for contact in result.getContacts():
                 other = contact.getNode1()
                 if other is ghost.node():
@@ -204,10 +212,18 @@ class KinematicCharacter:
                 mp = contact.getManifoldPoint()
                 dist = mp.getDistance()
                 if dist < -1e-4:
-                    n = Vec3(mp.getNormalWorldOnB()) * sign
-                    push += n * (-dist + SKIN * 0.5)
+                    key = other.this
+                    if key not in deepest or dist < deepest[key][0]:
+                        deepest[key] = (dist, Vec3(mp.getNormalWorldOnB()) * sign)
+            push = Vec3(0, 0, 0)
+            for dist, n in deepest.values():
+                push += n * (-dist + SKIN * 0.5)
+            if self.on_ground and push.z < 0.0:
+                push.z = 0.0          # head in a ceiling: never push a grounded character into the floor
             if push.lengthSquared() < 1e-10:
                 break
+            if push.length() > MAX_DEPEN_STEP:
+                push *= MAX_DEPEN_STEP / push.length()
             self.pos += push
             moved = True
         return moved
@@ -448,7 +464,10 @@ class KinematicCharacter:
         self.jump_cooldown = max(self.jump_cooldown - dt, 0.0)
         self.landing_timer = max(self.landing_timer - dt, 0.0)
 
-        self._depenetrate(2)
+        self._depen_k += 1
+        if self._depen_k >= self.depen_interval:
+            self._depen_k = 0
+            self._depenetrate(2)
         self._update_crouch(dt, inp.crouch)
 
         jumped = False

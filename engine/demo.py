@@ -153,7 +153,188 @@ def round_script(game) -> list:
 
 
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script, "routes": routes_script, "round": round_script}
+           "flash": flash_script, "routes": routes_script, "round": round_script, "bots": None}
+
+
+def make_demo(game, name: str):
+    if name == "bots":
+        return BotDemo(game)
+    return DemoRunner(game, name)
+
+
+class BotDemo:
+    """Milestone 5: watch a 5v5 bot match at high speed and report how it went.
+
+    Runs ``BOT_DEMO_ROUNDS`` rounds (env, default 8) with 32 fixed ticks per
+    rendered frame (``BOT_DEMO_DT``; ``BOT_DEMO_TRACE=1`` logs every bot's
+    state every 5 s), follows the most interesting bot (fighting, planting,
+    defusing, carrying the charge) and saves user/screenshots/demo_bots_*.png
+    around kills, plants and defuses. Prints every round's events, then a
+    summary: round results, kills by weapon, headshot rate, accuracy, plants,
+    defuses and any bot that got stuck (a move task without progress)."""
+
+    def __init__(self, game):
+        import os
+        self.game = game
+        self.name = "bots"
+        self.rounds = int(os.environ.get("BOT_DEMO_ROUNDS", "8"))
+        self.trace = os.environ.get("BOT_DEMO_TRACE", "") == "1"
+        self.frame_dt = float(os.environ.get("BOT_DEMO_DT", "0.5"))
+        self.done = False
+        self.ticks = 0
+        self.results = []
+        self.kills = []
+        self.events = []
+        self.shot_queue: list[tuple[int, str]] = []
+        self.shots_this_round = 0
+        self.stuck: dict[int, list] = {}
+        self.stuck_reports = []
+        self.hits = 0
+        self.plants = 0
+        self.defuses = 0
+        self.round_t0 = 0.0
+        game.debug_hud.toggle()
+        d = game.director
+        d.listeners.append(self._event)
+        for b in d.bots:
+            b.damageable.on_damage.append(lambda res, b=b: self._hit(res))
+        game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds")
+
+    def _hit(self, res) -> None:
+        if res.info.kind == "bullet":
+            self.hits += 1
+
+    def _event(self, kind: str, data: dict) -> None:
+        g = self.game
+        d = g.director
+        now = g.loop.time
+        t = now - self.round_t0
+        if kind == "round_start":
+            self.shots_this_round = 0
+            self.stuck = {}
+        elif kind == "live":
+            self.round_t0 = now
+        elif kind == "kill":
+            k, v = data.get("killer"), data["victim"]
+            self.kills.append((k.side if k else "", data.get("weapon", ""), bool(data.get("headshot"))))
+            ctx = ""
+            if k is not None and hasattr(k, "brain") and hasattr(v, "brain"):
+                c = v.perception.contacts.get(id(k))
+                saw = "saw" if c is not None and (c.seen or now - c.time < 1.0) else "blind"
+                dist = (k.position() - v.position()).length()
+                ctx = (f"  [{dist:.0f}m, killer {k.brain.mode}/{k.brain.task.tag or k.brain.task.kind} "
+                       f"{k.char.horizontal_speed:.1f}m/s, victim {v.brain.mode}/{v.brain.task.tag or v.brain.task.kind} "
+                       f"{saw}]")
+            g.log(f"[bots] {t:5.1f}s  {k.name if k else '-'} ({k.side if k else ''}) killed {v.name} "
+                  f"with {data.get('weapon')}{' (HS)' if data.get('headshot') else ''} at "
+                  f"{g.level.callout_at(v.position().x, v.position().y)}{ctx}")
+            if k is not None and hasattr(k, "brain") and k.alive and self.shots_this_round < 3:
+                d.spectator.target = k
+                self.shot_queue.append((3, f"bots_r{d.match.round}_kill{self.shots_this_round}"))
+                self.shots_this_round += 1
+        elif kind == "bomb_planted":
+            self.plants += 1
+            g.log(f"[bots] {t:5.1f}s  charge planted at {d.bomb.site} by {data['planter'].name}")
+            self.shot_queue.append((2, f"bots_r{d.match.round}_planted"))
+        elif kind == "bomb_defused":
+            self.defuses += 1
+            g.log(f"[bots] {t:5.1f}s  charge defused by {data['defuser'].name}")
+            self.shot_queue.append((2, f"bots_r{d.match.round}_defused"))
+        elif kind == "round_end":
+            r = data["result"]
+            m = d.match
+            self.results.append((r.winner_side, r.reason, t))
+            a, b = m.scoreline()
+            g.log(f"[bots] round {m.round}: {r.winner_side} win ({r.reason}) after {t:.0f}s  -  "
+                  f"attack {a} : {b} defend")
+
+    def tick(self, dt: float) -> None:
+        self.ticks += 1
+        d = self.game.director
+        if self.ticks % 16:
+            return
+        now = self.game.loop.time
+        if self.trace and self.ticks % (64 * 5) == 0 and d.match.phase in ("live", "planted"):
+            for b in d.bots:
+                if b.active and b.alive:
+                    p = b.position()
+                    self.game.log(f"[trace] {now - self.round_t0:5.1f}s {b.describe()} @ "
+                                  f"{self.game.level.callout_at(p.x, p.y)} ({p.x:.1f}, {p.y:.1f}, {p.z:.1f})")
+        # stuck detection: a bot with a move task that has not moved 0.6 m in 5 s
+        if d.match.phase in ("live", "planted"):
+            for b in d.bots:
+                if not (b.active and b.alive):
+                    continue
+                br = b.brain
+                moving = (br.follower.active and br.mode in ("task", "alert", "seek", "retreat")
+                          and b.intent.wish.lengthSquared() > 0.25)
+                rec = self.stuck.get(id(b))
+                p = b.position()
+                if not moving or rec is None:
+                    self.stuck[id(b)] = [p, now, False]
+                    continue
+                if (p - rec[0]).length() > 0.6:
+                    self.stuck[id(b)] = [p, now, False]
+                elif now - rec[1] > 5.0 and not rec[2]:
+                    rec[2] = True
+                    msg = (f"{b.name} stuck at ({p.x:.1f}, {p.y:.1f}, {p.z:.2f}) "
+                           f"{self.game.level.callout_at(p.x, p.y)} - {br.describe()}")
+                    self.stuck_reports.append(msg)
+                    self.game.log(f"[bots] STUCK {msg}")
+        # follow the action
+        sp = d.spectator
+        if sp.active and not sp.free:
+            busy = [b for b in d.bots if b.active and b.alive and b.brain.mode == "engage"]
+            planter = [b for b in d.bots if b.active and b.alive and (b.brain.plant_t > 0 or b.brain.defuse_t > 0)]
+            pick = (planter or busy or [None])[0]
+            if pick is not None and (sp.target is None or sp.target.brain.mode != "engage"):
+                sp.target = pick
+
+    def frame(self) -> bool:
+        g = self.game
+        d = g.director
+        if self.shot_queue:
+            n, name = self.shot_queue[0]
+            if n <= 0:
+                self.shot_queue.pop(0)
+                g.screenshot(str(paths.SCREENSHOT_DIR / f"demo_{name}.png"))
+            else:
+                self.shot_queue[0] = (n - 1, name)
+        m = d.match
+        if len(self.results) >= self.rounds or m.phase == "match_end":
+            if not self.done:
+                self.done = True
+                self._summary()
+            return True
+        return False
+
+    def _summary(self) -> None:
+        g = self.game
+        log = g.log
+        d = g.director
+        log("[bots] ===== summary =====")
+        by_reason = {}
+        for side, reason, t in self.results:
+            by_reason[(side, reason)] = by_reason.get((side, reason), 0) + 1
+        for (side, reason), n in sorted(by_reason.items()):
+            log(f"[bots] {side:7s} {reason:15s} x{n}")
+        if self.results:
+            log(f"[bots] average round length {sum(t for *_, t in self.results) / len(self.results):.0f}s")
+        weapons = {}
+        for _, w, _hs in self.kills:
+            weapons[w] = weapons.get(w, 0) + 1
+        hs = sum(1 for *_, h in self.kills if h)
+        log(f"[bots] kills {len(self.kills)} ({hs} headshots), by weapon: "
+            + ", ".join(f"{w} {n}" for w, n in sorted(weapons.items(), key=lambda x: -x[1])))
+        fired = sum(b.shots_fired for b in d.bots)
+        log(f"[bots] plants {self.plants}, defuses {self.defuses}, shots {fired}, bullet hits {self.hits} "
+            f"({100.0 * self.hits / max(fired, 1):.0f}%)")
+        for b in sorted(d.bots, key=lambda b: -b.stats.kills):
+            st = b.stats
+            log(f"[bots]   {b.name:9s} {b.side:7s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}  ${b.money}")
+        log(f"[bots] stuck reports: {len(self.stuck_reports)}")
+        for msg in self.stuck_reports[:20]:
+            log(f"[bots]   {msg}")
 
 
 class DemoRunner:

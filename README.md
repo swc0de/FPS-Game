@@ -6,18 +6,22 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 4 of 7.** Milestone 4 turns the compound into a **round-based match**: freeze time
-> and buy time, a CS-style economy, a buy menu, the breach-charge objective (plant, defuse, detonate),
-> halftime side swap, a match HUD, kill feed, scoreboard and a developer console. Until the AI bots arrive
-> in Milestone 5, the enemy team is played by **stand-ins** that hold positions on the map. Earlier
-> milestones delivered the full map and post-processing (3), the weapons, recoil, hit detection and
-> impact effects (2), and the player controller, PBR, shadows and IBL (1).
-> See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: Milestone 5 of 7.** Milestone 5 fills the match with **AI bots**: you play with four bot
+> teammates against five bots (5v5).
+> * Bots walk a navigation mesh generated from the map. Attackers take different lanes to the sites;
+>   defenders hold angles, rotate on information, retake and defuse.
+> * They see and hear like players and use cover and grenades.
+> * They fight with the same guns, recoil and accuracy rules as you.
+> * Four difficulty levels set reaction time and aim.
+> * When you die you spectate your teammates, and `--spectate` watches a full bot match.
+>
+> Earlier milestones delivered rounds, economy and the bomb (4), the full map and post-processing (3), the
+> weapons and hit detection (2), and the player controller and renderer (1). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 4: rounds, economy and the breach charge](docs/images/milestone4.jpg)
+![Milestone 5: AI bots](docs/images/milestone5.jpg)
 
-*From `python main.py --demo round`: buy menu, kill feed, planting at A, scoreboard, a detonation win and
-a defuse at B.*
+*From `python main.py --demo bots` (a spectated 5v5 bot match) and the bot body poses: fights at the sites,
+a plant, a retake and a defuse.*
 
 ## Requirements
 
@@ -38,8 +42,9 @@ python tools/download_assets.py
 python main.py
 ```
 
-`python main.py` starts a match on Kestrel Compound: pick a side (Vanguard attacks, Bastion defends)
-and the first round starts with freeze time. The first start of a map takes
+`python main.py` starts a match on Kestrel Compound. Pick a side (Vanguard attacks, Bastion defends) and the
+bot difficulty, and the first round starts with freeze time. The first match on a map also builds the bots'
+navigation mesh (~2 s, cached in `assets/cache/nav`). The first start of a map takes
 ~30-90 s: procedural fallback textures are generated, the sky lighting is prefiltered and the map's
 sky visibility is baked. Everything is cached in `assets/`, so later starts take a few seconds. If you are offline
 or a download fails, the game generates its own textures and sky and runs
@@ -59,11 +64,15 @@ Useful options (`python main.py --help` lists them all):
 | `--pose=x,y,z,heading,pitch` | start at a given eye position |
 | `--demo weapons` | scripted tour of the Milestone 2 features on the test range. It saves screenshots and prints the damage results |
 | `--demo routes` | walks every lane of the compound and prints PASS/FAIL per route |
-| `--demo round` | plays scripted rounds: buying, a pistol round, a plant and detonation, then a defuse on the defending side. Prints the money after each step and saves `user/screenshots/demo_m4_*.png` |
+| `--demo round` | plays scripted rounds against stand-ins: buying, a pistol round, a plant and detonation, then a defuse on the defending side. Prints the money after each step and saves `user/screenshots/demo_m4_*.png` |
+| `--demo bots` | watches a fast-forwarded 5v5 bot match (8 rounds; `BOT_DEMO_ROUNDS=n` to change). Prints every kill with context, a summary and any stuck bot, and saves `user/screenshots/demo_bots_*.png` |
 | `--team attack` / `--team defend` | start the match on that side and skip the side selection |
+| `--difficulty easy/normal/hard/expert` | bot difficulty (the side selection screen also sets it and remembers it) |
+| `--opponents 5 --teammates 4` | roster size (also `bots <n> [mates]` in the console) |
+| `--spectate` | watch a 5v5 bot match |
+| `--bots off` | Milestone 4 practice: stand-ins that hold positions and do not shoot back |
 | `--mode sandbox` | free play on the compound without rounds (`--mode match` / `auto` is the default on maps with bomb sites) |
-| `--opponents 5 --teammates 0` | stand-in roster size (also `bots <n> [mates]` in the console) |
-| `--seed 3` | fixed random seed (stand-in positions, bomb carrier) for reproducible rounds |
+| `--seed 3` | fixed random seed (spawns, bomb carrier, bot decisions) for reproducible rounds |
 | `--post-debug 1..4` | start with a post-processing debug view (AO, bloom, normals, depth); F3 in game |
 | `--save-settings` | persist the CLI overrides to `user/settings.json` |
 
@@ -89,7 +98,9 @@ Useful options (`python main.py --help` lists them all):
 | Tab (hold) | scoreboard |
 | ` or F10 | developer console (`help` lists the commands) |
 | Mouse wheel, Z | next/previous weapon, last weapon |
-| V | noclip fly mode (debug; also the spectator camera after you die) |
+| V | noclip fly mode (debug) |
+| Left / right mouse (dead) | spectate the next / previous player (teammates first) |
+| Space (dead) | free spectator camera (WASD to fly), Space again to follow players |
 | Esc | pause menu (resume, settings, quit); Esc again goes back |
 | F1 | toggle debug overlay |
 | F3 | cycle post-processing debug views (final, AO, bloom, normals, depth) |
@@ -97,11 +108,54 @@ Useful options (`python main.py --help` lists them all):
 
 Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
 
+## Milestone 5 - what to test
+
+Start with `python main.py`, pick a side and a difficulty (Normal is the default). You have four bot teammates
+against five bots. The team radio at the left shows what your teammates see and do ("Enemy spotted: B Long",
+"Rotating to A", "Planting at B!"). Things to try:
+
+1. **Fighting bots.** Peek them at different ranges with different guns.
+   * Bots need a moment to react when you appear (from 0.55-0.85 s on Easy to 0.14-0.22 s on Expert).
+   * Their first shots are less accurate than later ones, and more so when you or they are moving.
+   * Like you, they are inaccurate while running: they stop (counter-strafe) before shooting.
+   * They burst at range and spray up close, crouch for long shots, and strafe between bursts (more often on
+     the harder difficulties).
+   * Hide behind cover: a hurt bot or one with an empty gun falls back to cover and reloads.
+   * Hide only your body: if just your head shows, that is what they shoot at.
+2. **Sound.** Run (Shift walks silently) near a bot that cannot see you: it turns to the doorway or corner
+   you will come through, and tells its team. Gunshots carry much further than footsteps.
+3. **Attacking with bots.** Each round the bot team picks a site and a plan, announced on the radio:
+   * an **execute**: it gathers outside the site on one or two lanes, then goes in together after a
+     flash (and a smoke on the defenders' way back);
+   * a **rush**;
+   * or **map control**: spreading out, then committing to the quieter site.
+   One player gets the breach charge at random. If it is you, the bots switch to the site you head for.
+   If a carrier dies, the nearest bot fetches the charge. After the plant they hold positions with a
+   view of the charge and run before it blows.
+4. **Defending with bots.** Bots hold the map's angles at A, B and Mid. They rotate when two or more enemies
+   show up at a site, walking the last metres in. After a plant they regroup outside the site and retake
+   together (the best placed bot defuses, a kit holder first). They save when there is no time left to
+   defuse.
+5. **Grenades.** Watch for bot flashes (look away!), smokes during executes and frags thrown at players
+   hiding behind cover.
+6. **Difficulty.** Compare Easy and Expert on the side selection screen (or `difficulty expert` in the
+   console). The values are in `data/bots.json`.
+7. **Spectating.** When you die you follow your teammates over the shoulder. Left and right mouse switch
+   player, Space flies freely. The HUD shows the spectated bot's health, armour, ammo and plant or defuse
+   progress. **WATCH A BOT MATCH** on the side selection (or `--spectate`) lets ten bots play.
+8. **Console** (`): `botinfo` lists what every bot is doing, `bots 5 0` plays alone against five,
+   `difficulty hard`, `spectate`.
+
+Please tell me which difficulty feels right, whether bots feel unfair anywhere (seeing or hitting you too
+early) or dumb anywhere (getting stuck, walking into the open, ignoring you), and your FPS with ten bots.
+
+`python main.py --bots off` brings back the Milestone 4 stand-ins for buy and defuse practice.
+
 ## Milestone 4 - what to test
 
-Start with `python main.py` and pick **Vanguard** (attack). The match is the first to 13 rounds out of 24,
-and the sides swap after round 12. The 5 opponents are stand-ins: they stand or crouch at common angles,
-do not move or shoot yet, and die and drop their rifle like players. Bots replace them in Milestone 5.
+Run `python main.py --bots off` and pick **Vanguard** (attack). The match is the first to 13 rounds out of
+24, and the sides swap after round 12. In this practice mode the 5 opponents are stand-ins: they stand or
+crouch at common angles, do not move or shoot, and die and drop their rifle like players.
 
 1. **Freeze time and buying.** Each round starts with 12 s of freeze time: you can look around and buy but
    not move or shoot. Buying is allowed for 20 s after that while you are in your spawn's buy zone. The
@@ -280,19 +334,21 @@ Milestone 1 spawn).
 main.py                 entry point
 engine/                 app/game loop, fixed timestep (64 Hz), settings, input, physics, mesh building
 gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies,
-                        match rules (match.py), director (match <-> world), shop, bomb, stand-in agents
+                        match rules (match.py), director (match <-> world), shop, bomb, stand-in agents,
+                        third-person soldier body (body.py), spectator camera
 render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility,
                         post pipeline (pre-pass, GTAO, bloom, eye adaptation, tonemap, AA), particles, decals, effects
 render/shaders/         GLSL (commented: every technique is explained in place)
 maps/                   level builder, prefabs (prefabs.py basics, prefabs_military.py compound pieces),
                         map JSON files in maps/data/ (compound, test_range, showroom)
 data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces,
-                        match rules and economy (match.json)
+                        match rules and economy (match.json), bot difficulty and behaviour (bots.json)
 weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
 ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py),
                         match HUD + scoreboard, buy menu, team select, developer console
 audio/                  procedural sound synthesis (placeholder library) + 3D audio system
-ai/                     filled in by milestone 5
+ai/                     bots: navmesh (generation, A*, funnel), path following, perception, aiming, brain
+                        (modes and combat), team tactics, buying
 assets/                 downloaded / generated textures, HDRIs, caches (not committed)
 tools/                  download_assets.py, generate_textures.py
 tests/                  unit tests (python -m unittest discover -s tests -t .)
@@ -313,8 +369,12 @@ Maps are JSON files in `maps/data/` built from prefabs:
   * `furniture`: bunk, locker, shelf, desk, workbench, fuel tank, flagpole...
   * `terrain` (backdrop hills) and `paint_line`
 * **Gameplay data:** `zone` (bomb sites and buy zones, with a `team` for buy zones), `callout` (named areas),
-  `spawn`, plus `practice_positions` (where stand-ins stand), `test_routes` (waypoint walks checked by
-  `--demo routes`) and `camera_shots` (for `--shots`). A map with both bomb sites starts in match mode.
+  `spawn`, plus `practice_positions` (defender hold spots with the angle to watch, attacker lurk spots;
+  also where stand-ins stand), `test_routes` (waypoint walks checked by `--demo routes`; routes that end in
+  a bomb site are the attackers' lanes) and `camera_shots` (for `--shots`). A map with both bomb sites
+  starts in match mode.
+* **Bots** need nothing else: the navigation mesh is generated from the map's collision boxes on first
+  start and cached.
 
 Run a map with `python main.py --map <name>`.
 
@@ -338,6 +398,11 @@ The tests cover:
 * the match state machine: phases, round wins, loss bonus streaks, plant/defuse rewards, halftime swap,
   match end, friendly fire
 * the shop (team items, refunds, grenade limits, helmet upgrade, buy zone and time) and the bomb maths
+* the navmesh: walls and doors, erosion, stairs, ledges, crouch-only areas, two-level areas, unreachable
+  rooms, the cache, string pulling; characters following paths through real Bullet collision, and every
+  lane of the compound
+* bot aiming (turn speed, convergence, aim error decay, spray control), grenade arcs, bot buying and lanes
+* bot perception: view cone, walls, peripheral vision, reaction delay, flash blindness, hearing
 
 ## Troubleshooting
 
