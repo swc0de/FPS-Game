@@ -76,3 +76,30 @@ class MapTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _inside_box(point, center, size, hpr, margin=0.0) -> bool:
+    """Point inside an oriented box (heading/pitch/roll in degrees), grown by margin."""
+    from panda3d.core import Mat3, Vec3, composeMatrix
+    m = Mat3()
+    composeMatrix(m, Vec3(1, 1, 1), Vec3(*hpr))
+    inv = Mat3(m)
+    inv.invertInPlace()
+    d = Vec3(point[0] - center[0], point[1] - center[1], point[2] - center[2])
+    local = inv.xformVec(d)
+    return all(abs(local[i]) <= size[i] / 2 + margin for i in range(3))
+
+
+class PositionTests(unittest.TestCase):
+    def test_spawns_and_hold_positions_are_free(self):
+        data, ctx = build("compound")
+        points = [("spawn", s["pos"]) for s in ctx.spawns]
+        for side, positions in data["practice_positions"].items():
+            for p in positions:
+                points.append((f"{side} hold", p[:3]))
+        for label, p in points:
+            for height in (0.3, 1.0, 1.5):
+                q = (p[0], p[1], p[2] + height)
+                for c, size, hpr, _surface in ctx.colliders:
+                    self.assertFalse(_inside_box(q, c, size, hpr, margin=0.2),
+                                     f"{label} {p} overlaps a collider at {c} size {size}")

@@ -189,5 +189,29 @@
     "anchors": {"muzzle": [0, 0, 0], "eject": [0, 0, 0], "sight": [0, 0, 0.05], "grip_r": [0, 0, -0.01], "grip_l": [-0.2, -0.1, -0.2], "mag": [0, 0, 0]},
     "viewmodel": {"offset": [0.14, 0.28, -0.15], "ads_distance": 0.3, "one_handed": true, "elbow_r": [0.26, -0.1, -0.36], "elbow_l": [-0.3, -0.1, -0.4]},
     "radius": 0.03
+    },
+  "bomb_charge": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0, 0], "size": [0.26, 0.17, 0.075], "bevel": 0.008, "mat": "metal_olive"},
+      {"shape": "cyl", "pos": [0, 0.045, -0.012], "radius": 0.032, "length": 0.27, "axis": "x", "mat": "vehicle_od"},
+      {"shape": "cyl", "pos": [0, -0.045, -0.012], "radius": 0.032, "length": 0.27, "axis": "x", "mat": "vehicle_od"},
+      {"shape": "box", "pos": [-0.08, 0, 0.0], "size": [0.03, 0.18, 0.09], "bevel": 0.004, "mat": "canvas"},
+      {"shape": "box", "pos": [0.08, 0, 0.0], "size": [0.03, 0.18, 0.09], "bevel": 0.004, "mat": "canvas"},
+      {"shape": "box", "pos": [0.04, -0.015, 0.041], "size": [0.1, 0.085, 0.01], "bevel": 0.002, "mat": "steel_painted"},
+      {"shape": "box", "pos": [0.016, -0.03, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.04, -0.03, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.064, -0.03, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.016, -0.05, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.04, -0.05, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.064, -0.05, 0.047], "size": [0.018, 0.014, 0.005], "bevel": 0.001, "mat": "gun_metal"},
+      {"shape": "box", "pos": [0.04, 0.012, 0.047], "size": [0.075, 0.022, 0.004], "bevel": 0.001, "mat": "glass_dark"},
+      {"shape": "box", "pos": [0.04, 0.012, 0.0495], "size": [0.06, 0.012, 0.001], "bevel": 0.0003, "mat": "pbr_white_rough", "emit": [0.4, 2.5, 0.6], "group": "display"},
+      {"shape": "sphere", "pos": [-0.04, 0.05, 0.043], "radius": 0.006, "mat": "pbr_white_rough", "emit": [30, 1.5, 0.8], "group": "led"},
+      {"shape": "cyl", "pos": [-0.03, 0.0, 0.045], "radius": 0.0035, "length": 0.16, "axis": "y", "mat": "paint_red"},
+      {"shape": "cyl", "pos": [-0.045, 0.0, 0.044], "radius": 0.0035, "length": 0.16, "axis": "y", "mat": "steel"}
+    ],
+    "anchors": {"muzzle": [0, 0.1, 0], "eject": [0, 0, 0], "sight": [0, 0, 0.06], "grip_r": [0.12, -0.03, -0.02], "grip_l": [-0.12, -0.03, -0.02], "mag": [0, 0, 0]},
+    "viewmodel": {"offset": [0.02, 0.4, -0.25], "ads_distance": 0.4, "elbow_r": [0.3, -0.18, -0.42], "elbow_l": [-0.28, -0.18, -0.42]},
+    "radius": 0.15
   }
 }

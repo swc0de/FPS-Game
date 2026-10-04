@@ -6,16 +6,18 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 3 of 7.** Milestone 3 adds the full map **Kestrel Compound** and a modern post-processing
-> pipeline: GTAO ambient occlusion, bloom, eye adaptation, colour grading, FXAA/MSAA, render scale and sharpening.
-> It also adds a pause menu with a live-applying graphics settings screen. Earlier milestones delivered the
-> weapons, recoil, hit detection and impact effects (2), and the player controller, PBR, cascaded and local
-> shadows, and IBL (1). See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: Milestone 4 of 7.** Milestone 4 turns the compound into a **round-based match**: freeze time
+> and buy time, a CS-style economy, a buy menu, the breach-charge objective (plant, defuse, detonate),
+> halftime side swap, a match HUD, kill feed, scoreboard and a developer console. Until the AI bots arrive
+> in Milestone 5, the enemy team is played by **stand-ins** that hold positions on the map. Earlier
+> milestones delivered the full map and post-processing (3), the weapons, recoil, hit detection and
+> impact effects (2), and the player controller, PBR, shadows and IBL (1).
+> See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 3: Kestrel Compound](docs/images/milestone3.jpg)
+![Milestone 4: rounds, economy and the breach charge](docs/images/milestone4.jpg)
 
-*Kestrel Compound, rendered with the offline fallback (procedural textures and sky). Each rendering
-technique is explained in [docs/RENDERING.md](docs/RENDERING.md).*
+*From `python main.py --demo round`: buy menu, kill feed, planting at A, scoreboard, a detonation win and
+a defuse at B.*
 
 ## Requirements
 
@@ -36,7 +38,8 @@ python tools/download_assets.py
 python main.py
 ```
 
-`python main.py` starts on Kestrel Compound at the attackers' spawn. The first start of a map takes
+`python main.py` starts a match on Kestrel Compound: pick a side (Vanguard attacks, Bastion defends)
+and the first round starts with freeze time. The first start of a map takes
 ~30-90 s: procedural fallback textures are generated, the sky lighting is prefiltered and the map's
 sky visibility is baked. Everything is cached in `assets/`, so later starts take a few seconds. If you are offline
 or a download fails, the game generates its own textures and sky and runs
@@ -56,6 +59,11 @@ Useful options (`python main.py --help` lists them all):
 | `--pose=x,y,z,heading,pitch` | start at a given eye position |
 | `--demo weapons` | scripted tour of the Milestone 2 features on the test range. It saves screenshots and prints the damage results |
 | `--demo routes` | walks every lane of the compound and prints PASS/FAIL per route |
+| `--demo round` | plays scripted rounds: buying, a pistol round, a plant and detonation, then a defuse on the defending side. Prints the money after each step and saves `user/screenshots/demo_m4_*.png` |
+| `--team attack` / `--team defend` | start the match on that side and skip the side selection |
+| `--mode sandbox` | free play on the compound without rounds (`--mode match` / `auto` is the default on maps with bomb sites) |
+| `--opponents 5 --teammates 0` | stand-in roster size (also `bots <n> [mates]` in the console) |
+| `--seed 3` | fixed random seed (stand-in positions, bomb carrier) for reproducible rounds |
 | `--post-debug 1..4` | start with a post-processing debug view (AO, bloom, normals, depth); F3 in game |
 | `--save-settings` | persist the CLI overrides to `user/settings.json` |
 
@@ -75,14 +83,77 @@ Useful options (`python main.py --help` lists them all):
 | G | drop the current weapon |
 | Y | inspect weapon |
 | 1 2 3 4 | primary / pistol / knife / grenades (press 4 again to cycle grenade types) |
+| 5 | breach charge (attackers). Hold left mouse inside a bomb site to plant (3.2 s) |
+| F (hold) | defuse the planted charge while looking at it (10 s, 5 s with a defuse kit) |
+| B | buy menu (in your buy zone during buy time) |
+| Tab (hold) | scoreboard |
+| ` or F10 | developer console (`help` lists the commands) |
 | Mouse wheel, Z | next/previous weapon, last weapon |
-| V | noclip fly mode (debug) |
+| V | noclip fly mode (debug; also the spectator camera after you die) |
 | Esc | pause menu (resume, settings, quit); Esc again goes back |
 | F1 | toggle debug overlay |
 | F3 | cycle post-processing debug views (final, AO, bloom, normals, depth) |
 | F12 | screenshot to `user/screenshots/` |
 
 Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
+
+## Milestone 4 - what to test
+
+Start with `python main.py` and pick **Vanguard** (attack). The match is the first to 13 rounds out of 24,
+and the sides swap after round 12. The 5 opponents are stand-ins: they stand or crouch at common angles,
+do not move or shoot yet, and die and drop their rifle like players. Bots replace them in Milestone 5.
+
+1. **Freeze time and buying.** Each round starts with 12 s of freeze time: you can look around and buy but
+   not move or shoot. Buying is allowed for 20 s after that while you are in your spawn's buy zone. The
+   HUD shows `[B] BUY` and the time left.
+   * Press **B**. Number keys pick a category, then an item (e.g. **3 1** = first rifle), or click.
+     Items you cannot afford or carry are greyed out, and the reason shows on the right.
+   * Each side has its own rifle: the R7 Halberd for attackers, the C9 Lancer for defenders. The defuse
+     kit is defender-only.
+   * Right-click an item you bought this round to sell it back (only while buy time lasts).
+   * Buying a primary when you already carry one drops the old one at your feet.
+   * Armour costs $650. Armour + helmet costs $1000, or $350 if your armour is already full.
+   * Grenades: at most 4 in total, 2 flashbangs, 1 frag and 1 smoke.
+2. **Economy** (CS rules; the values are in `data/match.json`).
+   * Everyone starts with $800. The maximum is $16,000.
+   * A round win pays $3250 (elimination or time) or $3500 (detonation or defuse).
+   * A loss pays a bonus of $1400, rising by $500 per consecutive loss up to $3400. A win lowers the
+     streak by one, so a team that wins one round in a long losing streak still gets a big bonus later.
+   * Attackers who lose after planting get $800 extra. Planting and defusing pay the player $300.
+   * Kill rewards depend on the weapon: rifles $300, SMG $600, shotgun $900, sniper $100, knife $1500,
+     grenades $300. Money pop-ups appear next to your money.
+   * Watch the money after each round; the scoreboard (**Tab**) shows everyone's money and round history.
+3. **The breach charge.** One attacker carries it. When you are on attack, it is you; the icon shows
+   bottom-right.
+   * Press **5**, walk into site A (armory) or B (motor pool), and hold left mouse for 3.2 s. Letting go
+     resets the plant. You cannot move while planting, and you cannot plant in the air.
+   * Once planted, the round timer becomes the 40 s bomb timer. The charge beeps faster and faster and its
+     LED blinks.
+   * The explosion kills anyone within about 20 m (armour helps a little) and hurts up to 45 m, through
+     walls. Run.
+   * If you die while carrying it, it drops; walk over it to pick it up. **G** while holding it drops it.
+4. **Defusing.** Switch sides with the console (`team defend`), then `plant A` or `plant B` to get a
+   planted charge, and go there.
+   * Look at the charge and hold **F**: 10 s, or 5 s with a defuse kit. You cannot move while defusing,
+     and letting go resets.
+   * A defuse wins the round even if the timer is nearly out. If it runs out first, attackers win.
+5. **Round ends.** A side wins when the other side is eliminated, the round time runs out (defenders win),
+   the charge detonates (attackers win) or the charge is defused (defenders win). Then:
+   * a banner shows the winner, the reason and the MVP
+   * the round resets after 6 s; survivors keep their weapons and armour, the dead get a knife and pistol
+   * at halftime (after round 12) money resets to $800, the sides swap and everyone is re-equipped
+6. **Death.** Use the console `kill` or let the charge get you. You see YOU DIED, and after 2.5 s a free
+   spectator camera (fly with WASD) until the next round.
+7. **HUD.** Check the score bar (team scores, clock, alive pips per side), the kill feed (top right: killer,
+   assist, weapon, headshot), the banners, the plant and defuse progress bars, and the
+   bomb and kit icons.
+8. **Console** (` or F10): `help`, `money 16000`, `plant A`, `endround attack`, `team defend`,
+   `bots 3`, `god`, `give sr90`, `freeze 3`, `restart`. Handy for testing a full-buy round straight away.
+
+Tell me how the economy feels over a few rounds, whether the timers feel right, and anything in the buy menu
+or HUD that is hard to read.
+
+`python main.py --mode sandbox` keeps the Milestone 3 free walk of the map without rounds.
 
 ## Milestone 3 - what to test
 
@@ -208,15 +279,18 @@ Milestone 1 spawn).
 ```
 main.py                 entry point
 engine/                 app/game loop, fixed timestep (64 Hz), settings, input, physics, mesh building
-gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies
+gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies,
+                        match rules (match.py), director (match <-> world), shop, bomb, stand-in agents
 render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility,
                         post pipeline (pre-pass, GTAO, bloom, eye adaptation, tonemap, AA), particles, decals, effects
 render/shaders/         GLSL (commented: every technique is explained in place)
 maps/                   level builder, prefabs (prefabs.py basics, prefabs_military.py compound pieces),
                         map JSON files in maps/data/ (compound, test_range, showroom)
-data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces
+data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces,
+                        match rules and economy (match.json)
 weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
-ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py)
+ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py),
+                        match HUD + scoreboard, buy menu, team select, developer console
 audio/                  procedural sound synthesis (placeholder library) + 3D audio system
 ai/                     filled in by milestone 5
 assets/                 downloaded / generated textures, HDRIs, caches (not committed)
@@ -238,8 +312,9 @@ Maps are JSON files in `maps/data/` built from prefabs:
   * `vehicle` (truck / utility), `canopy` (hangar), `mast`
   * `furniture`: bunk, locker, shelf, desk, workbench, fuel tank, flagpole...
   * `terrain` (backdrop hills) and `paint_line`
-* **Gameplay data:** `zone` (bomb sites), `callout` (named areas), `spawn`, plus `test_routes` (waypoint
-  walks checked by `--demo routes`) and `camera_shots` (for `--shots`).
+* **Gameplay data:** `zone` (bomb sites and buy zones, with a `team` for buy zones), `callout` (named areas),
+  `spawn`, plus `practice_positions` (where stand-ins stand), `test_routes` (waypoint walks checked by
+  `--demo routes`) and `camera_shots` (for `--shots`). A map with both bomb sites starts in match mode.
 
 Run a map with `python main.py --map <name>`.
 
@@ -258,8 +333,11 @@ The tests cover:
 * reloads, including shell-by-shell; the armour and helmet damage model and falloff
 * hitbox raycasts, wall penetration per material, and the inventory and grenade maths
 * graphics option normalisation, the settings menu model (presets, overrides, restart detection)
-* map integrity: known prefabs and materials, both bomb sites, both spawn groups, callouts, and no
-  overlapping (z-fighting) floor slabs
+* map integrity: known prefabs and materials, both bomb sites, both spawn groups, callouts, no
+  overlapping (z-fighting) floor slabs, and spawns and stand-in positions free of colliders
+* the match state machine: phases, round wins, loss bonus streaks, plant/defuse rewards, halftime swap,
+  match end, friendly fire
+* the shop (team items, refunds, grenade limits, helmet upgrade, buy zone and time) and the bomb maths
 
 ## Troubleshooting
 

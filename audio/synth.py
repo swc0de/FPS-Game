@@ -190,6 +190,40 @@ def ui_tick(freq: float, dur: float = 0.06) -> np.ndarray:
     return normalize(x, 0.5)
 
 
+def tone(freqs, dur: float, attack: float = 0.005, decay: float = 0.2, square: float = 0.0) -> np.ndarray:
+    """Sum of sine (optionally squared-off) partials with an attack/decay envelope."""
+    t = _t(dur)
+    x = np.zeros_like(t)
+    for i, f in enumerate(freqs):
+        w = np.sin(2 * math.pi * f * t)
+        if square > 0:
+            w = np.tanh(w * (1.0 + 6.0 * square))
+        x += w / (1.0 + i * 0.4)
+    return x * env(t, attack, decay)
+
+
+def bomb_beep() -> np.ndarray:
+    return normalize(tone([2900, 5810], 0.09, 0.002, 0.03, square=0.2), 0.7)
+
+
+def chord(notes, dur: float, step: float = 0.0, decay: float = 0.6) -> np.ndarray:
+    t = _t(dur)
+    x = np.zeros_like(t)
+    for i, f in enumerate(notes):
+        start = i * step
+        tt = np.clip(t - start, 0, None)
+        e = env(t, 0.03, decay, start)
+        x += (np.sin(2 * math.pi * f * tt) + 0.3 * np.sin(2 * math.pi * 2 * f * tt)) * e
+    return normalize(x, 0.6)
+
+
+def alert(rng) -> np.ndarray:
+    """Two-tone radio alert for 'bomb planted'."""
+    parts = [tone([880, 1760], 0.18, 0.005, 0.12, square=0.4), tone([660, 1320], 0.18, 0.005, 0.12, square=0.4)]
+    x = np.concatenate(parts * 2)
+    return normalize(x + band(noise(len(x) / RATE, rng), 1500, 4000) * 0.03, 0.6)
+
+
 def sequence(dur: float, events, rng) -> np.ndarray:
     """events: list of (time, kind) with kind in click/clack/slide/thump/cloth."""
     t = _t(dur)
@@ -271,6 +305,14 @@ def build_library(out_dir: Path, weapons: dict, seed: int = 21) -> dict[str, lis
     add("pickup", lambda: sequence(0.3, [(0.0, "cloth"), (0.1, "click")], rng))
     add("land", lambda: footstep("concrete", rng) * 1.0)
     add("hit", lambda: ui_tick(1800, 0.05))
+    add("bomb_beep", bomb_beep)
+    add("bomb_planted", lambda: alert(rng))
+    add("bomb_defused", lambda: chord([1046, 784, 523], 1.2, 0.12, 0.35))
+    add("plant_tap", lambda: ui_tick(2200, 0.04))
+    add("defuse_start", lambda: sequence(0.5, [(0.0, "click"), (0.1, "slide"), (0.3, "click")], rng))
+    add("round_win", lambda: chord([523, 659, 784, 1046], 1.8, 0.09, 0.8))
+    add("round_lose", lambda: chord([440, 349, 294, 220], 1.8, 0.12, 0.8))
+    add("buy", lambda: sequence(0.3, [(0.0, "cloth"), (0.12, "click")], rng))
     add("hit_head", lambda: ui_tick(2600, 0.12))
     for key, w in weapons.items():
         if w.magazine <= 0:

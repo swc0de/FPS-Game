@@ -5,10 +5,99 @@
 | 1 | Player controller, movement, test level with PBR + shadows | **done** |
 | 2 | Weapons, recoil, hit detection, impact effects | **done** |
 | 3 | Full map, post-processing pipeline, graphics settings | **done** |
-| 4 | Rounds, economy, buy menu, bomb objective | next |
-| 5 | AI bots | |
+| 4 | Rounds, economy, buy menu, bomb objective | **done** |
+| 5 | AI bots | next |
 | 6 | Destructible walls, lean, gadgets, specialists | |
 | 7 | HUD polish, audio, menus, performance pass | |
+
+## Milestone 4 - delivered
+
+* **Match rules** (`gameplay/match.py`, all values in `data/match.json`): a
+  pure-Python state machine with no engine dependency, so it is unit
+  tested and the bots in Milestone 5 can use the same `Participant`
+  interface as the player.
+  * Phases: freeze (12 s) → live (1:55) → planted (40 s bomb timer) →
+    round end (6 s), with halftime after round 12 and the match ending
+    when a side reaches 13 of 24 rounds.
+  * Win conditions: elimination, time, detonation and defuse. An
+    elimination of the attackers after a plant does not end the round:
+    the bomb still has to be defused, as in CS.
+  * Per-player stats (kills, deaths, assists by damage, headshots, MVPs,
+    score), MVP selection, round history, and friendly fire (off by
+    default) through a damage filter.
+* **CS-style economy:** start money $800, cap $16,000; win rewards per
+  reason; a loss bonus streak ($1400 → $3400) that a win lowers by one;
+  the $800 planted-loss bonus; $300 plant and defuse rewards; per-weapon
+  kill rewards; halftime money reset.
+* **Buy menu** (`gameplay/shop.py`, `ui/buy_menu.py`):
+  * categories: pistols, SMGs, rifles, heavy, grenades, gear
+  * team-restricted items: the R7 for attackers; the C9 and the defuse
+    kit for defenders
+  * buy-zone and buy-time checks, and the CS 1.6-style number-key buying
+  * refunds of this round's purchases while buy time lasts
+  * grenade carry and total limits, and the $350 helmet upgrade
+  * buying a primary drops the old one
+  * the reason an item cannot be bought is shown
+* **Breach charge** (`gameplay/bomb.py`), with a procedural model and plant
+  animation:
+  * one attacker carries it; it drops on death and can be picked up
+  * a 3.2 s plant, only on the ground inside a site
+  * beeps that speed up and a blinking LED and light, then a 40 s timer
+  * a Gaussian-falloff explosion through walls (500 damage, sigma 14 m,
+    45 m radius) with a large explosion effect
+  * a 10 s defuse (5 s with a kit) while looking at the charge; you cannot
+    move while planting or defusing
+* **Match director** (`gameplay/director.py`) connects the rules to the
+  world:
+  * spawns and loadouts; survivors keep their equipment, the dead get a
+    knife and pistol
+  * buy zones, the freeze-time movement and combat lock, plant and
+    defuse input, kill attribution and rewards, bomb drop and pickup
+  * clearing decals, casings and dropped guns between rounds
+  * a free spectator camera 2.5 s after death
+* **Stand-in opponents** (`gameplay/agents.py`): uniformed mannequins with
+  real hitboxes, armour and helmets, at 21 hand-placed
+  `practice_positions` on the compound. They die, topple and drop their
+  rifle. They are placeholders for the Milestone 5 bots.
+* **UI:**
+  * side selection
+  * the match HUD: score bar with clock and alive pips, money and
+    reward pop-ups, kill feed, round, halftime and match banners,
+    plant and defuse progress, hints, buy indicator, bomb and kit icons
+  * a scoreboard (Tab) with K/D/A, HS%, MVPs, score, money and round
+    history
+  * a developer console (` or F10) with practice commands
+* **Map:** buy zones for both spawns and the stand-in positions on Kestrel
+  Compound. A map test checks that every spawn and position is free of
+  colliders.
+* **Scripted demo** `python main.py --demo round --seed 3`:
+  * a pistol round: buy armour, eliminate the 5 stand-ins
+  * a rifle round with the helmet upgrade, a plant at A and a detonation
+  * a defuse at B on the defending side
+  * prints the money after each step (it must end at $4900 → $1850 →
+    $2150 → $5650, and $4600 after the defuse) and saves screenshots
+* 84 unit tests. The new ones cover the match state machine, the economy,
+  the shop rules and the bomb maths.
+
+### Milestone 4 decisions to confirm
+
+1. **Stand-ins instead of opponents that fight back.** Real opponents need
+   the bots from Milestone 5, so for now the enemy team stands still. The
+   player also has no hitboxes yet; they come with the bots, which will
+   need something to shoot at.
+2. **CS economy values unchanged** (start $800, win $3250/$3500, loss bonus
+   $1400-$3400 with the "a win lowers the streak by one" rule, $800
+   planted-loss bonus, per-weapon kill rewards). They are all in
+   `data/match.json` if you want a Siege-like flatter economy instead.
+3. **Timers:** 12 s freeze time (CS2 uses 15-20 s), 20 s buy time, a 1:55
+   round, a 40 s bomb timer, a 3.2 s plant, and a 10 s / 5 s defuse.
+4. **Friendly fire is off** (`friendly_fire` in `data/match.json`). CS
+   competitive has it on; with bot teammates it is mostly a source of
+   frustration.
+5. **The bomb carrier.** On attack it is always the human player; with
+   bots the carrier will be random, as in CS, and bots will pass it.
+6. **ESC still pauses the match**, as decided in Milestone 3. The buy menu,
+   scoreboard and console are separate overlays that do not pause.
 
 ## Milestone 3 - delivered
 

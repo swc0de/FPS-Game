@@ -74,8 +74,16 @@ def main(argv=None) -> int:
                                        "saves screenshots to user/screenshots, then exits")
     parser.add_argument("--post-debug", type=int, default=0,
                         help="post-processing debug view: 1 AO, 2 bloom, 3 normals, 4 depth (also F3 in game)")
+    parser.add_argument("--team", choices=["attack", "defend"], help="start the match on this side (skips team select)")
+    parser.add_argument("--mode", choices=["auto", "match", "sandbox"], default="auto",
+                        help="match (rounds/economy/bomb) or sandbox; auto = match on maps with bomb sites")
+    parser.add_argument("--opponents", type=int, help="number of stand-in opponents (default from data/match.json)")
+    parser.add_argument("--teammates", type=int, help="number of stand-in teammates")
+    parser.add_argument("--seed", type=int, help="random seed for spawns and stand-in positions")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
     args = parser.parse_args(argv)
+    if args.demo in ("routes",) and args.mode == "auto":
+        args.mode = "sandbox"            # walking tests: no freeze time or round resets
     if args.map is None:
         # the weapon demos are scripted against the shooting range
         args.map = "test_range" if args.demo in ("weapons", "viewmodels", "impacts", "flash") else "compound"

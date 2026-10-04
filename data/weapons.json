@@ -22,7 +22,7 @@
       "reload_time": 2.1, "reload_empty_time": 2.3, "draw_time": 0.55, "speed": 1.0,
       "ads": {"zoom": 0.86, "time": 0.16, "speed": 0.85},
       "tracer_every": 0, "shell": "pistol", "sound": "pistol", "muzzle_flash": 0.7,
-      "kill_reward": 300
+      "kill_reward": 300, "teams": ["attack", "defend"], "buy_category": "pistols"
     },
     "mx5": {
       "name": "MX-5 Hornet", "class": "smg", "slot": "primary", "model": "smg_mx5", "price": 1250,
@@ -35,7 +35,7 @@
       "reload_time": 2.3, "reload_empty_time": 2.6, "draw_time": 0.6, "speed": 0.97,
       "ads": {"zoom": 0.82, "time": 0.18, "speed": 0.8},
       "tracer_every": 4, "shell": "pistol", "sound": "smg", "muzzle_flash": 0.8,
-      "kill_reward": 600
+      "kill_reward": 600, "teams": ["attack", "defend"], "buy_category": "smgs"
     },
     "r7": {
       "name": "R7 Halberd", "class": "rifle", "slot": "primary", "model": "rifle_r7", "price": 2700,
@@ -48,7 +48,7 @@
       "reload_time": 2.5, "reload_empty_time": 2.9, "draw_time": 0.75, "speed": 0.9,
       "ads": {"zoom": 0.78, "time": 0.2, "speed": 0.75},
       "tracer_every": 3, "shell": "rifle", "sound": "rifle_heavy", "muzzle_flash": 1.0,
-      "kill_reward": 300
+      "kill_reward": 300, "teams": ["attack"], "buy_category": "rifles"
     },
     "c9": {
       "name": "C9 Lancer", "class": "rifle", "slot": "primary", "model": "rifle_c9", "price": 3000,
@@ -61,7 +61,7 @@
       "reload_time": 2.4, "reload_empty_time": 2.8, "draw_time": 0.7, "speed": 0.91,
       "ads": {"zoom": 0.78, "time": 0.2, "speed": 0.75},
       "tracer_every": 3, "shell": "rifle", "sound": "rifle_light", "muzzle_flash": 0.9,
-      "kill_reward": 300
+      "kill_reward": 300, "teams": ["defend"], "buy_category": "rifles"
     },
     "sr90": {
       "name": "SR-90 Longbow", "class": "sniper", "slot": "primary", "model": "sniper_sr90", "price": 4750,
@@ -74,7 +74,7 @@
       "reload_time": 3.6, "reload_empty_time": 3.6, "draw_time": 1.0, "speed": 0.78,
       "scope": {"zooms": [0.42, 0.15], "time": 0.12, "speed": 0.6, "unscope_after_shot": true},
       "tracer_every": 1, "shell": "magnum", "sound": "sniper", "muzzle_flash": 1.4,
-      "kill_reward": 100
+      "kill_reward": 100, "teams": ["attack", "defend"], "buy_category": "rifles"
     },
     "s12": {
       "name": "S12 Breacher", "class": "shotgun", "slot": "primary", "model": "shotgun_s12", "price": 1200,
@@ -87,7 +87,7 @@
       "draw_time": 0.7, "speed": 0.92,
       "ads": {"zoom": 0.86, "time": 0.2, "speed": 0.8},
       "tracer_every": 0, "shell": "shell12", "sound": "shotgun", "muzzle_flash": 1.3,
-      "kill_reward": 900
+      "kill_reward": 900, "teams": ["attack", "defend"], "buy_category": "heavy"
     },
     "knife": {
       "name": "K-3 Field Knife", "class": "knife", "slot": "melee", "model": "knife_k3", "price": 0,
@@ -102,17 +102,17 @@
   },
   "grenades": {
     "frag": {
-      "name": "M-40 Frag", "slot": "grenade", "model": "grenade_frag", "price": 300, "max_carry": 1,
+      "name": "M-40 Frag", "slot": "grenade", "model": "grenade_frag", "price": 300, "max_carry": 1, "kill_reward": 300, "buy_category": "grenades",
       "fuse": 1.6, "damage": 98, "radius": 9.0, "falloff_power": 1.4, "armor_penetration": 0.5,
       "throw_speed": 17.0, "lob_speed": 9.0, "restitution": 0.42, "friction": 0.6, "speed": 1.0
     },
     "smoke": {
-      "name": "SG-2 Smoke", "slot": "grenade", "model": "grenade_smoke", "price": 300, "max_carry": 1,
+      "name": "SG-2 Smoke", "slot": "grenade", "model": "grenade_smoke", "price": 300, "max_carry": 1, "kill_reward": 300, "buy_category": "grenades",
       "fuse": 3.0, "settle_time": 0.35, "duration": 18.0, "radius": 3.7,
       "throw_speed": 16.0, "lob_speed": 8.5, "restitution": 0.35, "friction": 0.8, "speed": 1.0
     },
     "flash": {
-      "name": "FB-1 Flashbang", "slot": "grenade", "model": "grenade_flash", "price": 200, "max_carry": 2,
+      "name": "FB-1 Flashbang", "slot": "grenade", "model": "grenade_flash", "price": 200, "max_carry": 2, "kill_reward": 300, "buy_category": "grenades",
       "fuse": 1.5, "radius": 28.0, "max_blind": 4.6,
       "throw_speed": 17.0, "lob_speed": 9.0, "restitution": 0.45, "friction": 0.6, "speed": 1.0
     }

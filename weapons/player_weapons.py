@@ -19,7 +19,8 @@ from weapons.inventory import Inventory
 from weapons.viewmodel import Spring, Viewmodel
 from weapons.weapon import AimContext, angles_to_dir, apply_offset
 
-SLOT_KEYS = (("slot1", "primary"), ("slot2", "secondary"), ("slot3", "melee"), ("slot4", "grenade"))
+SLOT_KEYS = (("slot1", "primary"), ("slot2", "secondary"), ("slot3", "melee"), ("slot4", "grenade"),
+             ("slot5", "bomb"))
 
 
 class PlayerWeapons:
@@ -75,6 +76,8 @@ class PlayerWeapons:
             g = self.db.grenades[self.inv.grenade]
             self.vm.equip(g.model, "grenade", 0.45)
             self.switch_lock = now + 0.45
+        elif self.inv.slot == "bomb":
+            self.vm.equip("bomb_charge", "bomb", 0.5)
         self.game.audio.play_ui("draw")
 
     def current_name(self) -> str:
@@ -83,6 +86,8 @@ class PlayerWeapons:
             return ws.d.name
         if self.inv.slot == "grenade" and self.inv.grenade:
             return self.db.grenades[self.inv.grenade].name
+        if self.inv.slot == "bomb":
+            return "Breach charge"
         return ""
 
     def speed_scale(self) -> float:
@@ -132,15 +137,17 @@ class PlayerWeapons:
             self._ads_logic(ws, inp)
             trigger = inp.is_down("fire")
             pressed = inp.consume("fire")
+            if self.game.combat_locked():
+                trigger = pressed = False
             if ws.d.fire_mode == "melee":
                 alt = inp.consume("aim")
                 self._melee(ws, now, pressed or (trigger and now >= self.melee_next), alt)
             elif ws.wants_shot(now, trigger, pressed):
                 self._fire(ws, now)
             self._handle_events(ws, now)
-        elif self.inv.slot == "grenade":
+        elif self.inv.slot == "grenade" and not self.game.combat_locked():
             self._grenade_logic(dt, now, inp)
-        else:
+        elif self.inv.slot != "bomb":       # planting reads the held fire button (gameplay/objective.py)
             inp.consume("fire")
 
     def _ads_logic(self, ws, inp) -> None:
@@ -349,15 +356,22 @@ class PlayerWeapons:
 
     # ------------------------------------------------------------- pickups
     def drop_current(self) -> None:
+        if self.inv.slot == "bomb":
+            self.game.drop_bomb(self.game.player_agent)
+            return
         ws = self.inv.drop_current()
         if ws is None:
             return
+        self.drop_weapon_state(ws)
+        self._equip_current()
+
+    def drop_weapon_state(self, ws, throw: float = 4.0) -> None:
+        """Throw a weapon out in front of the player as a world pickup."""
         ws.cancel_reload()
         ws.zoom_level = 0
         fwd = Vec3(*angles_to_dir(self.player.yaw, self.player.pitch))
         self.game.pickups.spawn("weapon", ws, self.eye() + fwd * 0.5, self.player.yaw,
-                                vel=fwd * 4.0 + Vec3(0, 0, 1.5) + self.player.char.vel)
-        self._equip_current()
+                                vel=fwd * throw + Vec3(0, 0, 1.5) + self.player.char.vel)
 
     def try_pickup(self) -> bool:
         fwd = Vec3(*angles_to_dir(self.player.yaw, self.player.pitch))

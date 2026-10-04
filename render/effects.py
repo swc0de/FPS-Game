@@ -193,34 +193,54 @@ class Effects:
         self.casings.spawn(kind, pos, side, inherit)
 
     # --------------------------------------------------------- grenades fx
-    def explosion(self, pos: Point3, radius: float) -> None:
+    def big_explosion(self, pos: Point3) -> None:
+        """The bomb: several staggered fireballs, a tall smoke column and a long light pulse."""
         p = Point3(*pos)
-        self.light_pulse(p + Vec3(0, 0, 0.6), (1.0, 0.6, 0.3), 260.0, radius * 2.2, 0.4)
-        n = 18
-        self.add.emit(n, _jitter(n, p + Vec3(0, 0, 0.3), 0.3), _cone(n, (0, 0, 1), 1.4, (1.0, 6.0)),
-                      np.random.uniform(0.25, 0.55, n), np.random.uniform(0.4, 0.8, n), np.random.uniform(1.4, 2.6, n),
-                      (9.0, 4.0, 1.2, 1.0), (2.0, 0.5, 0.1, 0.0), rotv=np.random.uniform(-2, 2, n), drag=3.0,
-                      grav=-1.0, frame=P.F_FIRE)
-        n = 26
-        self.add.emit(n, _jitter(n, p + Vec3(0, 0, 0.2), 0.1), _cone(n, (0, 0, 1), 1.5, (6.0, 18.0)),
+        self.explosion(p, 9.0, scale=2.6)
+        for _ in range(4):
+            off = Vec3(R(-2.5, 2.5), R(-2.5, 2.5), R(0.5, 3.0))
+            self.explosion(p + off, 6.0, scale=1.6, decal=False, light=False)
+        self.light_pulse(p + Vec3(0, 0, 2.0), (1.0, 0.62, 0.32), 2200.0, 60.0, 1.4)
+        n = 40
+        self.alpha.emit(n, _jitter(n, p + Vec3(0, 0, 2.0), 2.0), _cone(n, (0, 0, 1), 0.6, (2.0, 7.0)),
+                        np.random.uniform(6.0, 10.0, n), np.random.uniform(2.0, 3.0, n), np.random.uniform(6.0, 9.0, n),
+                        (0.16, 0.15, 0.14, 0.9), (0.3, 0.28, 0.26, 0.0), rotv=np.random.uniform(-0.3, 0.3, n),
+                        drag=1.0, grav=-0.5, frame=P.F_SMOKE3, lit=1.0, hold=0.4)
+        cam = self.game.camera.getPos(self.game.render)
+        self.add_shake(max(0.0, 3.0 * (1.0 - (cam - p).length() / 70.0)))
+
+    def explosion(self, pos: Point3, radius: float, scale: float = 1.0, decal: bool = True,
+                  light: bool = True) -> None:
+        p = Point3(*pos)
+        k = scale
+        if light:
+            self.light_pulse(p + Vec3(0, 0, 0.6), (1.0, 0.6, 0.3), 260.0 * k * k, radius * 2.2 * k, 0.4 * k)
+        n = int(18 * k)
+        self.add.emit(n, _jitter(n, p + Vec3(0, 0, 0.3 * k), 0.3 * k), _cone(n, (0, 0, 1), 1.4, (1.0 * k, 6.0 * k)),
+                      np.random.uniform(0.25, 0.55, n) * k ** 0.5, np.random.uniform(0.4, 0.8, n) * k,
+                      np.random.uniform(1.4, 2.6, n) * k, (9.0, 4.0, 1.2, 1.0), (2.0, 0.5, 0.1, 0.0),
+                      rotv=np.random.uniform(-2, 2, n), drag=3.0, grav=-1.0, frame=P.F_FIRE)
+        n = int(26 * k)
+        self.add.emit(n, _jitter(n, p + Vec3(0, 0, 0.2), 0.1 * k), _cone(n, (0, 0, 1), 1.5, (6.0 * k, 18.0 * k)),
                       np.random.uniform(0.3, 0.9, n), 0.02, 0.01, (12.0, 6.0, 2.0, 1.0), (5.0, 1.5, 0.3, 0.0),
                       drag=1.2, grav=9.0, stretch=0.02, frame=P.F_SPARK)
-        n = 24
-        self.alpha.emit(n, _jitter(n, p + Vec3(0, 0, 0.5), 0.6), _cone(n, (0, 0, 1), 1.3, (0.5, 3.5)),
-                        np.random.uniform(2.5, 5.0, n), np.random.uniform(0.8, 1.4, n), np.random.uniform(3.0, 5.0, n),
-                        (0.2, 0.19, 0.18, 0.85), (0.32, 0.3, 0.28, 0.0), rotv=np.random.uniform(-0.5, 0.5, n),
-                        drag=1.8, grav=-0.35, frame=P.F_SMOKE3, lit=1.0)
-        n = 22
-        self.alpha.emit(n, _jitter(n, p + Vec3(0, 0, 0.2), 0.2), _cone(n, (0, 0, 1), 1.2, (4.0, 12.0)),
+        n = int(24 * k)
+        self.alpha.emit(n, _jitter(n, p + Vec3(0, 0, 0.5 * k), 0.6 * k), _cone(n, (0, 0, 1), 1.3, (0.5 * k, 3.5 * k)),
+                        np.random.uniform(2.5, 5.0, n) * k ** 0.5, np.random.uniform(0.8, 1.4, n) * k,
+                        np.random.uniform(3.0, 5.0, n) * k, (0.2, 0.19, 0.18, 0.85), (0.32, 0.3, 0.28, 0.0),
+                        rotv=np.random.uniform(-0.5, 0.5, n), drag=1.8, grav=-0.35, frame=P.F_SMOKE3, lit=1.0)
+        n = int(22 * k)
+        self.alpha.emit(n, _jitter(n, p + Vec3(0, 0, 0.2), 0.2 * k), _cone(n, (0, 0, 1), 1.2, (4.0 * k, 12.0 * k)),
                         np.random.uniform(0.8, 1.6, n), np.random.uniform(0.02, 0.05, n), 0.02,
                         (0.25, 0.22, 0.2, 1.0), rotv=np.random.uniform(-15, 15, n), drag=0.3, grav=9.8,
                         frame=P.F_CHUNK, lit=1.0)
-        hit = self.game.physics.ray_cast(p + Vec3(0, 0, 0.5), p - Vec3(0, 0, 2.0), MASK_SIGHT)
+        hit = self.game.physics.ray_cast(p + Vec3(0, 0, 0.5), p - Vec3(0, 0, 2.0), MASK_SIGHT) if decal else None
         if hit is not None:
-            self.decals.add(hit.pos, hit.normal, "scorch", size=radius * 0.45)
-        cam = self.game.camera.getPos(self.game.render)
-        dist = (cam - p).length()
-        self.add_shake(max(0.0, 2.2 * (1.0 - dist / (radius * 3.0))))
+            self.decals.add(hit.pos, hit.normal, "scorch", size=radius * 0.45 * k)
+        if light:
+            cam = self.game.camera.getPos(self.game.render)
+            dist = (cam - p).length()
+            self.add_shake(max(0.0, 2.2 * (1.0 - dist / (radius * 3.0))))
 
     def flashbang(self, pos: Point3) -> None:
         p = Point3(*pos)
@@ -284,6 +304,20 @@ class Effects:
                 total += c.density
         return min(total, 1.0)
 
+    def clear_world(self) -> None:
+        """Round restart: remove particles, decals, smoke, casings and light pulses."""
+        self.alpha.clear()
+        self.add.clear()
+        if self.vm_flash is not None:
+            self.vm_flash.clear()
+        self.decals.clear()
+        self.smokes = []
+        for light, *_ in self.temp_lights:
+            self.game.renderer.lights.remove(light)
+        self.temp_lights = []
+        self.casings.clear()
+        self.shake = 0.0
+
     # ------------------------------------------------------------- update
     def update(self, dt: float) -> None:
         cam = self.game.camera.getPos(self.game.render)
@@ -344,6 +378,11 @@ class ShellCasings:
                 self.game.materials.get("brass").apply(b)
             self.templates[kind] = t
         return t
+
+    def clear(self) -> None:
+        for it in self.items:
+            it["np"].removeNode()
+        self.items = []
 
     def spawn(self, kind: str, pos: Point3, side: Vec3, inherit: Vec3) -> None:
         if len(self.items) >= self.MAX:

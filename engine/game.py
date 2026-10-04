@@ -7,7 +7,7 @@ import time
 
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import ClockObject, Filename, Point3, WindowProperties
+from panda3d.core import ClockObject, Filename, Point3, Vec3, WindowProperties
 
 from audio.system import AudioSystem
 from engine import paths
@@ -23,6 +23,7 @@ from render.materials import MaterialLibrary
 from render.renderer import Renderer
 from ui.debug_hud import DebugHud
 from ui.hud import HUD
+from ui.console import Console
 from ui.menus import PauseMenu
 from weapons.ballistics import Ballistics
 from weapons.defs import database
@@ -85,8 +86,25 @@ class Game(ShowBase):
         self.weapons = PlayerWeapons(self)
         self.player.speed_scale = self.weapons.speed_scale
         self._spawn_props()
+        self.director = None
+        mode = getattr(args, "mode", "auto")
+        if mode != "sandbox":
+            from gameplay.director import MatchDirector, map_supports_match
+            if mode == "match" or map_supports_match(self.level):
+                side = args.team if getattr(args, "team", None) in ("attack", "defend") else "attack"
+                self.director = MatchDirector(self, side, getattr(args, "opponents", None),
+                                              getattr(args, "teammates", None), seed=getattr(args, "seed", None))
         self.paused = False
         self.menu = PauseMenu(self)
+        self.console = Console(self)
+        self.match_hud = None
+        self.buy_menu = None
+        self.team_select = None
+        if self.director is not None:
+            from ui.buy_menu import BuyMenu
+            from ui.match_hud import MatchHUD
+            self.match_hud = MatchHUD(self, self.director)
+            self.buy_menu = BuyMenu(self, self.director)
         self.renderer.post.set_brightness(float(settings.video.get("brightness", 0.0)))
         if not settings.video.get("show_fps", True):
             self.debug_hud.toggle()
@@ -100,6 +118,11 @@ class Game(ShowBase):
         self.accept("f12", self.screenshot)
         self.accept("f3", self.cycle_post_debug)
         self.accept("v", self.toggle_noclip)
+        self.accept("b", self._toggle_buy)
+        self.accept("tab", self._scoreboard, [True])
+        self.accept("tab-up", self._scoreboard, [False])
+        self.accept("`", self.console.toggle)
+        self.accept("f10", self.console.toggle)
         self.accept("window-event", self._on_window_event)
         self.taskMgr.add(self._update, "game-update", sort=-10)
 
@@ -115,6 +138,12 @@ class Game(ShowBase):
             self.demo = DemoRunner(self, args.demo)
         elif not args.offscreen and not args.frames:
             self.input.set_captured(True)
+        if self.director is not None and not args.shots:
+            if args.team or self.demo is not None or args.frames or args.offscreen:
+                self.director.start()
+            else:
+                from ui.team_select import TeamSelect
+                self.team_select = TeamSelect(self, self._choose_side)
         self.hud.on_resize()
 
     # ------------------------------------------------------------- setup
@@ -166,7 +195,33 @@ class Game(ShowBase):
         print(msg, flush=True)
 
     def damageables(self) -> list:
-        return [d for d in self.dummies] + [self.player]
+        out = [d for d in self.dummies] + [self.player]
+        if self.director is not None:
+            out += [a for a in self.director.standins if a.root.isHidden() is False]
+        return out
+
+    # ---------------------------------------------------- match services
+    @property
+    def player_agent(self):
+        return self.director.player_agent if self.director is not None else None
+
+    def combat_locked(self) -> bool:
+        return self.director is not None and self.director.combat_locked()
+
+    def drop_bomb(self, agent) -> None:
+        if self.director is not None:
+            self.director.drop_bomb(agent)
+
+    def drop_weapon_at(self, key: str, pos, heading: float) -> None:
+        self.pickups.spawn("weapon", key, pos, heading, vel=Vec3(0, 0, 1.0), static=False)
+
+    def clear_world(self) -> None:
+        """Round restart: grenades, smoke, decals, particles and dropped weapons go away."""
+        for gr in self.grenades:
+            gr.destroy()
+        self.grenades = []
+        self.effects.clear_world()
+        self.pickups.clear_dropped()
 
     def spawn_grenade(self, g) -> None:
         self.grenades.append(g)
@@ -187,7 +242,7 @@ class Game(ShowBase):
 
     def _player_damaged(self, res) -> None:
         self.hud.damage_taken(res.health)
-        if res.killed:
+        if res.killed and self.director is None:
             self._respawn_timer = RESPAWN_TIME
             self.hud.flash_msg("killed by " + (res.info.weapon or "the world"), 2.5)
 
@@ -229,7 +284,33 @@ class Game(ShowBase):
     def _on_escape(self) -> None:
         if self._shot_queue or self.demo is not None:
             return
-        self.menu.on_escape()
+        if self.console.is_open:
+            self.console.close()
+        elif self.buy_menu is not None and self.buy_menu.is_open:
+            self.buy_menu.close()
+        elif self.team_select is not None:
+            return
+        else:
+            self.menu.on_escape()
+
+    def _overlay_open(self) -> bool:
+        return (self.console.is_open or self.team_select is not None
+                or (self.buy_menu is not None and self.buy_menu.is_open))
+
+    def _choose_side(self, side: str) -> None:
+        self.team_select = None
+        self.director.restart(side)
+        self.input.set_captured(True)
+
+    def _toggle_buy(self) -> None:
+        if self.buy_menu is None or self.console.is_open or self.paused or self.team_select is not None:
+            return
+        self.buy_menu.toggle()
+
+    def _scoreboard(self, show: bool) -> None:
+        if self.match_hud is None or self.console.is_open:
+            return
+        self.match_hud.scoreboard.set_visible(show and not self.paused)
 
     def set_paused(self, paused: bool) -> None:
         """Pause menu: the simulation stops and the mouse is released."""
@@ -238,6 +319,12 @@ class Game(ShowBase):
         self.input.clear_presses()
         self.hud.set_visible(not paused)
         self.debug_hud.set_hidden(paused)
+        if self.match_hud is not None:
+            self.match_hud.set_visible(not paused)
+        if self.buy_menu is not None:
+            self.buy_menu.close()
+        if paused and self.console.is_open:
+            self.console.close()
         if not paused:
             self.renderer.post.reset_adaptation()
 
@@ -279,7 +366,7 @@ class Game(ShowBase):
             self.hud.flash_msg("mouse released - click to play")
 
     def _click_capture(self) -> None:
-        if self.paused:
+        if self.paused or self._overlay_open():
             return
         if not self.input.captured and not self._shot_queue and self.demo is None:
             self.input.set_captured(True)
@@ -319,6 +406,8 @@ class Game(ShowBase):
         self._shot_wait = 0
         self.debug_hud.toggle()
         self.hud.set_visible(False)
+        if self.match_hud is not None:
+            self.match_hud.set_visible(False)
         self._next_shot()
 
     def _next_shot(self) -> None:
@@ -362,7 +451,9 @@ class Game(ShowBase):
         self.grenades = [g for g in self.grenades if not g.done]
         self.physics.step(dt)
         self.weapons.fixed_update(dt, now)
-        if not self.player.damageable.alive:
+        if self.director is not None:
+            self.director.fixed_update(dt)
+        elif not self.player.damageable.alive:
             self._respawn_timer -= dt
             if self._respawn_timer <= 0:
                 self.player.damageable.reset(armor=0, helmet=False)
@@ -383,10 +474,16 @@ class Game(ShowBase):
             d.frame_update(dt)
         for g in self.grenades:
             g.frame_update()
+        if self.director is not None:
+            self.director.frame_update(dt)
         self.pickups.update(dt)
         self.effects.update(dt)
         self.renderer.update(dt)
         self.hud.update(dt)
+        if self.match_hud is not None:
+            self.match_hud.update(dt)
+        if self.buy_menu is not None:
+            self.buy_menu.update()
         self.debug_hud.update(dt)
         self._frame += 1
         if self.args.trace:

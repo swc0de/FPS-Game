@@ -463,10 +463,10 @@ def furniture(ctx, e):
 # --------------------------------------------------------------- gameplay
 @prefab("zone")
 def zone(ctx, e):
-    """Gameplay volume, e.g. a bomb site: {"name": "A", "kind": "bombsite",
-    "min": [x, y, z], "max": [x, y, z]}."""
-    ctx.zones.append({"name": e["name"], "kind": e.get("kind", "bombsite"), "min": list(e["min"]),
-                      "max": list(e["max"])})
+    """Gameplay volume: {"name": "A", "kind": "bombsite" | "buyzone", "team": "attack"
+    (buy zones), "min": [x, y, z], "max": [x, y, z]}."""
+    ctx.zones.append({"name": e["name"], "kind": e.get("kind", "bombsite"), "team": e.get("team", ""),
+                      "min": list(e["min"]), "max": list(e["max"])})
 
 
 @prefab("callout")

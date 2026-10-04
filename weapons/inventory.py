@@ -6,7 +6,7 @@ import random
 from weapons.defs import WeaponDatabase
 from weapons.weapon import WeaponState
 
-SLOT_ORDER = ("primary", "secondary", "melee", "grenade")
+SLOT_ORDER = ("primary", "secondary", "melee", "grenade", "bomb")
 GRENADE_ORDER = ("frag", "flash", "smoke")
 
 
@@ -17,6 +17,7 @@ class Inventory:
         self.rng = rng or random.Random()
         self.weapons: dict[str, WeaponState | None] = {"primary": None, "secondary": None, "melee": None}
         self.grenades: dict[str, int] = {}
+        self.has_bomb = False               # attackers: the breach charge (slot 5)
         self.slot = "melee"
         self.grenade = None
         self.last_slot = None
@@ -52,13 +53,15 @@ class Inventory:
 
     # ----------------------------------------------------------- select
     def current(self) -> WeaponState | None:
-        if self.slot == "grenade":
+        if self.slot in ("grenade", "bomb"):
             return None
         return self.weapons.get(self.slot)
 
     def has(self, slot: str) -> bool:
         if slot == "grenade":
             return any(c > 0 for c in self.grenades.values())
+        if slot == "bomb":
+            return self.has_bomb
         return self.weapons.get(slot) is not None
 
     def select(self, slot: str) -> bool:
@@ -91,8 +94,20 @@ class Inventory:
                 return s
         return "melee"
 
+    def clear(self) -> None:
+        """Strip everything (death / side switch)."""
+        self.weapons = {"primary": None, "secondary": None, "melee": None}
+        self.grenades = {}
+        self.has_bomb = False
+        self.grenade = None
+        self.slot = "melee"
+        self.last_slot = None
+
+    def grenade_count(self) -> int:
+        return sum(self.grenades.values())
+
     def drop_current(self) -> WeaponState | None:
-        if self.slot in ("melee", "grenade"):
+        if self.slot in ("melee", "grenade", "bomb"):
             return None
         ws = self.weapons.get(self.slot)
         self.weapons[self.slot] = None

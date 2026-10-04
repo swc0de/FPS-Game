@@ -62,6 +62,8 @@ class WeaponDef:
     sound: str = "rifle_heavy"
     muzzle_flash: float = 1.0
     kill_reward: int = 300
+    teams: list = field(default_factory=lambda: ["attack", "defend"])
+    buy_category: str = ""
     raw: dict = field(default_factory=dict)
 
     @property

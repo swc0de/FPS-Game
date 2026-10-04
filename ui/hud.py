@@ -184,7 +184,7 @@ class HUD:
         ws = w.inv.current()
         status = ""
         if not p.alive:
-            status = "YOU DIED - respawning..."
+            status = "YOU DIED" if g.director is not None else "YOU DIED - respawning..."
         elif ws is not None and ws.reloading:
             status = "reloading"
         elif ws is not None and ws.d.magazine and ws.ammo == 0:

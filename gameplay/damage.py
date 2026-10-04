@@ -49,6 +49,8 @@ class Damageable:
     alive: bool = True
     absorb_ratio: float = 0.5
     on_damage: list[Callable[[DamageResult], None]] = field(default_factory=list)
+    # optional veto (friendly fire rules, invulnerability): filter(self, info) -> bool
+    damage_filter: Callable | None = None
 
     def protected(self, hitgroup: str, kind: str) -> bool:
         if self.armor <= 0:
@@ -61,6 +63,8 @@ class Damageable:
 
     def take_damage(self, info: DamageInfo) -> DamageResult | None:
         if not self.alive:
+            return None
+        if self.damage_filter is not None and not self.damage_filter(self, info):
             return None
         dmg = max(info.amount, 0.0)
         health_dmg = dmg

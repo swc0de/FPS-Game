@@ -149,6 +149,11 @@ class PickupManager:
         for p in list(self.items):
             p.update(dt)
 
+    def clear_dropped(self) -> None:
+        """Round restart: dropped weapons disappear, rack pickups stay."""
+        for p in [i for i in self.items if not i.static]:
+            p.destroy()
+
     def look_at(self, eye: Point3, direction: Vec3) -> Pickup | None:
         res = self.game.physics.world.rayTestClosest(eye, eye + direction * REACH, GROUP_PICKUP)
         if res.hasHit():

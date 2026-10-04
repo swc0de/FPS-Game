@@ -1088,5 +1088,41 @@
    "wear": 0.3,
    "rust": 0.25
   }
+ },
+ "uniform_tan": {
+  "surface": "flesh",
+  "uv_scale": 0.6,
+  "sources": {
+   "polyhaven": [],
+   "ambientcg": []
+  },
+  "procedural": {
+   "type": "fabric",
+   "color": [
+    150,
+    128,
+    92
+   ],
+   "threads": 120,
+   "dirt": 0.5
+  }
+ },
+ "uniform_slate": {
+  "surface": "flesh",
+  "uv_scale": 0.6,
+  "sources": {
+   "polyhaven": [],
+   "ambientcg": []
+  },
+  "procedural": {
+   "type": "fabric",
+   "color": [
+    78,
+    92,
+    104
+   ],
+   "threads": 120,
+   "dirt": 0.4
+  }
  }
 }

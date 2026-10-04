@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import math
 
-from panda3d.core import Point3
+from panda3d.core import Point3, Vec3
 
 from engine import paths
 
@@ -126,8 +126,34 @@ def routes_script(game) -> list:
     return s
 
 
+def round_script(game) -> list:
+    """Milestone 4: pistol round won by elimination, a bomb round won by
+    detonation, then a defuse as a defender. Prints money after each step."""
+    s = [("wait_phase", "freeze", 200), ("wait", 10), ("open_buy",), ("wait", 6), ("shot", "m4_buy_menu"),
+         ("buy", "kevlar"), ("close_buy",), ("report_match", "after buying kevlar (expect $150)"),
+         ("wait_phase", "live", 2000)]
+    for i in range(5):
+        s += [("shoot_standin", i)]
+        if i == 1:
+            s += [("wait", 2), ("shot", "m4_killfeed")]
+    s += [("wait", 4), ("shot", "m4_round_won"), ("report_match", "pistol round won (expect $4900)"),
+          ("wait_phase", "freeze", 2000), ("wait", 4), ("buy", "r7"), ("buy", "kevlar_helmet"),
+          ("report_match", "bought rifle + helmet upgrade (expect $1850: kept armour, helmet $350)"), ("wait_phase", "live", 2000),
+          ("teleport", -40.0, 19.5, 0.02, 180.0), ("select", "bomb"), ("wait", 20), ("hold_async", "fire", 260),
+          ("wait", 120), ("shot", "m4_planting"), ("wait", 150), ("report_match", "after plant (expect planted, +$300 = $2150)"),
+          ("wait", 6), ("shot", "m4_planted"), ("scoreboard", True), ("wait", 10), ("shot", "m4_scoreboard"),
+          ("wait", 10), ("scoreboard", False), ("teleport", -47.0, -4.0, 0.02, 0.0), ("aim", -40.0, 19.5, 1.5),
+          ("wait_phase", "round_end", 6000), ("shot", "m4_explosion"), ("wait", 6), ("shot", "m4_explosion2"),
+          ("report_match", "bomb round (expect detonation win, $5650)"),
+          ("console", "team defend"), ("wait_phase", "live", 2000), ("console", "plant B"),
+          ("teleport", 40.0, 33.0, 0.02, 0.0), ("aim_bomb",), ("wait", 4), ("hold_async", "use", 700),
+          ("wait", 320), ("shot", "m4_defusing"), ("wait", 400), ("shot", "m4_defused"),
+          ("report_match", "defuse round (expect defused win, $4600)")]
+    return s
+
+
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script, "routes": routes_script}
+           "flash": flash_script, "routes": routes_script, "round": round_script}
 
 
 class DemoRunner:
@@ -143,7 +169,9 @@ class DemoRunner:
         self.shots: list[str] = []
         self.done = False
         # routes fast-forward: 8 fixed ticks per rendered frame
-        self.frame_dt = 0.125 if name == "routes" else 1.0 / 30.0
+        self.frame_dt = 0.125 if name in ("routes", "round") else 1.0 / 30.0
+        self.wait_for = None        # (phase, ticks left)
+        self.shooting = None        # (stand-in, ticks, shots)
         self.goto = None            # (x, y, ticks, best_dist, best_tick)
         self.route = None           # (name, start_tick, ok)
         self.route_results: list[tuple[str, bool, float]] = []
@@ -186,11 +214,72 @@ class DemoRunner:
         self.goto = (x, y, best, best_tick)
         return True
 
+    def _shoot(self) -> bool:
+        """Aim at the target stand-in's head and tap fire until it dies."""
+        g = self.game
+        a, ticks, shots = self.shooting
+        if not a.alive or shots > 30:
+            if a.alive:
+                g.log(f"[demo]   could not kill {a.name}")
+            self.shooting = None
+            return False
+        head = a.position() + Vec3(0, 0, 1.08 if a.crouch > 0.5 else 1.63)
+        eye = self._eye()
+        d = head - eye
+        g.player.yaw = math.degrees(math.atan2(-d.x, d.y))
+        g.player.pitch = math.degrees(math.atan2(d.z, math.hypot(d.x, d.y)))
+        if ticks % 14 == 6:
+            g.input.press("fire")
+            shots += 1
+        self.shooting = (a, ticks + 1, shots)
+        return True
+
+    def _approach(self, a) -> None:
+        """Teleport to a spot with line of sight 6 m in front of a stand-in."""
+        from engine.physics import MASK_SIGHT
+        g = self.game
+        base = a.position()
+        head = base + Vec3(0, 0, 1.08 if a.crouch > 0.5 else 1.63)
+        fwd = a.forward()
+        h0 = math.degrees(math.atan2(-fwd.x, fwd.y))
+        for k in range(16):
+            ang = math.radians(h0 + (k // 2) * 22.5 * (1 if k % 2 == 0 else -1))
+            for dist in (6.0, 4.0, 8.0, 2.5, 1.6):
+                p = base + Vec3(-math.sin(ang), math.cos(ang), 0) * dist
+                down = g.physics.ray_cast(p + Vec3(0, 0, 1.0), p - Vec3(0, 0, 6.0), MASK_SIGHT)
+                if down is None:
+                    continue
+                feet = down.pos
+                eye = feet + Vec3(0, 0, 1.69)
+                block = g.physics.ray_cast(eye, head, MASK_SIGHT)
+                # the whole hull footprint must be free, or the controller pushes us out of the spot
+                # (cast downward: rays that start inside a box report no hit)
+                clear = all(g.physics.ray_cast(feet + Vec3(ox, oy, 2.2), feet + Vec3(ox, oy, 0.15), MASK_SIGHT) is None
+                            for ox in (-0.45, 0.0, 0.45) for oy in (-0.45, 0.0, 0.45))
+                if block is None and clear:
+                    g.player.set_pose((feet.x, feet.y, eye.z), (0, 0))
+                    g.log(f"[demo]   engaging {a.name} at ({base.x:.1f}, {base.y:.1f}, {base.z:.2f}) "
+                          f"from ({feet.x:.1f}, {feet.y:.1f}, {feet.z:.2f})")
+                    return
+        g.log(f"[demo]   no clear spot near {a.name}")
+
     def tick(self, dt: float) -> None:
         g = self.game
         self.ticks += 1
         if self.goto is not None and self._steer():
             return
+        if self.shooting is not None and self._shoot():
+            return
+        if self.wait_for is not None:
+            phase, left = self.wait_for
+            m = g.director.match
+            if m.phase == phase or left <= 0:
+                if left <= 0:
+                    g.log(f"[demo]   timed out waiting for phase {phase} (now {m.phase})")
+                self.wait_for = None
+            else:
+                self.wait_for = (phase, left - 1)
+                return
         for action in list(self.holds):
             self.holds[action] -= 1
             if self.holds[action] <= 0:
@@ -222,6 +311,10 @@ class DemoRunner:
                 g.input.press(st[1])
                 self.holds[st[1]] = st[2]
                 self.wait = st[2]
+            elif kind == "hold_async":
+                g.input.virtual.add(st[1])
+                g.input.press(st[1])
+                self.holds[st[1]] = st[2]
             elif kind == "press":
                 g.input.press(st[1])
                 self.wait = 1
@@ -247,6 +340,48 @@ class DemoRunner:
                 if not st[1] <= z <= st[2]:
                     g.log(f"[demo]   WRONG HEIGHT z={z:.2f}, expected {st[1] + 0.35:.2f}")
                     self.route = (self.route[0], self.route[1], False)
+            elif kind == "wait_phase":
+                self.wait_for = (st[1], st[2])
+                return
+            elif kind == "buy":
+                from gameplay.shop import find_item
+                d = g.director
+                it = find_item(g.weapon_db, d.rules, d.player_agent.side, st[1])
+                ok, msg = d.shop.buy(d.player_agent, it)
+                g.log(f"[demo]   buy {st[1]}: {msg}")
+            elif kind == "open_buy":
+                g.buy_menu.open()
+            elif kind == "close_buy":
+                g.buy_menu.close()
+            elif kind == "console":
+                g.log(f"[demo]   console> {st[1]}: {g.console.run(st[1])}")
+            elif kind == "shoot_standin":
+                d = g.director
+                enemies = [a for a in d.standins if a.side != d.player_agent.side and a.alive]
+                if enemies:
+                    a = enemies[0]
+                    self._approach(a)
+                    self.shooting = (a, 0, 0)
+                    return
+            elif kind == "teleport":
+                _, x, y, z, h = st
+                g.player.set_pose((x, y, z + 1.69), (h, 0))
+            elif kind == "aim_bomb":
+                b = g.director.bomb.pos
+                eye = self._eye()
+                d = b - eye
+                g.player.yaw = math.degrees(math.atan2(-d.x, d.y))
+                g.player.pitch = math.degrees(math.atan2(d.z, math.hypot(d.x, d.y)))
+            elif kind == "scoreboard":
+                g._scoreboard(st[1])
+            elif kind == "report_match":
+                d = g.director
+                m = d.match
+                a, b = m.scoreline()
+                last = m.history[-1] if m.history else None
+                g.log(f"[demo] --- {st[1]}: phase={m.phase} round={m.round} score A{a}-D{b} "
+                      f"money=${d.player_agent.money} side={d.player_agent.side} bomb={d.bomb.state}"
+                      + (f" last={last.winner_side}/{last.reason}" if last else ""))
             elif kind == "end_route":
                 name, t0, ok = self.route
                 secs = (self.ticks - t0) / 64.0

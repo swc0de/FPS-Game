@@ -42,6 +42,8 @@ class PlayerController:
         self.on_damaged = None                   # callback(DamageResult)
         self.on_step = None                      # callback(StepEvent) -> audio / AI noise
         self.sens_scale = 1.0                    # zoomed scopes slow the mouse down
+        self.move_lock = False                   # freeze time, planting, defusing: look but don't move
+        self.agent = None                        # match participant (gameplay/agents.py)
 
     # ------------------------------------------------------------- spawning
     def spawn(self, pos, heading: float = 0.0) -> None:
@@ -85,6 +87,9 @@ class PlayerController:
             self._jump_buffer = 0.08
         else:
             self._jump_buffer = max(self._jump_buffer - dt, 0.0)
+        if self.move_lock and not self.noclip:
+            wish = Vec3(0, 0, 0)
+            self._jump_buffer = 0.0
 
         if self.noclip:
             self._noclip_move(dt, wish)
