@@ -18,8 +18,8 @@ class DebugHud:
                                  mayChange=True)
         self.help = OnscreenText(
             text="WASD move  SHIFT walk  CTRL crouch  SPACE jump  LMB fire  RMB aim/scope  R reload  "
-                 "1-4/wheel weapons  F use  G drop  Y inspect  V noclip  F1 hud  F12 screenshot",
-            parent=app.a2dTopLeft, pos=(0.04, -0.24), scale=0.034, fg=(0.85, 0.88, 0.85, 0.85),
+                 "1-4/wheel weapons  F use  G drop  Y inspect  V noclip  ESC menu  F1 hud  F3 buffers  F12 screenshot",
+            parent=app.a2dTopLeft, pos=(0.04, -0.29), scale=0.034, fg=(0.85, 0.88, 0.85, 0.85),
             shadow=(0, 0, 0, 0.8), align=TextNode.ALeft)
         self.message = OnscreenText(text="", parent=app.aspect2d, pos=(0, 0.25), scale=0.055,
                                     fg=(1, 1, 1, 1), shadow=(0, 0, 0, 0.9), mayChange=True)
@@ -27,8 +27,17 @@ class DebugHud:
 
     def toggle(self) -> None:
         self.visible = not self.visible
+        self._apply()
+
+    def set_hidden(self, hidden: bool) -> None:
+        """Temporarily hide (menus) without changing the user's choice."""
+        self._hidden = hidden
+        self._apply()
+
+    def _apply(self) -> None:
+        show = self.visible and not getattr(self, "_hidden", False)
         for t in (self.text, self.help):
-            t.show() if self.visible else t.hide()
+            t.show() if show else t.hide()
 
     def flash(self, msg: str, seconds: float = 2.5) -> None:
         self.message.setText(msg)
@@ -55,6 +64,9 @@ class DebugHud:
             f"pos {c.pos.x:7.2f} {c.pos.y:7.2f} {c.pos.z:6.2f}   yaw {p.yaw:6.1f} pitch {p.pitch:5.1f}",
             f"speed {c.horizontal_speed:4.2f} m/s  vz {c.vel.z:5.2f}  {p.state_text}  surface {c.ground_surface}",
         ]
+        post = self.app.renderer.post
+        lines.append(f"render {post.rsize[0]}x{post.rsize[1]} ({post.scale * 100:.0f}%)  AA {post.g['antialiasing']}  "
+                     f"AO {post.ssao_mode}  bloom {'on' if post.bloom_on else 'off'}  F3 view")
         if extra:
             lines.append(extra)
         self.text.setText("\n".join(lines))

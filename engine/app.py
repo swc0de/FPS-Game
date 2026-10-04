@@ -51,7 +51,8 @@ def configure_engine(settings: Settings, args) -> None:
 def main(argv=None) -> int:
     import argparse
     parser = argparse.ArgumentParser(description=f"{GAME_TITLE} - tactical FPS")
-    parser.add_argument("--map", default="test_range", help="map name in maps/data or path to a .json")
+    parser.add_argument("--map", default=None,
+                        help="map name in maps/data (compound, test_range, showroom) or path to a .json")
     parser.add_argument("--preset", choices=["low", "medium", "high", "ultra"], help="graphics preset")
     parser.add_argument("--res", help="resolution, e.g. 1920x1080")
     parser.add_argument("--fullscreen", action="store_true")
@@ -71,8 +72,13 @@ def main(argv=None) -> int:
     parser.add_argument("--trace", action="store_true", help="print player state twice per second (testing)")
     parser.add_argument("--demo", help="run a scripted demo (e.g. 'weapons') that drives the player and "
                                        "saves screenshots to user/screenshots, then exits")
+    parser.add_argument("--post-debug", type=int, default=0,
+                        help="post-processing debug view: 1 AO, 2 bloom, 3 normals, 4 depth (also F3 in game)")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
     args = parser.parse_args(argv)
+    if args.map is None:
+        # the weapon demos are scripted against the shooting range
+        args.map = "test_range" if args.demo in ("weapons", "viewmodels", "impacts", "flash") else "compound"
 
     paths.ensure_dirs()
     settings = Settings.load()

@@ -4,17 +4,24 @@ This document explains every rendering technique used by the game and points
 to the code. The GLSL sources in `render/shaders/` carry the same explanations
 as comments next to the implementation.
 
-Frame overview (Milestones 1-2):
+Frame graph (Milestone 3). Every pass is an off-screen render target whose
+sort order is its execution order; `render/post.py` builds and rebuilds it
+when graphics settings change.
 
 ```
- shadow passes          scene pass (HDR, RGBA16F)               post
- ─────────────          ─────────────────────────               ────
- CSM atlas (4 tiles) ─┐
- local light atlas  ──┼─> PBR forward shader ──> scene_hdr ──> tonemap (ACES) ──> FXAA ──> screen
- sky-visibility 3D  ──┤        + sky dome           ↑             + dither
- IBL (SH + cube)    ──┘        + decals (1 draw)    │
-                               + particles (2 draws)│
-                               viewmodel camera ────┘ (own FOV, depth cleared, same HDR buffer)
+ sort  pass                         target                  notes
+ ----  ---------------------------  ----------------------  ------------------------------------
+ -100  CSM atlas (2-4 cascades)     depth atlas             sun shadows
+  -99  local light shadow atlas     depth atlas             spot / point (6 faces), budgeted
+  -90  depth + normal pre-pass      RGBA8 + depth24         render resolution
+  -89  GTAO                         RGBA16F (1/2 or 1/1)    ambient occlusion
+  -88  AO blur H, -87 AO blur V     RGBA16F                 depth-aware (bilateral)
+  -80  forward PBR scene            RGBA16F (+ MSAA)        world, decals, particles; viewmodel overlay
+  -79  luminance 64x64 -> 16 -> 4 -> 1, adaptation 1x1 (ping-pong)    eye adaptation
+  -74  bloom: 6 downsamples, 5 tent upsamples                          1/2 .. 1/64 resolution
+  -60  tonemap / grading            RGBA8 (render res)      exposure, bloom, vignette, ACES, LGG
+  -59  FXAA                         RGBA8 (render res)
+    0  final (window)               backbuffer              upscale + CAS sharpening, debug views
 ```
 
 ## 1. Physically based materials (`pbr.frag`, `brdf.glsl`, `render/materials.py`)
@@ -132,19 +139,126 @@ Henyey–Greenstein phase term adds forward scattering toward the sun. The
 sky dome blends its horizon into the same fog colour so geometry and sky
 meet without a seam.
 
-## 7. HDR pipeline and post-processing (`render/post.py`, `tonemap.frag`, `fxaa.frag`)
+## 7. HDR pipeline and post-processing (`render/post.py`, `render/shaders/*.frag`)
 
-* The scene renders into an **RGBA16F** target (true HDR values: the sun
-  disc is ~100× brighter than white).
-* **ACES filmic tone mapping** (Hill's fit of the RRT+ODT in ACEScg) with
-  exposure, then the exact sRGB transfer function.
-* **Dithering:** ±½ LSB triangular noise before 8-bit quantisation removes
-  banding in skies and fog.
-* **FXAA** (Lottes 3.11 quality-style): edge detection on luma, edge walk,
-  sub-pixel blend.
+* **Custom render targets.** Panda's `FilterManager` only supports
+  window-sized buffers, so the pipeline creates its own off-screen buffers
+  (`Target` / `QuadPass`). That gives a **render scale** (3D at 50-100% of
+  the window, upscaled in the last pass), an **MSAA** scene buffer
+  (2x/4x/8x, resolved by the driver), and the depth/normal pre-pass.
+  Changing a graphics option rebuilds only what depends on it
+  (`Renderer.apply_graphics`): defines recompile the shaders; shadow
+  options rebuild CSM / the local atlas; post options rebuild the targets.
+* **HDR scene** in **RGBA16F**. The sun disc is about 100x brighter than
+  white; muzzle flashes and lamps are 5-10x.
 
-Milestone 3 adds bloom, SSAO, vignette, colour grading and auto exposure on
-top of this chain, plus an in-game graphics settings menu.
+### Depth + normal pre-pass (`prepass.vert/frag`)
+
+The opaque world is drawn once more before the main pass with a trivial
+shader into a 24-bit depth texture and an RGBA8 world-space normal target.
+A camera mask keeps the sky, particles, decals, text and the viewmodel out
+of it. Screen-space effects that have to exist *before* forward lighting
+read it: GTAO (so AO can darken only ambient light) and soft particles.
+
+### Ambient occlusion: GTAO (`gtao.frag`, `ao_blur.frag`, `ssao.glsl`)
+
+Ground Truth AO (Jimenez et al. 2016, structured like Intel's XeGTAO):
+
+* The hemisphere over each pixel is cut into 2-4 **slices** that contain
+  the view vector. In each slice, 4-8 samples on each side find the highest
+  **horizon angle**, rebuilt from the depth buffer in view space.
+* The cosine-weighted visible arc between the two horizons, clamped to the
+  normal's hemisphere, has a closed form,
+  `a(h) = (cos n + 2 h sin n - cos(2h - n)) / 4`, where `n` is the angle of
+  the normal projected into the slice. Averaging the slices gives the
+  visibility. This is physically based, unlike classic SSAO, which only
+  counts samples.
+* Samples fade out beyond the AO radius (0.9 m) and the whole effect fades
+  out at 55-80 m. Slice and step offsets are rotated per pixel with
+  interleaved gradient noise. A separable 9-tap **bilateral blur**
+  (weights fall off with the relative depth difference) removes the noise
+  without bleeding across silhouettes.
+* Positions are always rebuilt at depth **texel centres** with
+  `texelFetch`. Mixing a pixel's uv with a neighbouring texel's depth,
+  which happens at half resolution, puts points under sloped floors and
+  shows up as stripes of false occlusion.
+* In the forward pass, AO is read with **joint bilateral upsampling**: the
+  four nearest AO texels are weighted by bilinear weight times depth
+  similarity. It darkens **only ambient light** (sky SH, IBL specular),
+  plus a little (35%) of local lamp light for contact shadows. Direct
+  sunlight is never dimmed, because shadow maps already handle it.
+  Quality presets: half resolution with 2x4 or 3x6 samples, or full
+  resolution with 3x6 or 4x8.
+
+### Soft particles (`particle.frag`)
+
+Smoke and dust compare their depth with the pre-pass depth and fade over
+0.6 m where they intersect geometry, so a smoke cloud never shows a hard
+line on the floor or walls. Viewmodel-space particles (the gun's muzzle
+flash) opt out.
+
+### Eye adaptation (`luminance.frag`, `reduce.frag`, `adapt.frag`, `exposure.glsl`)
+
+* A 64x64 pass stores a centre-weighted `log2(luminance)` of the HDR scene
+  (16 bilinear taps per texel). Three 4x4 reductions bring it to 1x1, which
+  holds the weighted **geometric mean**. Bright specks cannot dominate it.
+* A 1x1 **ping-pong** pair (two buffers alternating every frame, so each
+  frame can read the previous result) moves the adapted value toward the
+  target exponentially. Adapting to brightness (about 0.33 s) is faster
+  than adapting to darkness (about 0.9 s), like the eye.
+* Exposure = map base exposure x 2^(strength x (reference - adapted)),
+  clamped to an EV range per map (compound: -1 .. +1.25 EV, strength 0.55).
+  A dark room is brightened, but it still reads as darker than the sunny
+  yard, which matters for gameplay (you can tell where you are). The
+  measured adapted values are logged for every `--shots` camera.
+
+### Bloom (`bloom_down.frag`, `bloom_up.frag`)
+
+Jimenez's Call of Duty: Advanced Warfare scheme (2014):
+
+* **6 downsamples** (1/2 to 1/64) with a 13-tap filter: five overlapping
+  2x2 boxes weighted 0.5 + 4 x 0.125. This avoids the shimmering of a plain
+  box filter on moving highlights.
+* The **first** downsample applies the current exposure and a soft-knee
+  threshold, so only things brighter than display white bloom: lamps,
+  flashes, explosions, sun glints. It also uses the **Karis average**: each
+  box is weighted by 1/(1+luma), which stops single bright pixels from
+  flickering into blobs.
+* **5 upsamples**, each a 3x3 tent filter of the smaller level, mixed with
+  the same-size downsample (`scatter` 0.7). The sum of many blur radii gives
+  a natural, long falloff at a cost of a few taps per pixel.
+
+### Tone mapping and grading (`tonemap.frag`)
+
+All in one pass, in this order:
+
+1. optional chromatic aberration (red and blue sampled apart toward the edges)
+2. exposure
+3. add bloom
+4. vignette (natural lens falloff)
+5. white balance (temperature / tint)
+6. saturation, and contrast around mid-grey in log space
+7. **ACES filmic** tone mapping (Hill's RRT+ODT fit)
+8. linear to sRGB
+9. **lift / gamma / gain** in display space
+10. optional film grain and +/- half-LSB dither
+
+Each map sets its own look (`environment.post` in the map JSON). The
+compound uses slightly warm, slightly desaturated dusty grading with cool
+lifted shadows.
+
+### Anti-aliasing and sharpening (`fxaa.frag`, `final.frag`)
+
+* **MSAA** (2x/4x/8x) smooths geometric edges in the forward pass, which
+  is how CS2 handles it. **FXAA** (Lottes 3.11 quality-style edge walk) also
+  smooths shading and specular aliasing. Both can be combined.
+* The final pass upscales from the render resolution and applies
+  **Contrast Adaptive Sharpening** (after AMD FidelityFX CAS): a 5-tap
+  filter whose strength per pixel depends on local contrast. Flat areas get
+  crisper without halos on edges, which recovers detail lost to FXAA or a
+  lower render scale.
+* **F3** cycles debug views: ambient occlusion, bloom, normals, linear
+  depth.
 
 ## 8. Procedural textures (`render/texture_gen.py`)
 
@@ -258,8 +372,14 @@ dielectric dust layer (lower metalness, higher roughness).
 
 ## Performance notes
 
-* Level geometry is batched per material: about 26 draw calls for the
-  test range's main pass, plus 1 for all decals and 2 for all particles.
+* Level geometry is batched per material: about 33 draw calls for the
+  compound's main pass (93k triangles including the backdrop terrain),
+  plus 1 for all decals and 2 for all particles. The pre-pass repeats the
+  opaque draws with a trivial shader.
+* Post-processing is about 24 full-screen passes. Most are tiny (bloom
+  mips, the 64x64 luminance pyramid). The expensive ones are GTAO (half
+  resolution on Medium/High) and the full-resolution tonemap, FXAA and
+  final passes.
 * The viewmodel has about 20-60 small parts per weapon. Only the equipped
   weapon is shown, and models are built once and cached, so switching
   weapons costs nothing.

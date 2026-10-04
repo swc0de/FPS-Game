@@ -7,7 +7,7 @@ import random
 from dataclasses import dataclass
 
 import numpy as np
-from panda3d.core import NodePath, Point3, Vec3
+from panda3d.core import LVecBase4f, NodePath, Point3, Vec3
 
 from engine.geometry import MeshBuilder
 from engine.physics import MASK_SIGHT
@@ -74,10 +74,11 @@ class Effects:
         self.atlas = P.make_atlas()
         self.alpha = P.ParticleSystem(game.render, self.atlas, 3000, additive=False, sort=20, name="fx_alpha")
         self.add = P.ParticleSystem(game.render, self.atlas, 2500, additive=True, sort=25, name="fx_add")
-        from render.renderer import SHADOW_CAMERA_MASK
+        from render.renderer import NO_DEPTH_PASSES
         for ps in (self.alpha, self.add):
-            ps.np.hide(SHADOW_CAMERA_MASK)
+            ps.np.hide(NO_DEPTH_PASSES)
         self.decals = DecalSystem(game, game.renderer.defines)
+        game.renderer.register_shader_user(self.decals.set_defines)
         self.surfaces = game.ballistics.surfaces if hasattr(game, "ballistics") else {}
         self.temp_lights: list[tuple[LocalLight, float, float, Vec3]] = []
         self.casings = ShellCasings(game)
@@ -90,6 +91,8 @@ class Effects:
         """Muzzle flashes for the viewmodel live in camera space."""
         self.vm_flash = P.ParticleSystem(vm_root, self.atlas, 64, additive=True, sort=30, name="vm_flash")
         self.vm_flash.np.setShaderInput("u_camPos", Vec3(0, 0, 0), 60)
+        # the pre-pass depth belongs to the world camera, not the viewmodel's
+        self.vm_flash.np.setShaderInput("u_softParams", LVecBase4f(1.0, 0.01, 20.0, 0.0), 60)
 
     def light_pulse(self, pos, color, intensity: float, rng: float, duration: float) -> None:
         light = LocalLight(pos=Point3(*pos), color=Vec3(*color) * intensity, range=rng, shadows=False)
@@ -242,7 +245,7 @@ class Effects:
         for c in self.smokes:
             c.age += dt
             # emit puffs during the first ~2 s, sized so the cloud fills the radius
-            target = int(min(c.age / 2.0, 1.0) * 70)
+            target = int(min(c.age / 2.0, 1.0) * 96)
             new = target - c.emitted
             if new > 0:
                 remaining = max(c.duration - c.age, 1.0)
@@ -255,10 +258,12 @@ class Effects:
                     pos.append((c.pos.x + math.cos(th) * rr * 0.3, c.pos.y + math.sin(th) * rr * 0.3, c.pos.z + 0.2))
                     vel.append((math.cos(th) * rr * 0.9, math.sin(th) * rr * 0.9, h * 0.9))
                 life = np.random.uniform(remaining - 1.5, remaining + 1.0, new).clip(2.0, None)
-                self.alpha.emit(new, pos, vel, life, np.random.uniform(0.8, 1.2, new),
-                                np.random.uniform(2.4, 3.2, new), (0.78, 0.78, 0.76, 0.92), (0.82, 0.82, 0.8, 0.0),
+                # dense for most of the smoke's life, fading only near the end
+                self.alpha.emit(new, pos, vel, life, np.random.uniform(0.9, 1.3, new),
+                                np.random.uniform(2.6, 3.6, new), (0.78, 0.78, 0.76, 0.95), (0.82, 0.82, 0.8, 0.0),
                                 rotv=np.random.uniform(-0.15, 0.15, new), drag=1.3, grav=0.0,
-                                frame=np.random.choice([P.F_SMOKE1, P.F_SMOKE2, P.F_SMOKE3], new), lit=1.0)
+                                frame=np.random.choice([P.F_SMOKE1, P.F_SMOKE2, P.F_SMOKE3], new), lit=1.0,
+                                hold=0.78, fade_in=0.06)
                 c.emitted = target
             if c.age < c.duration:
                 keep.append(c)

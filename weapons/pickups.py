@@ -87,8 +87,8 @@ class Pickup:
             lab.setBillboardPointEye()
             lab.setShaderOff(10)
             lab.setLightOff(10)
-            from render.renderer import SHADOW_CAMERA_MASK
-            lab.hide(SHADOW_CAMERA_MASK)
+            from render.renderer import NO_DEPTH_PASSES
+            lab.hide(NO_DEPTH_PASSES)
             self.label_np = lab
         else:
             self.label_np = None

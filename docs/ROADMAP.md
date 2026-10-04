@@ -4,32 +4,97 @@
 |---|---|---|
 | 1 | Player controller, movement, test level with PBR + shadows | **done** |
 | 2 | Weapons, recoil, hit detection, impact effects | **done** |
-| 3 | Full map, post-processing pipeline, graphics settings | next |
-| 4 | Rounds, economy, buy menu, bomb objective | |
+| 3 | Full map, post-processing pipeline, graphics settings | **done** |
+| 4 | Rounds, economy, buy menu, bomb objective | next |
 | 5 | AI bots | |
 | 6 | Destructible walls, lean, gadgets, specialists | |
 | 7 | HUD polish, audio, menus, performance pass | |
 
-## Milestone 1 - delivered
+## Milestone 3 - delivered
 
-* Fixed-timestep simulation (64 Hz) with interpolated rendering.
-* Kinematic character controller on Bullet convex sweeps: collide-and-slide,
-  stairs, slopes, ledges, crouch with headroom check, crouch-jump, depenetration,
-  Source-style friction and acceleration, landing slowdown, footstep events with
-  per-surface type and loudness (bots will "hear" these in Milestone 5).
-* Data-driven movement tuning (`data/movement.json`).
-* Custom PBR forward renderer: GGX/Smith/Schlick BRDF, normal maps, parallax occlusion,
-  specular AA, AO micro-shadowing.
-* Sun: 2-4 stabilised cascaded shadow maps in one atlas, Vogel-disk PCF soft shadows.
-* Shadow-casting point lights (6 faces) and spot lights in a budgeted shadow atlas.
-* IBL from an HDRI or a procedural sky: SH9 diffuse and a GGX-prefiltered specular cube map.
-  The sun direction is extracted from the HDRI.
-* Baked sky-visibility volume so interiors are not lit by the sky.
-* Exponential height fog, HDR RGBA16F target, ACES tone mapping, dithering, FXAA.
-* 26 materials: CC0 downloader (Poly Haven, ambientCG) with procedural fallback textures.
-* Modular JSON level format with prefabs, plus the "Range 07" test level.
-* Graphics presets Low/Medium/High/Ultra (`data/graphics_presets.json`), CLI overrides,
-  settings persisted to `user/settings.json`.
+* **Kestrel Compound** (`maps/data/compound.json`, now the default map), a
+  5v5 bomb-defusal layout built from modular prefabs:
+  * Attackers start outside the south wall and enter through three gates:
+    * **West gate:** A Long alley or the **Barracks** (corridor and bunk
+      rooms) into the **West Yard**.
+    * **Main gate:** a checkpoint chicane into **Mid** (parade ground,
+      containers, flagpole post). From Mid, connectors lead to A and B,
+      and **Mid Doors** lead to CT spawn.
+    * **East gate:** **B Long** road, or down the ramp into the **Bunker**
+      and through a 16 m **tunnel** that comes up by stairs in the **B Yard**.
+  * **Site A** is the **Armory**: a concrete-block warehouse with a loading
+    door, an office, shelving aisles and an outdoor loading apron.
+  * **Site B** is the **Motor Pool**: an open steel hangar with trucks,
+    workbenches and a yard.
+  * Defenders spawn in front of the **HQ**, which they can also cut through
+    to rotate between sites. The **comms tower** has a 4.5 m platform
+    overlooking A and CT. A **fuel depot** sits on the B side.
+  * Bomb-site zones, 23 callout areas (shown bottom-left on the HUD), and
+    5 attacker and 5 defender spawns.
+  * 11 walking **test routes** (`python main.py --demo routes`) prove every
+    lane is passable. Attackers reach a site in about 20-27 s; defenders
+    reach either site in about 7-8 s, like CS.
+  * New prefabs (`maps/prefabs_military.py`):
+    * building shells with door and window openings, parapets and
+      two-material walls
+    * T-walls, jersey barriers, gabions and a checkpoint boom gate
+    * procedural trucks and utility vehicles
+    * a hangar canopy and a lattice comms mast
+    * furniture: bunks, lockers, shelving, desks, workbenches, fuel tanks
+    * a height-field **backdrop terrain** of hills beyond the perimeter
+    * bomb-site zones, callouts and paint lines
+  * 17 new procedural PBR materials, each with Poly Haven / ambientCG
+    download candidates.
+* **Post-processing pipeline** (`render/post.py`; details in
+  [RENDERING.md](RENDERING.md)), with custom render targets in place of
+  FilterManager:
+  * depth/normal pre-pass
+  * **GTAO** ambient occlusion with a bilateral blur, applied to ambient
+    light only
+  * soft particles
+  * **bloom** (13-tap / tent chain with a Karis-average prefilter)
+  * **eye adaptation** (log-luminance pyramid, ping-pong adaptation)
+  * ACES with white balance, saturation, contrast, lift/gamma/gain and
+    vignette, plus optional chromatic aberration and film grain
+  * **FXAA and/or MSAA 2x/4x/8x**
+  * render scale 50-100% with **CAS** sharpening
+  * **F3** debug views
+* **Pause menu (ESC) and settings screen** with Graphics, Display, Gameplay
+  and Audio tabs:
+  * Presets, plus every graphics option individually.
+  * Changes **apply live**: only the affected part of the renderer is
+    rebuilt. Settings are saved to `user/settings.json`. Only texture
+    quality and V-Sync need a restart.
+  * Display options: resolution, display mode, FPS limit, FOV with the
+    horizontal equivalent shown, weapon FOV and brightness.
+  * Gameplay options: mouse and zoom sensitivity, invert mouse, and a
+    crosshair editor. Audio: volumes.
+* Fixed a frame-order bug: shadow maps now render before the scene in the
+  same frame (before, they lagged one frame behind).
+* 65 unit tests. New ones cover the graphics settings normalisation, map
+  integrity (known prefabs and materials, both sites, spawns, no
+  overlapping floor slabs) and the settings menu model.
+
+### Milestone 3 decisions to confirm
+
+1. **Anti-aliasing: MSAA + FXAA instead of SMAA.** In a forward renderer,
+   MSAA is the natural high-quality option (CS2 uses it), and FXAA already
+   covers the cheap post-process case. SMAA needs precomputed area and
+   search textures plus three more passes, for a result between the two.
+   I can still add SMAA 1x if you want it.
+2. **Eye adaptation is partial and clamped** (55% strength, -1..+1.25 EV),
+   so interiors are brighter than without it but still darker than
+   outside. Siege adapts more strongly; CS2 adapts less. You can turn it
+   off in the settings.
+3. **Map name and layout.** I designed the layout CS-style: three lanes,
+   sites near the defender spawn, an underground tunnel as the Siege-like
+   flank. Interior partition walls are plaster and plywood. They are
+   already bullet-penetrable, and they will become destructible soft walls
+   in Milestone 6.
+4. **Default map** is now the compound. The test range is still there:
+   `--map test_range`. The weapon demos select it automatically.
+5. **ESC pauses the game** (single player against bots). Online play would
+   not pause; that can change if multiplayer is ever added.
 
 ## Milestone 2 - delivered
 
@@ -141,6 +206,27 @@
    low-poly models. They are readable but not detailed. They can be swapped
    for real CC0 or authored meshes later (glTF/egg) without code changes,
    because anchors and animated groups are just named nodes.
+
+## Milestone 1 - delivered
+
+* Fixed-timestep simulation (64 Hz) with interpolated rendering.
+* Kinematic character controller on Bullet convex sweeps: collide-and-slide,
+  stairs, slopes, ledges, crouch with headroom check, crouch-jump, depenetration,
+  Source-style friction and acceleration, landing slowdown, footstep events with
+  per-surface type and loudness (bots will "hear" these in Milestone 5).
+* Data-driven movement tuning (`data/movement.json`).
+* Custom PBR forward renderer: GGX/Smith/Schlick BRDF, normal maps, parallax occlusion,
+  specular AA, AO micro-shadowing.
+* Sun: 2-4 stabilised cascaded shadow maps in one atlas, Vogel-disk PCF soft shadows.
+* Shadow-casting point lights (6 faces) and spot lights in a budgeted shadow atlas.
+* IBL from an HDRI or a procedural sky: SH9 diffuse and a GGX-prefiltered specular cube map.
+  The sun direction is extracted from the HDRI.
+* Baked sky-visibility volume so interiors are not lit by the sky.
+* Exponential height fog, HDR RGBA16F target, ACES tone mapping, dithering, FXAA.
+* 26 materials: CC0 downloader (Poly Haven, ambientCG) with procedural fallback textures.
+* Modular JSON level format with prefabs, plus the "Range 07" test level.
+* Graphics presets Low/Medium/High/Ultra (`data/graphics_presets.json`), CLI overrides,
+  settings persisted to `user/settings.json`.
 
 ## Milestone 1 design decisions
 

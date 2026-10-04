@@ -96,11 +96,14 @@ class Sky:
         self.dome.setLightOff(1)
         self.dome.hide(shadow_mask)
         self.dome.setTransparency(TransparencyAttrib.MNone)
-        self.dome.setShader(shader_loader.load("sky.vert", "sky.frag", defines), 10)
+        self.set_defines(defines)
         self.dome.setShaderInput("u_skyTex", self.sky_tex)
         self.dome.setShaderInput("u_skyParams", LVecBase4f(
             float(env.get("sky_intensity", 1.0)), math.radians(float(env.get("sun_disc_deg", 0.6))),
             float(env.get("sun_disc_intensity", 120.0)), float(env.get("horizon_fog", 1.0))))
+
+    def set_defines(self, defines: dict) -> None:
+        self.dome.setShader(shader_loader.load("sky.vert", "sky.frag", defines), 10)
 
     def apply_inputs(self, np_: NodePath) -> None:
         e = self.env

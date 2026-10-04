@@ -54,8 +54,8 @@ class TargetDummy:
         np_.setShaderOff(10)
         np_.setLightOff(10)
         np_.setDepthOffset(1)
-        from render.renderer import SHADOW_CAMERA_MASK
-        np_.hide(SHADOW_CAMERA_MASK)
+        from render.renderer import NO_DEPTH_PASSES
+        np_.hide(NO_DEPTH_PASSES)
         return np_
 
     def center_of_mass(self) -> Point3:

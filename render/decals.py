@@ -219,10 +219,7 @@ class DecalSystem:
         node.setBounds(OmniBoundingVolume())
         node.setFinal(True)
         self.np = base.render.attachNewNode(node)
-        d = dict(defines)
-        d["DECAL"] = True
-        d["PARALLAX"] = False
-        self.np.setShader(shader_loader.load("pbr.vert", "pbr.frag", d), 40)
+        self.set_defines(defines)
         alb, nrm, orm = make_atlases()
         self.np.setShaderInput("u_albedo", alb)
         self.np.setShaderInput("u_normalMap", nrm)
@@ -232,8 +229,15 @@ class DecalSystem:
         self.np.setDepthWrite(False)
         self.np.setDepthOffset(2)
         self.np.setBin("fixed", 5)
-        from render.renderer import SHADOW_CAMERA_MASK
-        self.np.hide(SHADOW_CAMERA_MASK)
+        from render.renderer import NO_DEPTH_PASSES
+        self.np.hide(NO_DEPTH_PASSES)
+
+    def set_defines(self, defines: dict) -> None:
+        """(Re)compile the decal variant of the PBR shader for these quality defines."""
+        d = dict(defines)
+        d["DECAL"] = True
+        d["PARALLAX"] = False
+        self.np.setShader(shader_loader.load("pbr.vert", "pbr.frag", d), 40)
 
     def add(self, pos, normal, style: str, size: float | None = None, rotation: float | None = None) -> None:
         if style not in STYLES:

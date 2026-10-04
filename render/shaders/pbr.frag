@@ -10,7 +10,8 @@
 //   4. sun light with cascaded soft shadows,
 //   5. local point/spot lights with atlas shadows,
 //   6. image based ambient light (SH diffuse + prefiltered specular),
-//      occluded by the baked sky-visibility volume,
+//      occluded by the baked sky-visibility volume and by screen-space
+//      ambient occlusion (GTAO, computed from the depth/normal pre-pass),
 //   7. height fog. Output is linear HDR; tone mapping happens in post.
 
 #include "common.glsl"
@@ -19,6 +20,7 @@
 #include "lights.glsl"
 #include "ibl.glsl"
 #include "fog.glsl"
+#include "ssao.glsl"
 
 uniform sampler2D u_albedo;
 uniform sampler2D u_normalMap;
@@ -126,11 +128,17 @@ void main() {
         color += shadeDirect(s, u_sunDir, u_sunColor * sh * micro);
     }
 
-    // --- local lights
+    float ssao = screenSpaceAO();
+
+    // --- local lights (a little AO adds contact darkening under lamps)
+#ifdef SSAO
+    color += shadeLocalLights(s, pixel) * mix(1.0, ssao, u_ssaoParams.w);
+#else
     color += shadeLocalLights(s, pixel);
+#endif
 
     // --- ambient / IBL
-    color += ambientLighting(s, Ng, ao);
+    color += ambientLighting(s, Ng, ao * ssao);
 
     // --- emission
     color += u_emission.rgb;

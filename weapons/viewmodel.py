@@ -25,9 +25,9 @@ from __future__ import annotations
 import math
 import random
 
-from panda3d.core import Camera, PerspectiveLens, Point2, Point3, Vec3
+from panda3d.core import Camera, LVecBase4f, PerspectiveLens, Point2, Point3, Vec3
 
-from render.renderer import MAIN_CAMERA_MASK, SHADOW_CAMERA_MASK, VIEWMODEL_CAMERA_MASK
+from render.renderer import MAIN_CAMERA_MASK, NO_DEPTH_PASSES, VIEWMODEL_CAMERA_MASK
 from weapons import anim_data
 from weapons.models import build_arm, build_weapon_model
 
@@ -80,18 +80,16 @@ class Viewmodel:
         cam = Camera("viewmodel_cam", lens)
         cam.setCameraMask(VIEWMODEL_CAMERA_MASK)
         self.cam_np = game.camera.attachNewNode(cam)
-        buffer = game.renderer.post.manager.buffers[0]
-        dr = buffer.makeDisplayRegion()
-        dr.setSort(10)
-        dr.setClearDepthActive(True)
-        dr.setClearDepth(1.0)
-        dr.setCamera(self.cam_np)
-        self.region = dr
+        # drawn into the HDR scene buffer after the world, with a depth clear
+        game.renderer.add_scene_overlay(self.cam_np, 10)
         # the viewmodel camera sees nothing but the viewmodel
         game.render.hide(VIEWMODEL_CAMERA_MASK)
         self.root = game.camera.attachNewNode("viewmodel")
         self.root.showThrough(VIEWMODEL_CAMERA_MASK)
-        self.root.hide(MAIN_CAMERA_MASK | SHADOW_CAMERA_MASK)
+        self.root.hide(MAIN_CAMERA_MASK | NO_DEPTH_PASSES)
+        # screen-space AO comes from the world's pre-pass; it would put the
+        # occlusion of whatever is behind the gun onto the gun itself
+        self.root.setShaderInput("u_ssaoParams", LVecBase4f(0, 0, 0, 0), 60)
         self.pivot = self.root.attachNewNode("pivot")
         self.entries: dict[str, VMEntry] = {}
         self.current: VMEntry | None = None

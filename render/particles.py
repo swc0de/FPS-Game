@@ -168,6 +168,8 @@ class ParticleSystem:
         self.stretch = np.zeros(capacity, f32)
         self.frame = np.zeros(capacity, f32)
         self.lit = np.zeros(capacity, f32)
+        self.hold = np.zeros(capacity, f32)      # alpha stays at col0 until this fraction of life
+        self.fade_in = np.zeros(capacity, f32)   # alpha ramps up over this fraction of life
 
         self.vdata = GeomVertexData(name, particle_format(), Geom.UHDynamic)
         self.vdata.uncleanSetNumRows(capacity * 4)
@@ -200,7 +202,7 @@ class ParticleSystem:
 
     # ---------------------------------------------------------------- emit
     def emit(self, count: int, pos, vel, life, size0, size1, col0, col1=None, rot=None, rotv=0.0, drag=0.0,
-             grav=0.0, stretch=0.0, frame=F_SOFT, lit=0.0) -> None:
+             grav=0.0, stretch=0.0, frame=F_SOFT, lit=0.0, hold=0.0, fade_in=0.0) -> None:
         count = int(min(count, self.capacity - self.n))
         if count <= 0:
             return
@@ -224,6 +226,8 @@ class ParticleSystem:
         self.stretch[s] = arr(stretch, (count,))
         self.frame[s] = arr(frame, (count,))
         self.lit[s] = arr(lit, (count,))
+        self.hold[s] = arr(hold, (count,))
+        self.fade_in[s] = arr(fade_in, (count,))
         self.n += count
 
     # -------------------------------------------------------------- update
@@ -259,7 +263,8 @@ class ParticleSystem:
 
     def _arrays(self):
         return (self.pos, self.vel, self.age, self.life, self.size0, self.size1, self.col0, self.col1,
-                self.rot, self.rotv, self.drag, self.grav, self.stretch, self.frame, self.lit)
+                self.rot, self.rotv, self.drag, self.grav, self.stretch, self.frame, self.lit, self.hold,
+                self.fade_in)
 
     def _write(self, n: int, order=None) -> None:
         if n != self._rows:
@@ -275,6 +280,16 @@ class ParticleSystem:
         t = (self.age[idx] / self.life[idx])[:, None]
         size = self.size0[idx] + (self.size1[idx] - self.size0[idx]) * t[:, 0]
         col = self.col0[idx] + (self.col1[idx] - self.col0[idx]) * t
+        hold = self.hold[idx]
+        fade_in = self.fade_in[idx]
+        if hold.any() or fade_in.any():
+            # alpha curve: optional fade-in, then hold at col0 before fading to col1
+            tt = t[:, 0]
+            h = np.where(hold > 0, np.clip((tt - hold) / np.maximum(1.0 - hold, 1e-3), 0.0, 1.0), tt)
+            h = np.where(hold > 0, h * h * (3 - 2 * h), h)
+            a = self.col0[idx, 3] + (self.col1[idx, 3] - self.col0[idx, 3]) * h
+            a *= np.where(fade_in > 0, np.clip(tt / np.maximum(fade_in, 1e-3), 0.0, 1.0), 1.0)
+            col[:, 3] = a
         v = self._verts
         rows = n * 4
         v[:rows, 0:3] = np.repeat(self.pos[idx], 4, axis=0)

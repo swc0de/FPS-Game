@@ -55,6 +55,9 @@ class HUD:
                                    shadow=(0, 0, 0, 0.8), mayChange=True)
         self.message = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.3), scale=0.05, fg=WHITE,
                                     shadow=(0, 0, 0, 0.9), mayChange=True)
+        # map location (callout areas) and bomb-site indicator, bottom left
+        self.location = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.2), scale=0.042, fg=AMBER,
+                                     shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
         self._msg_t = 0.0
         self.crosshair = Crosshair(game, game.settings.data["gameplay"]["crosshair"])
 
@@ -152,7 +155,7 @@ class HUD:
 
     def set_visible(self, v: bool) -> None:
         self.visible = v
-        for w in (self.health, self.armor, self.ammo, self.reserve, self.weapon, self.status):
+        for w in (self.health, self.armor, self.ammo, self.reserve, self.weapon, self.status, self.location):
             w.show() if v else w.hide()
         self.crosshair.set_visible(v and not self.scoped)
 
@@ -169,6 +172,10 @@ class HUD:
         self.health.setText(f"+ {int(math.ceil(p.health))}")
         self.health.setFg((1, 0.35, 0.3, 1) if p.health <= 25 else WHITE)
         self.armor.setText((f"[A] {int(p.armor)}" + ("  [H]" if p.helmet else "")) if p.armor > 0 else "")
+        c = g.player.char.pos
+        loc = g.level.callout_at(c.x, c.y)
+        site = g.level.zone_at((c.x, c.y, c.z))
+        self.location.setText(loc + (f"   [bomb site {site['name']}]" if site else ""))
         w = g.weapons
         mag, res = w.ammo_text()
         self.ammo.setText(mag)

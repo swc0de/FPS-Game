@@ -38,7 +38,7 @@ from panda3d.core import (
 )
 
 
-def make_depth_buffer(base, name: str, width: int, height: int, sort: int = -20):
+def make_depth_buffer(base, name: str, width: int, height: int, sort: int = -100):
     """Off-screen depth-only buffer whose depth attachment is a shadow texture."""
     fbp = FrameBufferProperties()
     fbp.setDepthBits(24)
@@ -119,6 +119,12 @@ class CascadedShadows:
         self.sun_dir = Vec3(0.4, -0.5, 0.75).normalized()
         self._light_quat = Quat()
         self._compute_light_rotation()
+
+    def destroy(self) -> None:
+        for cam in self.cams:
+            cam.removeNode()
+        self.cams = []
+        self.base.graphicsEngine.removeWindow(self.buffer)
 
     # ------------------------------------------------------------------
     def set_sun(self, direction: Vec3) -> None:

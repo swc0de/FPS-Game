@@ -107,7 +107,7 @@ class LightManager:
         self._rr = 0
         if self.shadows_enabled:
             self.buffer, self.atlas = make_depth_buffer(base, "local_shadow_atlas", self.atlas_size,
-                                                        self.atlas_size, sort=-19)
+                                                        self.atlas_size, sort=-99)
         else:
             self.atlas = Texture("no_local_shadows")
             self.atlas.setup2dTexture(1, 1, Texture.T_float, Texture.F_depth_component)
@@ -127,6 +127,16 @@ class LightManager:
         # Panda stores RGBA RAM images as BGRA
         bgra = arr[..., [2, 1, 0, 3]]
         tex.setRamImage(np.ascontiguousarray(bgra, dtype=np.float32).tobytes())
+
+    def destroy(self) -> None:
+        for cam in self.tile_cams:
+            cam.removeNode()
+        self.tile_cams = []
+        self.tile_regions = []
+        self._active_regions = []
+        if self.buffer is not None:
+            self.base.graphicsEngine.removeWindow(self.buffer)
+            self.buffer = None
 
     # -------------------------------------------------------------- setup
     def add(self, light: LocalLight) -> LocalLight:

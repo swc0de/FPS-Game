@@ -40,6 +40,8 @@ class LevelContext:
         self.spawns: list[dict] = []
         self.fixtures: list[tuple] = []      # (center, size, emission rgb)
         self.props: list[tuple[str, dict]] = []  # game objects created after geometry
+        self.zones: list[dict] = []          # bomb sites etc. {"name", "kind", "min", "max"}
+        self.callouts: list[dict] = []       # named areas (radio callouts, bot navigation)
         self._stack = [((0.0, 0.0, 0.0), 0.0)]
 
     # ---------------------------------------------------------- transforms
@@ -94,9 +96,10 @@ class LevelContext:
         b, r = self._xf(base, (heading, 0, 0))
         self.builder(mat).add_wedge(b, width, length, height, r[0], uv_scale=self.uv_scale(mat))
 
-    def cylinder(self, center, radius, height, mat, segments=20, caps=True):
-        c, _ = self._xf(center)
-        self.builder(mat).add_cylinder(c, radius, height, segments=segments, uv_scale=self.uv_scale(mat), caps=caps)
+    def cylinder(self, center, radius, height, mat, segments=20, caps=True, hpr=(0, 0, 0)):
+        c, r = self._xf(center, hpr)
+        self.builder(mat).add_cylinder(c, radius, height, segments=segments, uv_scale=self.uv_scale(mat), caps=caps,
+                                       hpr=r)
 
     def sphere(self, center, radius, mat):
         c, _ = self._xf(center)
@@ -159,6 +162,8 @@ class Level:
         self.name = self.data.get("name", self.path.stem)
         self.root = app.render.attachNewNode(f"level:{self.name}")
         self.spawns: list[dict] = []
+        self.zones: list[dict] = []
+        self.callouts: list[dict] = []
         self.camera_shots = self.data.get("camera_shots", [])
         self.lights: list[LocalLight] = []
         self.props: list[tuple[str, dict]] = []
@@ -190,12 +195,14 @@ class Level:
             self._add_light(e)
         self.renderer.lights.finalize()
         self.spawns = ctx.spawns
+        self.zones = ctx.zones
+        self.callouts = ctx.callouts
         self.props = ctx.props
         for kind, e in ctx.props:
             if kind == "weapon_model":
                 self._weapon_model(e)
         self.log(f"[level] {self.name}: {len(ctx.builders)} material batches, {tris} triangles, "
-                 f"{len(ctx.colliders)} colliders, {len(self.lights)} lights "
+                 f"{len(ctx.colliders)} colliders, {len(self.lights)} lights, {len(self.zones)} zones "
                  f"(textures: {self.materials.summary()}) in {time.time() - t0:.1f}s")
 
         # sky visibility bake
@@ -250,6 +257,23 @@ class Level:
         m.root.setPos(*e["pos"])
         m.root.setHpr(e.get("heading", 0.0), *e.get("pr", (0.0, 0.0)))
         m.root.setScale(e.get("scale", 1.0))
+
+    def callout_at(self, x: float, y: float) -> str:
+        """Name of the smallest callout area containing (x, y), or ''."""
+        best, best_area = "", float("inf")
+        for c in self.callouts:
+            (x0, y0), (x1, y1) = c["min"][:2], c["max"][:2]
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                area = (x1 - x0) * (y1 - y0)
+                if area < best_area:
+                    best, best_area = c["name"], area
+        return best
+
+    def zone_at(self, pos, kind: str = "bombsite") -> dict | None:
+        for z in self.zones:
+            if z["kind"] == kind and all(z["min"][i] <= pos[i] <= z["max"][i] for i in range(3)):
+                return z
+        return None
 
     def spawn_point(self, team: str | None = None) -> dict:
         for s in self.spawns:

@@ -7,7 +7,7 @@ import time
 
 from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import ClockObject, Filename, Point3
+from panda3d.core import ClockObject, Filename, Point3, WindowProperties
 
 from audio.system import AudioSystem
 from engine import paths
@@ -23,6 +23,7 @@ from render.materials import MaterialLibrary
 from render.renderer import Renderer
 from ui.debug_hud import DebugHud
 from ui.hud import HUD
+from ui.menus import PauseMenu
 from weapons.ballistics import Ballistics
 from weapons.defs import database
 from weapons.pickups import PickupManager
@@ -84,19 +85,27 @@ class Game(ShowBase):
         self.weapons = PlayerWeapons(self)
         self.player.speed_scale = self.weapons.speed_scale
         self._spawn_props()
+        self.paused = False
+        self.menu = PauseMenu(self)
+        self.renderer.post.set_brightness(float(settings.video.get("brightness", 0.0)))
+        if not settings.video.get("show_fps", True):
+            self.debug_hud.toggle()
         self._loading.destroy()
         self.log(f"[game] ready in {time.time() - t0:.1f}s - "
                  f"{self.win.getGsg().getDriverRenderer()} / GL {self.win.getGsg().getDriverVersion()}")
 
-        self.accept("escape", self.toggle_capture)
+        self.accept("escape", self._on_escape)
         self.accept("mouse1", self._click_capture)
         self.accept("f1", self.debug_hud.toggle)
         self.accept("f12", self.screenshot)
+        self.accept("f3", self.cycle_post_debug)
         self.accept("v", self.toggle_noclip)
         self.accept("window-event", self._on_window_event)
         self.taskMgr.add(self._update, "game-update", sort=-10)
 
         self._frame = 0
+        if getattr(args, "post_debug", 0):
+            self.renderer.post.set_debug_view(args.post_debug)
         self._shot_queue = []
         self.demo = None
         if args.shots:
@@ -137,7 +146,7 @@ class Game(ShowBase):
 
     def _make_sign(self, e: dict) -> None:
         from panda3d.core import TextNode
-        from render.renderer import SHADOW_CAMERA_MASK
+        from render.renderer import NO_DEPTH_PASSES
         tn = TextNode("sign")
         tn.setText(e["text"])
         tn.setAlign(TextNode.ACenter)
@@ -150,7 +159,7 @@ class Game(ShowBase):
         np_.setShaderOff(10)
         np_.setLightOff(10)
         np_.setTwoSided(True)
-        np_.hide(SHADOW_CAMERA_MASK)
+        np_.hide(NO_DEPTH_PASSES)
 
     # -------------------------------------------------------- game services
     def log(self, msg: str) -> None:
@@ -199,17 +208,70 @@ class Game(ShowBase):
         if abs(zoom - self.zoom) > 1e-4:
             self.zoom = zoom
             self.apply_fov()
-        self.player.sens_scale = zoom
+        zs = float(self.settings.input.get("zoom_sensitivity", 1.0)) if zoom < 0.999 else 1.0
+        self.player.sens_scale = zoom * zs
 
     def _on_window_event(self, win) -> None:
         self.windowEvent(win)
         if win == self.win:
             self.apply_fov()
+            self.renderer.on_window_resized()
             if hasattr(self, "hud"):
                 self.hud.on_resize()
             props = win.getProperties()
             if props.getForeground() is False and self.input.captured:
-                self.input.set_captured(False)
+                if hasattr(self, "menu") and not self._shot_queue and self.demo is None:
+                    if not self.menu.is_open:
+                        self.menu.open()
+                else:
+                    self.input.set_captured(False)
+
+    def _on_escape(self) -> None:
+        if self._shot_queue or self.demo is not None:
+            return
+        self.menu.on_escape()
+
+    def set_paused(self, paused: bool) -> None:
+        """Pause menu: the simulation stops and the mouse is released."""
+        self.paused = paused
+        self.input.set_captured(not paused)
+        self.input.clear_presses()
+        self.hud.set_visible(not paused)
+        self.debug_hud.set_hidden(paused)
+        if not paused:
+            self.renderer.post.reset_adaptation()
+
+    def apply_settings(self, data: dict) -> None:
+        """Apply a full settings tree from the settings menu and save it."""
+        import copy
+        old_video = dict(self.settings.video)
+        self.settings.data = copy.deepcopy(data)
+        self.settings.save()
+        restart = self.renderer.apply_graphics(self.settings.graphics, self.materials)
+        self.graphics = self.settings.graphics
+        v = self.settings.video
+        if v["resolution"] != old_video.get("resolution") or v.get("fullscreen") != old_video.get("fullscreen"):
+            props = WindowProperties()
+            props.setSize(int(v["resolution"][0]), int(v["resolution"][1]))
+            props.setFullscreen(bool(v.get("fullscreen")))
+            self.win.requestProperties(props)
+        clock = ClockObject.getGlobalClock()
+        if v.get("max_fps"):
+            clock.setMode(ClockObject.MLimited)
+            clock.setFrameRate(float(v["max_fps"]))
+        else:
+            clock.setMode(ClockObject.MNormal)
+        self.apply_fov()
+        self.weapons.vm.base_fov = float(v.get("viewmodel_fov", 54.0))
+        self.renderer.post.set_brightness(float(v.get("brightness", 0.0)))
+        if bool(v.get("show_fps", True)) != self.debug_hud.visible:
+            self.debug_hud.toggle()
+        self.audio.settings = self.settings.audio
+        self.audio.set_volume(float(self.settings.audio.get("master", 0.8)))
+        self.hud.crosshair.cfg = self.settings.data["gameplay"]["crosshair"]
+        self.hud.crosshair.rebuild()
+        self.log(f"[settings] applied (preset {v['preset']}, overrides {sorted(self.settings.data.get('graphics', {}))})"
+                 + (f"; restart needed for {restart}" if restart else ""))
 
     def toggle_capture(self) -> None:
         self.input.set_captured(not self.input.captured)
@@ -217,9 +279,19 @@ class Game(ShowBase):
             self.hud.flash_msg("mouse released - click to play")
 
     def _click_capture(self) -> None:
+        if self.paused:
+            return
         if not self.input.captured and not self._shot_queue and self.demo is None:
             self.input.set_captured(True)
             self.input.consume("fire")
+
+    POST_DEBUG_VIEWS = ("final image", "ambient occlusion", "bloom", "normals", "depth")
+
+    def cycle_post_debug(self) -> None:
+        post = self.renderer.post
+        mode = (post.debug_view + 1) % len(self.POST_DEBUG_VIEWS)
+        post.set_debug_view(mode)
+        self.hud.flash_msg(f"view: {self.POST_DEBUG_VIEWS[mode]}", 1.5)
 
     def toggle_noclip(self) -> None:
         if not self.input.captured:
@@ -253,7 +325,9 @@ class Game(ShowBase):
         shot = self._shot_queue[0]
         self.player.set_pose(shot["pos"], shot["hpr"])
         self.weapons.force_hide_vm = not shot.get("viewmodel", False)
-        # local shadow maps update on a budget; give them a few frames
+        # eye adaptation jumps straight to the new view; local shadow maps
+        # update on a budget, so give them a few frames
+        self.renderer.post.reset_adaptation()
         self._shot_wait = 6
 
     def _process_shots(self) -> None:
@@ -262,6 +336,10 @@ class Game(ShowBase):
             return
         shot = self._shot_queue.pop(0)
         preset = self.settings.video["preset"]
+        lum = self.renderer.post.adapted_luminance()
+        if lum is not None:
+            self.log(f"[post] {shot['name']}: adapted log2 luminance {lum:+.2f}, "
+                     f"auto exposure {self.renderer.post.exposure_ev(lum):+.2f} EV")
         self.screenshot(str(paths.SCREENSHOT_DIR / f"{self.level.path.stem}_{shot['name']}_{preset}.png"))
         if self._shot_queue:
             self._next_shot()
@@ -270,7 +348,7 @@ class Game(ShowBase):
 
     # -------------------------------------------------------------- loop
     def _fixed_update(self, dt: float) -> None:
-        if self._shot_queue:
+        if self._shot_queue or self.paused:
             self.player.char.prev_pos = Point3(self.player.char.pos)
             return
         now = self.loop.time
@@ -295,7 +373,7 @@ class Game(ShowBase):
     def _update(self, task):
         dt = min(ClockObject.getGlobalClock().getDt(), 0.25)
         if self.demo is not None:
-            dt = 1.0 / 30.0   # deterministic: simulation and animation advance identically
+            dt = self.demo.frame_dt   # deterministic: simulation and animation advance identically
         self.input.poll_mouse()
         alpha = self.loop.advance(dt, self._fixed_update)
         self.weapons.pre_frame(dt)
@@ -307,7 +385,7 @@ class Game(ShowBase):
             g.frame_update()
         self.pickups.update(dt)
         self.effects.update(dt)
-        self.renderer.update()
+        self.renderer.update(dt)
         self.hud.update(dt)
         self.debug_hud.update(dt)
         self._frame += 1

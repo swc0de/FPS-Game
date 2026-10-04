@@ -11,6 +11,12 @@ Each script is a list of steps executed on fixed ticks:
   ("wait", ticks)
   ("shot", name)                           save user/screenshots/demo_<name>.png
   ("report", label)                        print dummy damage readouts
+  ("route", name, x, y, z, heading)        start a walking route (teleport, feet position)
+  ("goto", x, y)                           run toward a waypoint (fails if stuck for 2 s)
+  ("expect_z", zmin, zmax)                 check the player's feet height
+  ("end_route",)                           print PASS/FAIL for the route
+
+    python main.py --map compound --demo routes   # walk every lane of the map
 """
 from __future__ import annotations
 
@@ -105,8 +111,23 @@ def flash_script(game) -> list:
     return s
 
 
+def routes_script(game) -> list:
+    """Walk the main lanes of the map (waypoints) and report blocked paths."""
+    routes = game.level.data.get("test_routes", [])
+    s = []
+    for r in routes:
+        x, y, z, h = r["start"]
+        s.append(("route", r["name"], x, y, z, h))
+        for wp in r["waypoints"]:
+            s.append(("goto", wp[0], wp[1]))
+            if len(wp) > 2:
+                s.append(("expect_z", wp[2] - 0.35, wp[2] + 0.35))
+        s.append(("end_route",))
+    return s
+
+
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script}
+           "flash": flash_script, "routes": routes_script}
 
 
 class DemoRunner:
@@ -121,6 +142,12 @@ class DemoRunner:
         self.holds: dict[str, int] = {}
         self.shots: list[str] = []
         self.done = False
+        # routes fast-forward: 8 fixed ticks per rendered frame
+        self.frame_dt = 0.125 if name == "routes" else 1.0 / 30.0
+        self.goto = None            # (x, y, ticks, best_dist, best_tick)
+        self.route = None           # (name, start_tick, ok)
+        self.route_results: list[tuple[str, bool, float]] = []
+        self.ticks = 0
         game.input.virtual_mode = True
         game.input.captured = True
         game.debug_hud.toggle()
@@ -130,8 +157,40 @@ class DemoRunner:
         c = self.game.player.char
         return Point3(c.pos.x, c.pos.y, c.pos.z + c.eye_height)
 
+    def _steer(self) -> bool:
+        """Drive toward the current waypoint; True while still walking."""
+        g = self.game
+        x, y, best, best_tick = self.goto
+        c = g.player.char.pos
+        dx, dy = x - c.x, y - c.y
+        dist = math.hypot(dx, dy)
+        if dist < 0.5:
+            g.input.virtual.discard("forward")
+            self.goto = None
+            return False
+        if dist < best - 0.25:
+            best, best_tick = dist, self.ticks
+        elif self.ticks - best_tick > 128:          # no progress for 2 s
+            g.input.virtual.discard("forward")
+            g.log(f"[demo]   STUCK at ({c.x:.1f}, {c.y:.1f}, {c.z:.2f}) heading for ({x}, {y})")
+            self.goto = None
+            if self.route is not None:
+                self.route = (self.route[0], self.route[1], False)
+            # skip the rest of this route
+            while self.i < len(self.steps) and self.steps[self.i][0] != "end_route":
+                self.i += 1
+            return False
+        g.player.yaw = math.degrees(math.atan2(-dx, dy))
+        g.player.pitch = 0.0
+        g.input.virtual.add("forward")
+        self.goto = (x, y, best, best_tick)
+        return True
+
     def tick(self, dt: float) -> None:
         g = self.game
+        self.ticks += 1
+        if self.goto is not None and self._steer():
+            return
         for action in list(self.holds):
             self.holds[action] -= 1
             if self.holds[action] <= 0:
@@ -173,7 +232,31 @@ class DemoRunner:
                 self.wait = 1
             elif kind == "report":
                 self.report(st[1])
-        if self.i >= len(self.steps) and self.wait <= 0 and not self.shots:
+            elif kind == "route":
+                _, name, x, y, z, h = st
+                g.player.set_pose((x, y, z + g.player.char.eye_height), (h, 0))
+                self.route = (name, self.ticks, True)
+                g.log(f"[demo] route {name}")
+            elif kind == "goto":
+                c = g.player.char.pos
+                self.goto = (st[1], st[2], math.hypot(st[1] - c.x, st[2] - c.y), self.ticks)
+                if self._steer():
+                    return
+            elif kind == "expect_z":
+                z = g.player.char.pos.z
+                if not st[1] <= z <= st[2]:
+                    g.log(f"[demo]   WRONG HEIGHT z={z:.2f}, expected {st[1] + 0.35:.2f}")
+                    self.route = (self.route[0], self.route[1], False)
+            elif kind == "end_route":
+                name, t0, ok = self.route
+                secs = (self.ticks - t0) / 64.0
+                self.route_results.append((name, ok, secs))
+                g.log(f"[demo] route {name}: {'PASS' if ok else 'FAIL'} ({secs:.1f} s)")
+                self.route = None
+        if self.i >= len(self.steps) and self.wait <= 0 and not self.shots and self.goto is None:
+            if not self.done and self.route_results:
+                ok = sum(1 for r in self.route_results if r[1])
+                g.log(f"[demo] routes: {ok}/{len(self.route_results)} passed")
             self.done = True
 
     def report(self, label: str) -> None:

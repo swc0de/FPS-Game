@@ -6,16 +6,16 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 2 of 7.** Milestone 2 adds weapons with fixed recoil patterns, hitbox-based hit
-> detection with wall penetration, grenades, pickups, a first-person viewmodel and impact effects
-> (decals, particles, muzzle flash, tracers, shell casings). Milestone 1 delivered the player
-> controller, the PBR test level, cascaded shadows, IBL and the HDR post chain.
-> See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: Milestone 3 of 7.** Milestone 3 adds the full map **Kestrel Compound** and a modern post-processing
+> pipeline: GTAO ambient occlusion, bloom, eye adaptation, colour grading, FXAA/MSAA, render scale and sharpening.
+> It also adds a pause menu with a live-applying graphics settings screen. Earlier milestones delivered the
+> weapons, recoil, hit detection and impact effects (2), and the player controller, PBR, cascaded and local
+> shadows, and IBL (1). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 2 shooting range](docs/images/milestone2.jpg)
+![Milestone 3: Kestrel Compound](docs/images/milestone3.jpg)
 
-*The Milestone 2 shooting range, rendered with the offline fallback (procedural textures, sky and sounds).
-Each rendering technique is explained in [docs/RENDERING.md](docs/RENDERING.md).*
+*Kestrel Compound, rendered with the offline fallback (procedural textures and sky). Each rendering
+technique is explained in [docs/RENDERING.md](docs/RENDERING.md).*
 
 ## Requirements
 
@@ -36,9 +36,9 @@ python tools/download_assets.py
 python main.py
 ```
 
-The first start takes ~30-60 s: procedural fallback textures are generated,
-the sky lighting is prefiltered and the level's sky visibility is baked. Everything
-is cached in `assets/`, so later starts take a few seconds. If you are offline
+`python main.py` starts on Kestrel Compound at the attackers' spawn. The first start of a map takes
+~30-90 s: procedural fallback textures are generated, the sky lighting is prefiltered and the map's
+sky visibility is baked. Everything is cached in `assets/`, so later starts take a few seconds. If you are offline
 or a download fails, the game generates its own textures and sky and runs
 normally.
 
@@ -46,6 +46,7 @@ Useful options (`python main.py --help` lists them all):
 
 | Option | Effect |
 |---|---|
+| `--map compound` / `--map test_range` | the full map (default) or the Milestone 1-2 test level with the shooting range |
 | `--preset low/medium/high/ultra` | graphics quality (default `high`) |
 | `--res 1920x1080 --fullscreen` | resolution / display mode |
 | `--fov 80` | vertical FOV in degrees (74 ≈ 106° horizontal at 16:9) |
@@ -53,7 +54,9 @@ Useful options (`python main.py --help` lists them all):
 | `--no-vsync` | uncapped frame rate (for benchmarking) |
 | `--shots` | render the map's predefined camera shots to `user/screenshots/` and exit |
 | `--pose=x,y,z,heading,pitch` | start at a given eye position |
-| `--demo weapons` | scripted tour of the Milestone 2 features. It saves screenshots and prints the damage results |
+| `--demo weapons` | scripted tour of the Milestone 2 features on the test range. It saves screenshots and prints the damage results |
+| `--demo routes` | walks every lane of the compound and prints PASS/FAIL per route |
+| `--post-debug 1..4` | start with a post-processing debug view (AO, bloom, normals, depth); F3 in game |
 | `--save-settings` | persist the CLI overrides to `user/settings.json` |
 
 ## Controls
@@ -74,15 +77,44 @@ Useful options (`python main.py --help` lists them all):
 | 1 2 3 4 | primary / pistol / knife / grenades (press 4 again to cycle grenade types) |
 | Mouse wheel, Z | next/previous weapon, last weapon |
 | V | noclip fly mode (debug) |
-| Esc | release / recapture the mouse (click also recaptures) |
+| Esc | pause menu (resume, settings, quit); Esc again goes back |
 | F1 | toggle debug overlay |
+| F3 | cycle post-processing debug views (final, AO, bloom, normals, depth) |
 | F12 | screenshot to `user/screenshots/` |
 
 Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
 
+## Milestone 3 - what to test
+
+1. **Walk the map.** Spawn is the attackers' staging area outside the south wall. The location name is shown
+   bottom-left (e.g. *A Long*, *Mid Doors*, *Tunnel*). Try the three lanes to each site:
+   * **A (Armory):** west gate → *A Long* alley; or west gate → *Barracks* (south door, corridor, north door);
+     or main gate → *Mid* → *A Connector*. All three end in the *West Yard*, at the armory's loading door.
+   * **B (Motor Pool):** east gate → *B Long* road; or east gate → down the ramp into the *Bunker* →
+     *Tunnel* → stairs up into the *B Yard*; or *Mid* → *B Connector*.
+   * **Defenders:** spawn in front of the HQ. Walk *Mid Doors*, through the HQ (west to east door), and up the
+     *comms tower* stairs to the platform overlooking A.
+   * Tell me about anything you can get stuck on, see through, or fall out of. Also tell me which lanes feel
+     too long, too open, or too cramped.
+2. **Graphics settings:** ESC → Settings → Graphics.
+   * Switch presets, then single options. They apply live when you press **Apply** and are saved.
+   * Compare ambient occlusion Off/High in the barracks corridor and around crates (F3 shows the raw AO).
+   * Try anti-aliasing FXAA vs MSAA 4x on the T-wall edges and the hangar beams.
+   * Lower the render scale to 70% with sharpening 50%: that is the fps-saving option.
+   * Bloom: look at the lamps in the bunker and fire a few shots in the dark (muzzle flash glow).
+   * Eye adaptation: walk from the bright yard into the armory or the bunker and back. The image re-exposes
+     over about a second. Brightness in the Display tab offsets the exposure.
+   * Display: resolution, fullscreen, frame-rate limit, FOV (the horizontal value is shown) and weapon FOV.
+     Gameplay: sensitivity, zoom sensitivity and the crosshair editor (changes show live).
+3. **Performance:** please tell me your GPU, resolution, preset and FPS in a few places. Good places are mid,
+   B site, and looking across the map from the comms tower. Which options cost you the most?
+
+Run `python main.py --map test_range` for the Milestone 2 shooting range (dummies, spray wall, penetration
+panels, weapon racks). Its checklist follows.
+
 ## Milestone 2 - what to test
 
-You spawn at the **shooting range** (north end of the test level) with the R7 Halberd rifle, the P9
+On `--map test_range` you spawn at the **shooting range** (north end of the test level) with the R7 Halberd rifle, the P9
 pistol, a knife, one frag, two flashbangs and one smoke. The bench in front of you holds every gun
 (rifles and the SMG to the left; shotgun, sniper and pistol in the middle). Look at one and press **F**.
 The ammo, armour and grenade boxes are at the right end of the bench. Rack items come back after you
@@ -140,12 +172,13 @@ take them. Ammo is limited, so reload and refill at the ammo box.
 To see everything without playing, run `python main.py --demo weapons`. It shoots each target, prints the
 damage it did in the console and writes `user/screenshots/demo_*.png`.
 
-The Milestone 1 areas are still there: the movement course, the house, the container yard and the PBR gallery.
-Use `V` (noclip) to fly back to the road. The checklist from Milestone 1 is below.
+The Milestone 1 areas are still there on the test range: the movement course, the house, the container yard
+and the PBR gallery. Use `V` (noclip) to fly back to the road. The checklist from Milestone 1 is below.
 
 ## Milestone 1 - what to test
 
-Use `--pose=0,-52,1.77,0,0` to start at the south end of the road, facing north (the Milestone 1 spawn).
+Use `--map test_range --pose=0,-52,1.77,0,0` to start at the south end of the road, facing north (the
+Milestone 1 spawn).
 
 1. **Movement feel**
    - Run (5.4 m/s), walk with Shift (2.75 m/s) and crouch with Ctrl (1.85 m/s). Watch the speed readout in the overlay.
@@ -176,13 +209,14 @@ Use `--pose=0,-52,1.77,0,0` to start at the south end of the road, facing north 
 main.py                 entry point
 engine/                 app/game loop, fixed timestep (64 Hz), settings, input, physics, mesh building
 gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies
-render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility, post
+render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility,
+                        post pipeline (pre-pass, GTAO, bloom, eye adaptation, tonemap, AA), particles, decals, effects
 render/shaders/         GLSL (commented: every technique is explained in place)
-maps/                   modular level builder (prefabs) + map JSON files in maps/data/
+maps/                   level builder, prefabs (prefabs.py basics, prefabs_military.py compound pieces),
+                        map JSON files in maps/data/ (compound, test_range, showroom)
 data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces
 weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
-render/ (M2)            particles.py, decals.py, effects.py (muzzle flash, tracers, casings, explosions, smoke)
-ui/                     HUD, crosshair, debug overlay (menus in later milestones)
+ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py)
 audio/                  procedural sound synthesis (placeholder library) + 3D audio system
 ai/                     filled in by milestone 5
 assets/                 downloaded / generated textures, HDRIs, caches (not committed)
@@ -193,11 +227,21 @@ docs/                   RENDERING.md, ROADMAP.md
 
 ## Adding a map
 
-Maps are JSON files in `maps/data/` built from prefabs (`maps/prefabs.py`):
-`floor`, `wall` (with door/window openings and a different material on each side),
-`stairs`, `ramp`, `box`, `crate`, `crate_stack`, `container`, `sandbags`,
-`barrel`, `pillar`, `railing`, `catwalk`, `light`, `spawn`, and `group` (a reusable
-offset/rotated block of pieces). Run it with `python main.py --map <name>`.
+Maps are JSON files in `maps/data/` built from prefabs:
+
+* **Basic pieces:** `floor`, `wall` (door/window openings, a different material on each side), `stairs`,
+  `ramp`, `box`, `crate`, `crate_stack`, `container`, `sandbags`, `barrel`, `pillar`, `railing`,
+  `catwalk`, `light`, `spawn` and `group` (an offset and rotated block of pieces).
+* **Compound pieces:**
+  * `building`: a shell with openings per side, a parapet and an interior finish
+  * barriers: `twall`, `jersey`, `gabion`, `boom_gate`
+  * `vehicle` (truck / utility), `canopy` (hangar), `mast`
+  * `furniture`: bunk, locker, shelf, desk, workbench, fuel tank, flagpole...
+  * `terrain` (backdrop hills) and `paint_line`
+* **Gameplay data:** `zone` (bomb sites), `callout` (named areas), `spawn`, plus `test_routes` (waypoint
+  walks checked by `--demo routes`) and `camera_shots` (for `--shots`).
+
+Run a map with `python main.py --map <name>`.
 
 ## Tests
 
@@ -213,12 +257,16 @@ The tests cover:
 * fire rates, recoil patterns and recovery, inaccuracy (first shot, moving, crouched, in the air)
 * reloads, including shell-by-shell; the armour and helmet damage model and falloff
 * hitbox raycasts, wall penetration per material, and the inventory and grenade maths
+* graphics option normalisation, the settings menu model (presets, overrides, restart detection)
+* map integrity: known prefabs and materials, both bomb sites, both spawn groups, callouts, and no
+  overlapping (z-fighting) floor slabs
 
 ## Troubleshooting
 
 * **Black screen or shader errors:** update your GPU driver; the game needs OpenGL 3.3. Run from a
   terminal and send me the log.
-* **Low FPS:** try `--preset medium` or `low`, or `--gfx shadow_resolution=1024`.
+* **Low FPS:** ESC → Settings → Graphics. The biggest wins are render scale (with sharpening),
+  ambient occlusion, MSAA, and shadow quality. Or start with `--preset medium` / `low`.
 * **Textures look procedural:** run `python tools/download_assets.py`. It prints which assets it
   fetched and writes `assets/CREDITS.md`.
 * **Stale lighting after changing a map:** delete `assets/cache/`.

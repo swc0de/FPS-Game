@@ -11,6 +11,7 @@ to add and every map is just data.
 """
 from __future__ import annotations
 
+import importlib
 import math
 import random
 from typing import Callable
@@ -412,7 +413,8 @@ def light(ctx, e):
 
 @prefab("spawn")
 def spawn(ctx, e):
-    ctx.spawns.append({"team": e.get("team", "attack"), "pos": e["pos"], "heading": e.get("heading", 0.0)})
+    pos, hpr = ctx._xf(e["pos"], (e.get("heading", 0.0), 0, 0))
+    ctx.spawns.append({"team": e.get("team", "attack"), "pos": list(pos), "heading": hpr[0]})
 
 
 @prefab("weapon_display")
@@ -446,3 +448,7 @@ def group(ctx, e):
     for child in e.get("pieces", []):
         ctx.build_piece(child)
     ctx.pop_transform()
+
+
+# military compound pieces (buildings, barriers, vehicles, furniture...) register themselves
+importlib.import_module("maps.prefabs_military")

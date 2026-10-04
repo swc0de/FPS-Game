@@ -185,7 +185,9 @@ class MaterialLibrary:
                     uv_scale = float(meta["world_size_m"])
             except (OSError, ValueError):
                 pass
-        parallax = float(d.get("parallax", 0.0)) if self.graphics.get("parallax", True) else 0.0
+        # the PARALLAX shader define decides whether this is used, so the
+        # option can be toggled at runtime
+        parallax = float(d.get("parallax", 0.0))
         mat = Material(
             name=name,
             surface=d.get("surface", "default"),
@@ -199,6 +201,12 @@ class MaterialLibrary:
         )
         self._cache[name] = mat
         return mat
+
+    def set_anisotropy(self, degree: int) -> None:
+        self.graphics = dict(self.graphics, anisotropy=degree)
+        for m in self._cache.values():
+            for tex in (m.albedo, m.normal, m.orm):
+                tex.setAnisotropicDegree(int(degree))
 
     def summary(self) -> str:
         counts: dict[str, int] = {}

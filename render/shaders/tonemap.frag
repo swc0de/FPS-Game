@@ -1,18 +1,35 @@
 #version 330
-// tonemap.frag - HDR -> display.
+// tonemap.frag - HDR scene -> display image (the "uber" post pass).
 //
-// 1. Exposure scales scene radiance.
-// 2. ACES filmic tone mapping (Stephen Hill's fit of the RRT+ODT, applied in
-//    ACEScg via the input/output matrices) compresses highlights with a
-//    pleasing shoulder and slight hue shift of very bright colours.
-// 3. Linear -> sRGB transfer function.
-// 4. +/- half-LSB triangular dither removes 8-bit banding in skies/fog.
+// In HDR (linear, scene-referred) space:
+//   1. chromatic aberration (optional): red and blue are sampled slightly
+//      apart toward the screen edges, like a cheap lens,
+//   2. bloom is added on top of the exposed image (it was thresholded and
+//      exposed in the first downsample, so it adds only to bright areas),
+//   3. exposure from eye adaptation (exposure.glsl),
+//   4. vignette: natural lens falloff toward the corners,
+//   5. grading: white balance (temperature / tint), saturation, and contrast
+//      around mid-grey in log space (keeps black and white points stable),
+// then:
+//   6. ACES filmic tone mapping (Stephen Hill's fit of the RRT+ODT in
+//      ACEScg) compresses highlights with a soft shoulder,
+//   7. linear -> sRGB,
+//   8. lift / gamma / gain in display space (shadows, mid-tones, highlights),
+//   9. film grain (optional) and +/- half-LSB dither against 8-bit banding.
 // The output stores luma in alpha for the FXAA pass that follows.
 
 #include "common.glsl"
+#include "exposure.glsl"
 
 uniform sampler2D u_scene;
-uniform vec4 u_tonemapParams;  // x: exposure, y: dither strength, z/w unused
+uniform sampler2D u_bloom;
+uniform vec4 u_bloomMix;       // x: intensity
+uniform vec4 u_grade;          // x: saturation, y: contrast, z: temperature (-1..1), w: tint (-1..1)
+uniform vec4 u_lift;           // rgb (display space, additive in shadows)
+uniform vec4 u_gamma;          // rgb (mid-tones, 1 = neutral)
+uniform vec4 u_gain;           // rgb (multiplier)
+uniform vec4 u_lensFx;         // x: vignette strength, y: vignette start radius, z: chromatic aberration, w: grain
+uniform vec4 u_misc;           // x: dither strength, y: time (s), z: aspect ratio, w: unused
 
 in vec2 v_uv;
 layout(location = 0) out vec4 o_color;
@@ -45,13 +62,61 @@ vec3 linearToSRGB(vec3 c) {
     return mix(lo, hi, step(vec3(0.0031308), c));
 }
 
+// Simple white balance: warm/cool along the blue-orange axis, tint along
+// green-magenta, normalised so overall luminance is unchanged.
+vec3 whiteBalance(vec3 c, float temperature, float tint) {
+    vec3 m = vec3(1.0 + 0.10 * temperature, 1.0 - 0.06 * tint, 1.0 - 0.10 * temperature);
+    return c * m / luminance(m);
+}
+
+float hash12(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
 void main() {
-    vec3 hdr = texture(u_scene, v_uv).rgb;
+    vec2 centered = v_uv - 0.5;
+    vec3 hdr;
+    if (u_lensFx.z > 0.0) {
+        vec2 shift = centered * dot(centered, centered) * u_lensFx.z * 0.06;
+        hdr.r = texture(u_scene, v_uv - shift).r;
+        hdr.g = texture(u_scene, v_uv).g;
+        hdr.b = texture(u_scene, v_uv + shift).b;
+    } else {
+        hdr = texture(u_scene, v_uv).rgb;
+    }
     hdr = max(hdr, vec3(0.0));
-    vec3 c = acesFitted(hdr * u_tonemapParams.x);
+
+    vec3 c = hdr * sceneExposure();
+    c += texture(u_bloom, v_uv).rgb * u_bloomMix.x;
+
+    // vignette (radius 0 at the centre, 1 at the corners)
+    float r = length(centered * vec2(u_misc.z, 1.0)) / length(vec2(u_misc.z, 1.0) * 0.5);
+    c *= mix(1.0, 1.0 - u_lensFx.x, smoothstep(u_lensFx.y, 1.15, r));
+
+    // grading in linear space
+    c = whiteBalance(c, u_grade.z, u_grade.w);
+    float l = luminance(c);
+    c = max(mix(vec3(l), c, u_grade.x), vec3(0.0));
+    c = 0.18 * pow(c / 0.18 + 1e-6, vec3(u_grade.y));
+
+    c = acesFitted(c);
     c = linearToSRGB(c);
+
+    // lift / gamma / gain (ASC-CDL-like) in display space
+    c = c * u_gain.rgb + u_lift.rgb * (1.0 - c);
+    c = pow(max(c, vec3(0.0)), 1.0 / max(u_gamma.rgb, vec3(0.01)));
+
+    if (u_lensFx.w > 0.0) {
+        float g = hash12(gl_FragCoord.xy + fract(u_misc.y * 7.13) * 512.0) - 0.5;
+        float lumD = dot(c, vec3(0.299, 0.587, 0.114));
+        c += g * u_lensFx.w * (1.0 - lumD * 0.7);
+    }
+
     float n1 = interleavedGradientNoise(gl_FragCoord.xy);
     float n2 = interleavedGradientNoise(gl_FragCoord.xy + vec2(47.0, 13.0));
-    c += (n1 - n2) * u_tonemapParams.y / 255.0;
+    c += (n1 - n2) * u_misc.x / 255.0;
+    c = saturate(c);
     o_color = vec4(c, dot(c, vec3(0.299, 0.587, 0.114)));
 }
