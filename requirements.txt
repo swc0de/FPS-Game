@@ -1,0 +1,6 @@
+# Runtime
+panda3d>=1.10.14,<1.11   # engine, Bullet physics, OpenAL audio, FilterManager
+numpy>=1.24               # procedural textures, IBL prefiltering, light data packing
+
+# No other dependencies: rendering uses custom GLSL (no simplepbr needed),
+# asset downloads use the standard library (urllib + zipfile).

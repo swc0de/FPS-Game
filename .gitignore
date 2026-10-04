@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Per-user data (settings, screenshots)
+user/
+
+# Downloaded / generated assets (re-creatable)
+assets/textures/*
+!assets/textures/.gitkeep
+assets/hdri/*
+!assets/hdri/.gitkeep
+assets/cache/
+assets/CREDITS.md
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

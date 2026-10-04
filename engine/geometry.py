@@ -1,0 +1,279 @@
+"""Procedural mesh construction with numpy.
+
+``MeshBuilder`` accumulates triangles with full tangent frames (normal,
+tangent, binormal) so normal mapping works, then writes them into a single
+Panda3D ``GeomVertexData`` in one memcpy. Levels batch all pieces sharing a
+material into one builder, which keeps draw calls low.
+
+UV conventions
+--------------
+Box faces use *world-space* planar UVs by default: ``u = dot(P, T) / scale``
+and ``v = dot(P, B) / scale`` where T/B are the face tangent/binormal and
+``scale`` is metres per texture repeat. Adjacent coplanar pieces therefore
+line up seamlessly and texel density is uniform across the whole map.
+"""
+from __future__ import annotations
+
+import math
+
+import numpy as np
+from panda3d.core import (
+    Geom,
+    GeomNode,
+    GeomTriangles,
+    GeomVertexArrayFormat,
+    GeomVertexData,
+    GeomVertexFormat,
+    InternalName,
+    TransformState,
+)
+
+_FORMAT = None
+FLOATS_PER_VERTEX = 14  # pos3 normal3 tangent3 binormal3 uv2
+
+
+def vertex_format() -> GeomVertexFormat:
+    global _FORMAT
+    if _FORMAT is None:
+        arr = GeomVertexArrayFormat()
+        arr.addColumn(InternalName.getVertex(), 3, Geom.NTFloat32, Geom.CPoint)
+        arr.addColumn(InternalName.getNormal(), 3, Geom.NTFloat32, Geom.CNormal)
+        arr.addColumn(InternalName.getTangent(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getBinormal(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getTexcoord(), 2, Geom.NTFloat32, Geom.CTexcoord)
+        _FORMAT = GeomVertexFormat.registerFormat(GeomVertexFormat(arr))
+    return _FORMAT
+
+
+def hpr_matrix(hpr) -> np.ndarray:
+    """3x3 rotation (row-vector convention, like Panda) for heading/pitch/roll."""
+    m = TransformState.makeHpr(tuple(hpr)).getMat()
+    return np.array([[m.getCell(r, c) for c in range(3)] for r in range(3)], dtype=np.float64)
+
+
+# Local box faces: (normal, tangent, binormal) with T = B x N so the frame is
+# right-handed and textures are never mirrored when seen from outside.
+_BOX_FACES = (
+    ((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+    ((-1, 0, 0), (0, -1, 0), (0, 0, 1)),
+    ((0, 1, 0), (-1, 0, 0), (0, 0, 1)),
+    ((0, -1, 0), (1, 0, 0), (0, 0, 1)),
+    ((0, 0, 1), (1, 0, 0), (0, 1, 0)),
+    ((0, 0, -1), (-1, 0, 0), (0, 1, 0)),
+)
+FACE_NAMES = ("+x", "-x", "+y", "-y", "+z", "-z")
+
+
+class MeshBuilder:
+    def __init__(self):
+        self._verts: list[np.ndarray] = []
+        self._indices: list[np.ndarray] = []
+        self._count = 0
+
+    @property
+    def vertex_count(self) -> int:
+        return self._count
+
+    def add(self, verts: np.ndarray, indices: np.ndarray) -> None:
+        """Append raw vertices (N x 14 float array) and local triangle indices."""
+        self._verts.append(np.asarray(verts, dtype=np.float32))
+        self._indices.append(np.asarray(indices, dtype=np.uint32) + self._count)
+        self._count += len(verts)
+
+    def add_quad(self, corners, normal, tangent, binormal, uvs) -> None:
+        v = np.zeros((4, FLOATS_PER_VERTEX), np.float32)
+        v[:, 0:3] = corners
+        v[:, 3:6] = normal
+        v[:, 6:9] = tangent
+        v[:, 9:12] = binormal
+        v[:, 12:14] = uvs
+        self.add(v, np.array([0, 1, 2, 0, 2, 3]))
+
+    # ------------------------------------------------------------- boxes
+    def add_box(self, center, size, hpr=(0, 0, 0), uv_scale: float = 1.0,
+                skip_faces=(), uv_mode: str = "world", uv_offset=(0.0, 0.0)) -> None:
+        """Axis box of ``size`` (full extents) centred at ``center``.
+
+        uv_mode "world": world-planar UVs (seamless between pieces).
+        uv_mode "fit":   each face maps to [0, repeats] where repeats = face
+                         size / uv_scale rounded to >= 1 (good for crates).
+        """
+        c = np.asarray(center, np.float64)
+        half = np.asarray(size, np.float64) * 0.5
+        rot = hpr_matrix(hpr)
+        signs = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], np.float64)
+        for i, (n, t, b) in enumerate(_BOX_FACES):
+            if FACE_NAMES[i] in skip_faces:
+                continue
+            n = np.array(n, np.float64)
+            t = np.array(t, np.float64)
+            b = np.array(b, np.float64)
+            hn = abs(np.dot(n, half))
+            ht = abs(np.dot(t, half))
+            hb = abs(np.dot(b, half))
+            local = n * hn + signs[:, :1] * t * ht + signs[:, 1:] * b * hb
+            world = local @ rot + c
+            nw, tw, bw = n @ rot, t @ rot, b @ rot
+            if uv_mode == "fit":
+                ru = max(round(2 * ht / uv_scale), 1)
+                rv = max(round(2 * hb / uv_scale), 1)
+                uvs = (signs * 0.5 + 0.5) * np.array([ru, rv])
+            else:
+                uvs = np.stack([world @ tw, world @ bw], axis=1) / uv_scale
+            uvs = uvs + np.asarray(uv_offset)
+            self.add_quad(world, nw, tw, bw, uvs)
+
+    # ------------------------------------------------------------ polygons
+    def add_polygon(self, points, normal, tangent, binormal, uv_scale: float = 1.0) -> None:
+        """Convex planar polygon (CCW seen from the normal side), world UVs."""
+        pts = np.asarray(points, np.float64)
+        n = len(pts)
+        v = np.zeros((n, FLOATS_PER_VERTEX), np.float32)
+        v[:, 0:3] = pts
+        v[:, 3:6] = normal
+        v[:, 6:9] = tangent
+        v[:, 9:12] = binormal
+        v[:, 12] = pts @ np.asarray(tangent) / uv_scale
+        v[:, 13] = pts @ np.asarray(binormal) / uv_scale
+        idx = []
+        for i in range(1, n - 1):
+            idx += [0, i, i + 1]
+        self.add(v, np.array(idx))
+
+    def add_wedge(self, base, width: float, length: float, height: float, heading: float = 0.0,
+                  uv_scale: float = 1.0) -> None:
+        """Solid ramp: bottom-front-centre at ``base``, rising ``height`` over
+        ``length`` along local +Y (rotated by ``heading``)."""
+        rot = hpr_matrix((heading, 0, 0))
+        b = np.asarray(base, np.float64)
+        w2, L, H = width / 2, length, height
+
+        def xf(p):
+            return np.asarray(p, np.float64) @ rot + b
+
+        def d(v):
+            v = np.asarray(v, np.float64) @ rot
+            return v / np.linalg.norm(v)
+        slope_n = d((0, -H, L))
+        slope_b = d((0, L, H))
+        self.add_polygon([xf((-w2, 0, 0)), xf((w2, 0, 0)), xf((w2, L, H)), xf((-w2, L, H))],
+                         slope_n, d((1, 0, 0)), slope_b, uv_scale)
+        self.add_polygon([xf((w2, L, 0)), xf((-w2, L, 0)), xf((-w2, L, H)), xf((w2, L, H))],
+                         d((0, 1, 0)), d((-1, 0, 0)), d((0, 0, 1)), uv_scale)
+        self.add_polygon([xf((w2, 0, 0)), xf((-w2, 0, 0)), xf((-w2, L, 0)), xf((w2, L, 0))],
+                         d((0, 0, -1)), d((-1, 0, 0)), d((0, 1, 0)), uv_scale)
+        self.add_polygon([xf((w2, 0, 0)), xf((w2, L, 0)), xf((w2, L, H))],
+                         d((1, 0, 0)), d((0, 1, 0)), d((0, 0, 1)), uv_scale)
+        self.add_polygon([xf((-w2, L, 0)), xf((-w2, 0, 0)), xf((-w2, L, H))],
+                         d((-1, 0, 0)), d((0, -1, 0)), d((0, 0, 1)), uv_scale)
+
+    # --------------------------------------------------------- cylinders
+    def add_cylinder(self, center, radius: float, height: float, segments: int = 24,
+                     uv_scale: float = 1.0, caps: bool = True, hpr=(0, 0, 0)) -> None:
+        """Vertical cylinder; ``center`` is the middle of the axis."""
+        c = np.asarray(center, np.float64)
+        rot = hpr_matrix(hpr)
+        ang = np.linspace(0, 2 * math.pi, segments + 1)
+        cos, sin = np.cos(ang), np.sin(ang)
+        n = np.stack([cos, sin, np.zeros_like(cos)], 1)
+        t = np.stack([-sin, cos, np.zeros_like(cos)], 1)
+        b = np.tile([0.0, 0.0, 1.0], (segments + 1, 1))
+        circumference = 2 * math.pi * radius
+        u = ang / (2 * math.pi) * max(round(circumference / uv_scale), 1)
+        verts = []
+        for z, vv in ((-height / 2, 0.0), (height / 2, height / uv_scale)):
+            p = np.stack([cos * radius, sin * radius, np.full_like(cos, z)], 1)
+            row = np.zeros((segments + 1, FLOATS_PER_VERTEX), np.float32)
+            row[:, 0:3] = p @ rot + c
+            row[:, 3:6] = n @ rot
+            row[:, 6:9] = t @ rot
+            row[:, 9:12] = b @ rot
+            row[:, 12] = u
+            row[:, 13] = vv
+            verts.append(row)
+        verts = np.concatenate(verts)
+        s = segments + 1
+        idx = []
+        for i in range(segments):
+            a, b2, c2, d = i, i + 1, s + i + 1, s + i
+            idx += [a, b2, c2, a, c2, d]
+        self.add(verts, np.array(idx))
+        if caps:
+            for top in (False, True):
+                z = height / 2 if top else -height / 2
+                nz = 1.0 if top else -1.0
+                p = np.stack([cos[:-1] * radius, sin[:-1] * radius, np.full(segments, z)], 1)
+                p = np.vstack([[0, 0, z], p])
+                cap = np.zeros((segments + 1, FLOATS_PER_VERTEX), np.float32)
+                cap[:, 0:3] = p @ rot + c
+                cap[:, 3:6] = np.array([0, 0, nz]) @ rot
+                tx = np.array([nz, 0, 0])
+                cap[:, 6:9] = tx @ rot
+                cap[:, 9:12] = np.array([0, 1, 0]) @ rot
+                cap[:, 12] = p[:, 0] * nz / uv_scale
+                cap[:, 13] = p[:, 1] / uv_scale
+                tri = []
+                for i in range(segments):
+                    j = (i + 1) % segments
+                    if top:
+                        tri += [0, 1 + i, 1 + j]
+                    else:
+                        tri += [0, 1 + j, 1 + i]
+                self.add(cap, np.array(tri))
+
+    # ----------------------------------------------------------- spheres
+    def add_sphere(self, center, radius: float, rings: int = 24, segments: int = 48,
+                   uv_scale: float = 1.0) -> None:
+        c = np.asarray(center, np.float64)
+        theta = np.linspace(0, math.pi, rings + 1)        # polar angle from +Z
+        phi = np.linspace(0, 2 * math.pi, segments + 1)
+        th, ph = np.meshgrid(theta, phi, indexing="ij")
+        n = np.stack([np.sin(th) * np.cos(ph), np.sin(th) * np.sin(ph), np.cos(th)], -1)
+        t = np.stack([-np.sin(ph), np.cos(ph), np.zeros_like(ph)], -1)
+        b = np.cross(n, t)
+        v = np.zeros((rings + 1, segments + 1, FLOATS_PER_VERTEX), np.float32)
+        v[..., 0:3] = n * radius + c
+        v[..., 3:6] = n
+        v[..., 6:9] = t
+        v[..., 9:12] = b
+        v[..., 12] = ph / (2 * math.pi) * max(round(2 * math.pi * radius / uv_scale), 1)
+        v[..., 13] = (1 - th / math.pi) * max(round(math.pi * radius / uv_scale), 1)
+        v = v.reshape(-1, FLOATS_PER_VERTEX)
+        s = segments + 1
+        idx = []
+        for r in range(rings):
+            for k in range(segments):
+                a = r * s + k
+                b2 = a + 1
+                c2 = a + s + 1
+                d = a + s
+                idx += [a, d, c2, a, c2, b2]
+        self.add(v, np.array(idx))
+
+    # ------------------------------------------------------------- build
+    def build(self, name: str = "mesh") -> GeomNode | None:
+        if not self._verts:
+            return None
+        verts = np.concatenate(self._verts).astype(np.float32)
+        indices = np.concatenate(self._indices).astype(np.uint32)
+        vdata = GeomVertexData(name, vertex_format(), Geom.UHStatic)
+        vdata.uncleanSetNumRows(len(verts))
+        memoryview(vdata.modifyArray(0)).cast("B")[:] = verts.tobytes()
+        prim = GeomTriangles(Geom.UHStatic)
+        prim.setIndexType(Geom.NTUint32)
+        handle = prim.modifyVertices()
+        handle.uncleanSetNumRows(len(indices))
+        memoryview(handle).cast("B")[:] = indices.tobytes()
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+        node = GeomNode(name)
+        node.addGeom(geom)
+        return node
+
+
+def fullscreen_quad(name: str = "quad"):
+    """A unit quad in the XZ plane (-1..1), for post-processing passes."""
+    mb = MeshBuilder()
+    mb.add_quad(np.array([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1]]),
+                (0, -1, 0), (1, 0, 0), (0, 0, 1), np.array([[0, 0], [1, 0], [1, 1], [0, 1]]))
+    return mb.build(name)

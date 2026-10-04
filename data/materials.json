@@ -1,0 +1,121 @@
+{
+  "_comment": [
+    "PBR material library. Each material resolves textures in this order:",
+    "  1. assets/textures/<name>/ (downloaded by tools/download_assets.py from CC0 sources)",
+    "  2. assets/textures/_generated/<name>/ (procedural cache)",
+    "  3. generate procedurally now (render/texture_gen.py) and cache",
+    "uv_scale = metres of world space covered by one texture repeat.",
+    "surface = gameplay surface type (footsteps, impacts, penetration)."
+  ],
+  "concrete_wall": {
+    "surface": "concrete", "uv_scale": 3.0,
+    "sources": {"polyhaven": ["concrete_wall_008", "concrete_wall_004", "concrete_wall_003"],
+                "ambientcg": ["Concrete034", "Concrete031", "Concrete026"]},
+    "procedural": {"type": "concrete", "color": [150, 147, 140], "stains": 0.6, "cracks": 0.35, "pores": 0.6}
+  },
+  "concrete_floor": {
+    "surface": "concrete", "uv_scale": 4.0,
+    "sources": {"polyhaven": ["concrete_floor_worn_001", "concrete_floor_02", "concrete_floor_01"],
+                "ambientcg": ["Concrete042A", "Concrete032", "Concrete040"]},
+    "procedural": {"type": "concrete", "color": [128, 126, 120], "stains": 0.8, "cracks": 0.5, "pores": 0.3,
+                   "roughness": [0.55, 0.88]}
+  },
+  "concrete_dark": {
+    "surface": "concrete", "uv_scale": 3.0,
+    "sources": {"polyhaven": ["concrete_wall_006", "rough_concrete"], "ambientcg": ["Concrete035", "Concrete020"]},
+    "procedural": {"type": "concrete", "color": [96, 96, 94], "stains": 0.7, "cracks": 0.4, "pores": 0.7}
+  },
+  "asphalt": {
+    "surface": "concrete", "uv_scale": 4.0,
+    "sources": {"polyhaven": ["asphalt_02", "asphalt_01", "aerial_asphalt_01"], "ambientcg": ["Asphalt012", "Asphalt025A", "Asphalt010"]},
+    "procedural": {"type": "asphalt", "color": [54, 54, 57], "cracks": 0.6}
+  },
+  "gravel": {
+    "surface": "gravel", "uv_scale": 2.5,
+    "sources": {"polyhaven": ["gravel_floor_02", "gravel_floor", "gravelly_sand"], "ambientcg": ["Gravel022", "Gravel026", "Gravel040"]},
+    "procedural": {"type": "gravel", "color": [116, 104, 88]}
+  },
+  "dirt": {
+    "surface": "dirt", "uv_scale": 4.0,
+    "sources": {"polyhaven": ["dry_ground_01", "brown_mud_leaves_01", "forrest_ground_01", "aerial_ground_rock"],
+                "ambientcg": ["Ground037", "Ground054", "Ground048"]},
+    "procedural": {"type": "dirt", "color": [112, 96, 74]}
+  },
+  "brick": {
+    "surface": "brick", "uv_scale": 1.2, "parallax": 0.025,
+    "sources": {"polyhaven": ["red_brick_03", "brick_wall_001", "red_brick"], "ambientcg": ["Bricks059", "Bricks076A", "Bricks066"]},
+    "procedural": {"type": "brick", "color": [124, 60, 42], "courses": 16, "bricks_per_row": 5}
+  },
+  "wood_planks": {
+    "surface": "wood", "uv_scale": 2.0,
+    "sources": {"polyhaven": ["wood_planks", "weathered_planks", "old_planks_02", "wood_planks_grey"],
+                "ambientcg": ["Planks021", "WoodFloor041", "Planks023A"]},
+    "procedural": {"type": "planks", "color": [118, 86, 58], "planks": 8, "segments": 2, "weathered": 0.6}
+  },
+  "plywood": {
+    "surface": "wood", "uv_scale": 2.44,
+    "sources": {"polyhaven": ["plywood", "wood_table_001"], "ambientcg": ["Plywood001", "Wood049"]},
+    "procedural": {"type": "plywood", "color": [182, 148, 104]}
+  },
+  "metal_olive": {
+    "surface": "metal", "uv_scale": 2.0,
+    "sources": {"polyhaven": ["green_metal_rust", "painted_metal_02"], "ambientcg": ["PaintedMetal006", "PaintedMetal017"]},
+    "procedural": {"type": "painted_metal", "color": [74, 80, 54], "wear": 0.45, "rust": 0.35}
+  },
+  "metal_tan": {
+    "surface": "metal", "uv_scale": 2.0,
+    "sources": {"polyhaven": ["painted_metal_shutter"], "ambientcg": ["PaintedMetal009", "PaintedMetal004"]},
+    "procedural": {"type": "painted_metal", "color": [150, 130, 96], "wear": 0.5, "rust": 0.3}
+  },
+  "container_red": {
+    "surface": "metal", "uv_scale": 2.4,
+    "sources": {"polyhaven": ["corrugated_iron_02", "corrugated_iron"], "ambientcg": ["CorrugatedSteel005", "CorrugatedSteel007A"]},
+    "procedural": {"type": "corrugated", "color": [120, 44, 32], "ridges": 10, "wear": 0.55, "rust": 0.5}
+  },
+  "container_green": {
+    "surface": "metal", "uv_scale": 2.4,
+    "sources": {"polyhaven": ["corrugated_iron"], "ambientcg": ["CorrugatedSteel007A", "CorrugatedSteel005"]},
+    "procedural": {"type": "corrugated", "color": [64, 78, 58], "ridges": 10, "wear": 0.5, "rust": 0.4}
+  },
+  "diamond_plate": {
+    "surface": "metal_grate", "uv_scale": 1.0,
+    "sources": {"polyhaven": ["metal_plate", "metal_plate_02"], "ambientcg": ["DiamondPlate001", "DiamondPlate008A"]},
+    "procedural": {"type": "diamond_plate", "reps": 10}
+  },
+  "steel": {
+    "surface": "metal", "uv_scale": 1.5,
+    "sources": {"polyhaven": ["metal_plate_02", "rusty_metal_02"], "ambientcg": ["Metal032", "Metal046A"]},
+    "procedural": {"type": "brushed_metal", "color": [148, 150, 152], "roughness": 0.35}
+  },
+  "plaster": {
+    "surface": "plaster", "uv_scale": 3.0,
+    "sources": {"polyhaven": ["painted_plaster_wall", "white_plaster_02", "beige_wall_001"], "ambientcg": ["Plaster001", "Plaster003"]},
+    "procedural": {"type": "plaster", "color": [196, 190, 176], "dirt": 0.5}
+  },
+  "sandbag": {
+    "surface": "fabric", "uv_scale": 0.8,
+    "sources": {"polyhaven": ["hessian_230", "jute"], "ambientcg": ["Fabric026", "Fabric045"]},
+    "procedural": {"type": "fabric", "color": [148, 128, 92], "threads": 72, "dirt": 0.6}
+  },
+  "canvas": {
+    "surface": "fabric", "uv_scale": 1.5,
+    "sources": {"polyhaven": ["denim_fabric"], "ambientcg": ["Fabric030", "Fabric004"]},
+    "procedural": {"type": "fabric", "color": [86, 92, 66], "threads": 110, "dirt": 0.4}
+  },
+  "floor_tiles": {
+    "surface": "tile", "uv_scale": 1.2,
+    "sources": {"polyhaven": ["floor_tiles_06", "concrete_tiles"], "ambientcg": ["Tiles074", "Tiles101"]},
+    "procedural": {"type": "tiles", "color": [140, 146, 132], "count": 4}
+  },
+  "hazard": {
+    "surface": "metal", "uv_scale": 1.0,
+    "sources": {},
+    "procedural": {"type": "hazard", "color": [205, 160, 24], "stripes": 4}
+  },
+  "pbr_white_rough":  {"surface": "default", "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [200, 200, 200], "roughness": 0.9, "metallic": 0.0}, "size": 16},
+  "pbr_white_glossy": {"surface": "default", "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [200, 200, 200], "roughness": 0.15, "metallic": 0.0}, "size": 16},
+  "pbr_red_plastic":  {"surface": "default", "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [170, 30, 25], "roughness": 0.35, "metallic": 0.0}, "size": 16},
+  "pbr_gold":         {"surface": "metal",   "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [255, 200, 110], "roughness": 0.25, "metallic": 1.0}, "size": 16},
+  "pbr_chrome":       {"surface": "metal",   "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [235, 235, 235], "roughness": 0.06, "metallic": 1.0}, "size": 16},
+  "pbr_copper_rough": {"surface": "metal",   "uv_scale": 1.0, "sources": {}, "procedural": {"type": "flat", "color": [240, 160, 120], "roughness": 0.6, "metallic": 1.0}, "size": 16}
+}
