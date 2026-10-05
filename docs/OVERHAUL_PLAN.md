@@ -8,7 +8,8 @@ No feature code has been written. Phase 0 added measuring tools only (`tools/bot
 
 * **Your diagnosis holds, with corrections.** The bots run one fixed priority ladder, choose the
   closest target, hold one of 11 hand-placed spots with a ±13° scan, pick a random A/D strafe,
-  reload at 70 % of the magazine and see the whole team's picture instantly. Three corrections:
+  reload at 70 % of the magazine and see the whole team's picture instantly. Corrections and
+  additions:
   * The "exact, instant team knowledge" is partly legitimate. The HUD radar already shows a human
     player exact positions of every enemy a teammate sees, for 3 s, so exact sighted positions are
     information a player has. What a player does not have:
@@ -20,9 +21,14 @@ No feature code has been written. Phase 0 added measuring tools only (`tools/bot
     The legacy brain uses all four. I count the first two per round in the baseline. The
     radar itself is also slightly leaky for humans: a teammate's death puts the unseen killer on
     your radar.
-  * The biggest spikes in the AI's tick are not decisions. Gadget deploys, weapon switches and
-    drone throws build meshes (30-250 ms) inside the AI's call path. Path queries add 8-13 ms
-    spikes. The 4 ms spike budget needs both fixed. Details are in the baseline.
+  * The biggest spikes in the AI's tick are not decisions. Procedural models are built on demand,
+    taking 28-323 ms each: gadget deploys, weapon switches, drone throws and every weapon dropped
+    on death. Path queries add spikes of up to 16 ms (282 ticks over 4 ms in 8 rounds). The 4 ms
+    spike budget needs both fixed.
+  * The scripted utility never fires. Execute flashes and smokes are ordered from 19-35 m, but the
+    longest possible throw is about 14.5 m. One grenade was thrown in 56 rounds.
+  * The worst behaviour is the fallback: 23 % of deaths happen while "retreating", including most
+    deaths while reloading.
   * Difficulty does change two decision rates (grenade use and strafing probability), but no
     judgement.
 * **Workstream A** keeps the legacy brain selectable and adds a layered `ai/v2/` package:
@@ -59,9 +65,25 @@ No feature code has been written. Phase 0 added measuring tools only (`tools/bot
 ## 1. Baseline (Phase 0)
 
 Full numbers, method and files: [docs/baseline/README.md](baseline/README.md). Headline figures
-(legacy brain, Normal, seeds 1 and 2, 24 rounds each, all rounds played):
+(legacy brain, Normal, pooled over seeds 1-3, 56 rounds, all rounds played; timing from the solo
+seed 3 run):
 
-BASELINE_TABLE
+| | legacy baseline | target |
+|---|---|---|
+| attack round wins | 62 % (35 of 56; CI 49-74 %) | balanced, reported per side |
+| deaths while reloading | **19.3 %** of 389 kills; 60 of the 69 in seeds 1-2 happen while "retreating" | lower |
+| unseen deaths (killer not seen in the last 5 s) | **8.5 %** | lower |
+| traded deaths (within 3 s) | **13.9 %** (22.3 % with a teammate within 15 m) | higher |
+| stacking incidents | **3.1 per round** (50 clumps of 3+) | ≤ 0.1 per round |
+| stuck bots | **3** in 56 rounds | **0** |
+| attack plans | execute **45 %**, default 39 %, rush 16 % | none above 40 % |
+| grenades thrown | **1 in 56 rounds** (execute throws are out of range, section 2.1) | used, and effective |
+| defender holds | 11 distinct spots; one used in 16 of 24 rounds | varied, adaptive |
+| info leaks per round | 2.3 exact attacker positions, 0.64 exact killer broadcasts | 0 (audit) |
+| live tick, ms (alone, seed 3) | mean **3.06**, p95 **5.11**, p99 7.54 | mean ≤ 3.97, p95 ≤ 6.64 |
+| AI decisions, ms per tick | mean 0.61; **282 ticks over 4 ms** in 8 rounds; max 41 | 0 ticks over 4 ms |
+| AI incl. the mesh building it triggers | max **326 ms** | fixed by model caching |
+| soldier draw calls per pass | 10 (body 6 + rifle 4) | ≤ 6 LOD0, ≤ 3 far |
 
 ---
 
@@ -114,6 +136,10 @@ evidence.
    * Reloads: at 70 % of the magazine while holding or idle, 60 % in alert, 50 % while seeking.
    * Extended: "seek" walks *towards* the last known position for 2-3.5 s (`_seek`). That is
      exactly the push into the enemy's crosshair that a human punishes.
+   * Extended, measured: **"retreat" is where bots die.** In seeds 1-2 it accounts for 77 of
+     340 deaths (23 %) and 60 of the 69 deaths while reloading. `_retreat` back-pedals in sight of
+     the threat and reloads at 99 %. Cover is the best of 14 random points within 9 m that the
+     threat's last known position cannot see. It is often far, and the route to it is exposed.
 6. **Mechanical movement: confirmed.**
    * Bots walk only when a task says so (the last 12 m of a rotation) or while seeking. They
      look at a point 4 m ahead on the path at 1.5 m height (`_move_to`).
@@ -122,6 +148,11 @@ evidence.
 7. **Scripted utility only: confirmed.**
    * Grenades: one flash at the site centre and one smoke at the defenders' rotation point per
      execute, and a frag at a heard enemy 7-20 m away (8 s cooldown).
+   * **Measured, it is worse: the execute's throws never happen.** The flash target (site centre)
+     and the smoke target (rotation point) are 19-35 m from the staging points. With gravity
+     20 m/s² and throw speeds of 16-17 m/s the longest flat throw is 12.8-14.5 m, so `_do_throw`
+     finds no arc and drops the order. A probe of all 12 lane / grenade pairs finds every one out
+     of range. One frag was thrown in 56 rounds.
    * Defenders throw nothing on purpose.
    * No bot reacts to incoming utility. Flash blindness only depends on where the bot happened to
      look, there is no frag avoidance, and smoke is only a sight blocker.
@@ -133,30 +164,38 @@ evidence.
 
 ### 2.2 Engineering findings that matter for the plan
 
-* **Spikes.** In the baseline the AI exceeds 4 ms in a tick about `SPIKES_PER_ROUND` times per
-  round. The worst are mesh building inside the AI's call path:
-  * `Tactical.deploy` building a gadget model: up to 246 ms;
-  * `CharacterBody.set_weapon`, which **rebuilds and flattens the third-person weapon model on
-    every switch** (bots switch to the charge to plant, to grenades to throw, to the pistol): up
-    to 148 ms;
-  * drone throws: 28 ms.
+* **Spikes.** In the baseline the AI's decisions exceed 4 ms in a tick about 35 times per round.
+  Including what the AI triggers, the worst spikes are procedural meshes built on demand.
+  * Inside the AI's call path:
+    * `Tactical.deploy` building a gadget model: up to 323 ms;
+    * `CharacterBody.set_weapon`, which **rebuilds and flattens the third-person weapon model on
+      every switch** (bots switch to the charge to plant, to grenades to throw, to the pistol):
+      up to 168 ms;
+    * drone throws: about 28 ms.
+  * The same `build_weapon_model` / `add_chamfer_box` path also runs on every death, when the
+    victim's gun drops (about 135 ms). That is why a bot's killing shot is expensive (mean 9.5 ms
+    per shot).
 
-  Pure decision spikes come from path queries: `find_path` reaches 8-13 ms through `_lane_path` on
-  long lanes. Garbage-collection pauses are small (max about 1.3 ms).
+  Pure decision spikes come from path queries: `find_path` (p99 7.4 ms, max 16 ms) through
+  `_lane_path` on long lanes and `_preaim`. Garbage-collection pauses are rare (p99 0.9 ms,
+  max 59 ms) and not caused by the AI.
 * **Hitbox lag (verified).** Hitboxes are children of the body parts, and Bullet only reads their
   transforms in `PhysicsWorld.step`. Test: move a posed body 1 m. A ray at the new position misses
-  until the next step, and a ray at the old position still hits. Bots animate and fire *after* the physics step in the same tick, so
-  shots test the pose from the start of the tick. That is up to one tick (15.6 ms, about 8 cm at a
-  run) behind. With frame interpolation of the body root, hit tests can depend on the frame rate.
-  Workstream B syncs hitboxes explicitly after posing.
+  until the next step, and a ray at the old position still hits. Bots animate and fire *after* the
+  physics step in the same tick, so shots test the pose from the start of the tick. That is up to
+  one tick (15.6 ms, about 8 cm at a run) behind. With frame interpolation of the body root, hit
+  tests can depend on the frame rate. Workstream B syncs hitboxes explicitly after posing.
 * **Determinism.**
   * Gameplay randomness uses the bots' and teams' own `Random`. Global `random` is used only by
     debris, decals and particles, which never touch gameplay masks.
   * Bullet uses one sub-step per tick.
-  * DETERMINISM_RESULT
-* **Cost structure** (live ticks, this machine): AI is about AI_SHARE of the tick. The rest is
-  Bullet, character movement, body animation and the Siege layer. Body animation already costs
-  about 0.13 ms per moving soldier.
+  * Verified: two runs of seed 5 printed identical logs (every kill time, plant, defuse, result,
+    shot count, money). This holds with the demos' fixed frame time. In interactive play, hit
+    registration can depend on the frame rate (the hitbox-lag point above). v2 keeps all
+    randomness on per-bot and per-team `Random`s, including traits.
+* **Cost structure** (live ticks, this machine): AI is about 0.61-0.66 ms of a 3.06 ms tick (about
+  20 %). The rest is Bullet, character movement, body animation and the Siege layer. Body
+  animation already costs about 0.07 ms per moving soldier (0.69 ms for 10).
 
 ### 2.3 Soldiers (workstream B): what exists
 
@@ -183,7 +222,12 @@ right.*
 * **Hitbox exposed areas** (cm², 5 mm ray grid, from `docs/baseline/soldier_stats.json`). These are
   the ±10 % reference for workstream B:
 
-HITBOX_TABLE
+| view | head | chest | stomach | arm | leg | total |
+|---|---|---|---|---|---|---|
+| stand front | 383 | 950 | 1317 | 1070 | 2570 | 6291 |
+| stand side | 377 | 440 | 700 | 1107 | 1450 | 4074 |
+| crouch front | 383 | 1009 | 786 | 1138 | 1658 | 4973 |
+| crouch side | 376 | 448 | 687 | 1106 | 1316 | 3934 |
 
 ---
 
@@ -222,7 +266,7 @@ HITBOX_TABLE
   Both brains drive the same `BotAgent` (`Intent`, `AimController`, `Perception`, inventory,
   character).
 * The legacy modules stay byte-for-byte as they are, so the baseline stays reproducible. Shared
-  fixes that change no decisions (weapon-model cache, prebuilt gadget models) apply to both.
+  fixes that change no decisions (model caching, see 3.10) apply to both.
 
 ### 3.2 Tactical map analysis (`ai/v2/tactical_map.py`), precomputed and cached
 
@@ -393,8 +437,8 @@ HITBOX_TABLE
 * **Traits** (aggression, patience, teamwork, utility, risk) are derived deterministically from
   `hash(seed, name)` with a `Random` per bot, so a bot plays with a recognisable style.
   `botinfo` shows them.
-* **Reaction time**: lognormal with the profile's mean and median, and a fixed sigma of about
-  0.25, replacing the uniform draw.
+* **Reaction time**: a lognormal draw (sigma about 0.25) replaces the uniform draw. Its mean
+  equals the mean of the profile's current range.
   * The mean equals today's mean, so expected reaction is unchanged; only the shape is more human.
   * In the head-to-head both brains draw from the same sampler.
 * **Attention**: tunnel vision on the current target. A second enemy, or one outside a cone of
@@ -456,8 +500,8 @@ HITBOX_TABLE
 * Measured with `tools/bot_metrics.py --no-detail` (whole ticks) and the detailed run (breakdown),
   same seeds, same machine.
 * **Shared fixes**:
-  * cache third-person weapon models per body and key (show/hide, no rebuild);
-  * pre-build or pool gadget and drone models;
+  * build every procedural model once and instance it: third-person weapons (no rebuild on a
+    switch), dropped weapons (no build on a death), gadget and drone models;
   * radio HUD text off the AI path.
 * **v2 by construction**:
   * the tactical map is precomputed; queries are table lookups;
@@ -490,8 +534,9 @@ HITBOX_TABLE
 * **Candy-wrapper twisting** is avoided with twist bones that take 50 % of the forearm roll and
   25 % of the upper arm roll, plus shoulder and hip helper weights. Dual quaternions stay the
   fallback if a test pose still collapses.
-* **Hitboxes become capsules** (sphere for the head) parented to bones. They are synced
-  explicitly after posing (the hitbox lag in 2.2), so a shot tests the pose being shown.
+* **Hitboxes become capsules** (sphere for the head) attached to the gameplay skeleton's bones.
+  Their Bullet transforms are set explicitly after posing (the hitbox lag in 2.2), so a shot tests
+  the pose being shown.
   * Sizes are fitted so each hit group's front and side areas, standing and crouched, stay within
     ±10 % of the table in 2.3.
   * **Hitbox sizes are identical for every appearance.**
@@ -576,8 +621,9 @@ HITBOX_TABLE
   * every 4th tick beyond.
   * Bones are not updated outside the view frustum, and never for hidden bodies.
 
-  Hitboxes still follow the gameplay pose at full rate: the hitbox transforms are computed
-  analytically from the pose, independent of the visual palette.
+  The gameplay skeleton and its hitboxes are still posed every tick (about 15 capsules), so
+  animation LOD and frustum skipping only ever save the visual palette and mesh work, never hit
+  accuracy.
 * `_sig` caching stays.
 
 ### 4.5 Animation (procedural, with events)
@@ -632,7 +678,8 @@ metrics run:
    * `--ai` selection per team; head-to-head runner;
    * metrics folded into `--demo bots`;
    * fairness audit framework, run on legacy for its reference count;
-   * shared spike fixes (weapon-model cache, prebuilt gadgets and drones);
+   * shared spike fixes: build each procedural model once (third-person and dropped weapons,
+     gadgets, drones);
    * a path-query budget queue.
 2. **Tactical map**: occupancy, points, visibility (vectorised, cached), cover, spots, destruction
    patching, plus tests and a debug view.
@@ -685,12 +732,13 @@ from here):
     (MHCLO), poses and expressions … have been released under CC0 1.0 Universal".
   * §D: the MakeHuman project makes no claim over output.
   * `LICENSE.ASSETS.md` is the CC0 1.0 legal code.
-  * Contents: `base.obj`, 1,554 targets, `default.mhskel` and `default_weights.mhw`, eyes,
-    modifiers.
+  * Contents: `base.obj`, about 1,550 target files, `default.mhskel` and
+    `default_weights.mhw`, eyes, modifiers.
 * `makehumancommunity/mpfb2` at commit `d0a32e5` (2026-10-04).
   * `LICENSE.md` §C states the same, explicitly including rigs and JSON mesh data.
-  * Contents: `base.obj`, 1,477 targets, **`rig.game_engine.json` + `weights.game_engine.json`**
-    (a game-ready skeleton with weights), vertex groups, face-region detail textures.
+  * Contents: `base.obj`, about 1,480 target files, **`rig.game_engine.json` and
+    `weights.game_engine.json`** (a game-ready skeleton with weights), vertex groups, face-region
+    detail textures.
 * Not used: the separate "system assets" (skins, hair, eyebrows, proxies, clothes) and community
   assets. They come from makehumancommunity.org (blocked here), and community assets have mixed
   licences. Hair, brows, skin and clothing are made procedurally instead.

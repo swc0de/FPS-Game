@@ -328,6 +328,8 @@ def main(argv=None) -> int:
     ap.add_argument("--preset", default="high")
     opts, rest = ap.parse_known_args(argv)
 
+    from panda3d.core import loadPrcFileData
+    loadPrcFileData("soldier-sheet", "jpeg-quality 85")       # keeps the committed sheet small
     import engine.demo as demo_mod
     orig = demo_mod.make_demo
 

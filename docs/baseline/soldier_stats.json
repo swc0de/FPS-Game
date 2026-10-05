@@ -1,0 +1,101 @@
+{
+ "body": {
+  "geom_nodes": 6,
+  "geoms": 6,
+  "triangles": 1760,
+  "vertices": 2424,
+  "parts": [
+   {
+    "node": "body:rubber",
+    "triangles": 88
+   },
+   {
+    "node": "body:canvas",
+    "triangles": 132
+   },
+   {
+    "node": "body:glass_dark",
+    "triangles": 44
+   },
+   {
+    "node": "body:metal_tan",
+    "triangles": 400
+   },
+   {
+    "node": "body:uniform_tan",
+    "triangles": 484
+   },
+   {
+    "node": "body:glove",
+    "triangles": 612
+   }
+  ]
+ },
+ "weapon": {
+  "geom_nodes": 1,
+  "geoms": 4,
+  "triangles": 884,
+  "vertices": 7120,
+  "parts": [
+   {
+    "node": "bolt",
+    "triangles": 580
+   },
+   {
+    "node": "bolt",
+    "triangles": 88
+   },
+   {
+    "node": "bolt",
+    "triangles": 172
+   },
+   {
+    "node": "bolt",
+    "triangles": 44
+   }
+  ]
+ },
+ "skinning": {
+  "palette_bones": 24,
+  "matrix": "mat4",
+  "uniform_components": 384,
+  "weights_per_vertex": 1
+ },
+ "draw_calls_note": "one draw call per Geom per pass; a soldier is drawn in the main pass, the depth pre-pass and every shadow cascade it overlaps (2-4 by preset), and in local-light shadow maps when a shadowed lamp is near",
+ "animate_us_per_call_running": 69.25396050019117,
+ "animate_ms_per_tick_10_soldiers": 0.6925396050019117,
+ "hitbox_areas_cm2": {
+  "stand_front": {
+   "arm": 1070.5,
+   "chest": 950.5,
+   "head": 383.0,
+   "leg": 2569.7,
+   "stomach": 1317.2,
+   "total": 6291.0
+  },
+  "stand_side": {
+   "arm": 1107.2,
+   "chest": 439.7,
+   "head": 377.2,
+   "leg": 1450.5,
+   "stomach": 699.7,
+   "total": 4074.5
+  },
+  "crouch_front": {
+   "arm": 1138.0,
+   "chest": 1008.7,
+   "head": 383.0,
+   "leg": 1658.0,
+   "stomach": 785.5,
+   "total": 4973.2
+  },
+  "crouch_side": {
+   "arm": 1105.5,
+   "chest": 448.0,
+   "head": 376.2,
+   "leg": 1316.5,
+   "stomach": 687.2,
+   "total": 3933.5
+  }
+ }
+}
