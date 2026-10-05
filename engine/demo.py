@@ -452,7 +452,7 @@ def m7_script(game) -> list:
     s += [("call", lambda g: g.menu.open()), ("wait", 4), ("shot", "m7_pause"),
           ("call", lambda g: g.menu.to_main_menu()), ("wait", 40), ("shot", "m7_back_to_menu"),
           ("call", lambda g: g.log(f"[demo]   back at the menu: phase {g.director.match.phase}, "
-                                   f"menu {'open' if g.menu_open() else 'closed'}"))]
+                                   f"menu {'open' if g.menu_open else 'closed'}"))]
     return s
 
 
