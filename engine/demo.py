@@ -443,8 +443,10 @@ def m7_script(game) -> list:
           ("shot", "m7_radar_north"),
           ("call", lambda g: _m7_hud(g, minimap_rotate=True, minimap_zoom=1.0))]
     # spectating: third person, then the first-person option
-    s += [("call", _m7_kill), ("wait", 60), ("shot", "m7_spectate"),
-          ("call", lambda g: _m7_hud(g, first_person_spectate=True)), ("wait", 20), ("shot", "m7_spectate_fp"),
+    # (spectating starts 2.5 s = 160 ticks after the death)
+    s += [("call", _m7_kill), ("wait", 230), ("shot", "m7_spectate"),
+          ("call", lambda g: g.log(f"[demo]   spectating {getattr(g.director.spectator.target, 'name', None)}")),
+          ("call", lambda g: _m7_hud(g, first_person_spectate=True)), ("wait", 30), ("shot", "m7_spectate_fp"),
           ("call", lambda g: _m7_hud(g, first_person_spectate=False)), ("wait", 4)]
     # pause menu -> quit to the main menu
     s += [("call", lambda g: g.menu.open()), ("wait", 4), ("shot", "m7_pause"),
