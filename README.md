@@ -26,8 +26,9 @@ weapons and characters are original. Third-party art is CC0 only.
 
 ![Milestone 7: menus, HUD, spectating](docs/images/milestone7.jpg)
 
-*From `python main.py --demo m7`: the main menu, key rebinding, the HUD with radar, compass and damage arcs,
-enemy intel on the radar, first-person spectating and the pause menu.*
+*From `python main.py --demo m7`: the main menu and match setup, key rebinding, the HUD options with the
+crosshair preview, the radar, compass and damage arcs, spotted enemies on the radar and compass, and first-person
+and over-the-shoulder spectating.*
 
 ## Requirements
 
