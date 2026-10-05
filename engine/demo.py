@@ -740,7 +740,7 @@ class DemoRunner:
         self.shots: list[str] = []
         self.done = False
         # routes fast-forward: 8 fixed ticks per rendered frame
-        self.frame_dt = 0.125 if name in ("routes", "round") else 1.0 / 30.0
+        self.frame_dt = 0.125 if name in ("routes", "round") else (1.0 / 16.0 if name == "m7" else 1.0 / 30.0)
         self.wait_for = None        # (phase, ticks left)
         self.shooting = None        # (stand-in, ticks, shots)
         self.goto = None            # (x, y, ticks, best_dist, best_tick)

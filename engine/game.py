@@ -520,6 +520,8 @@ class Game(ShowBase):
     def _fixed_update(self, dt: float) -> None:
         if self._shot_queue or self.paused:
             self.player.char.prev_pos = Point3(self.player.char.pos)
+            if self.paused and self.demo is not None:
+                self.demo.tick(dt)          # scripted demos drive the pause menu too
             return
         now = self.loop.time
         if self.demo is not None:
