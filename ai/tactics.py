@@ -398,7 +398,8 @@ class TeamBrain:
             staged = [b for b in bots if id(b) in self.stage_arrived]
             ready = len(staged) >= max(1, math.ceil(len(bots) * 0.6))
             waited = self.first_stage_t is not None and now - self.first_stage_t > 12.0
-            if ready or waited or left < 35.0:
+            breaching = self.gadgets.breach_busy() and left >= 35.0
+            if (ready or waited or left < 35.0) and not breaching:
                 self._execute(bots, now)
         elif self.phase == "exec":
             # carrier inside: plant; time pressure keeps everyone moving in

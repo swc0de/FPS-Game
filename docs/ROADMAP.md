@@ -111,6 +111,20 @@
    they are readable and their collision is exact. Bullet holes are one or
    two chunks.
 
+### Milestone 6 known issues
+
+* **Bot balance swings a lot from seed to seed.** Three spectated runs after
+  the Milestone 6 changes went 2:2, 0:4 and 5:1 (attack:defence), 7:7 over
+  14 rounds. That is about even overall, but individual matches are lopsided.
+* **Bots breach only from a staged group, and only door-sized walls.** Once
+  defenders have reinforced a breach wall, only Kiln can open it. In the
+  last run bots planned 2 breaches and found no way in 4 times.
+* Deployable shields do not change the navmesh: bots walk around them using
+  the stuck handling.
+* I measured everything with software OpenGL in a headless container, so I
+  have no real FPS numbers. The destructible panels add about 110 small
+  geometry nodes; a damaged panel rebuilds in about a millisecond.
+
 ## Milestone 5 - delivered
 
 * **Navigation mesh** (`ai/navmesh.py`), generated from the level's collision

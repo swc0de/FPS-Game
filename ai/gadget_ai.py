@@ -376,9 +376,17 @@ class GadgetAI:
             tac.scan_view(view, "defend", by=b)
 
     # ------------------------------------------------------------- breach
+    def breach_busy(self) -> bool:
+        """A teammate is still opening the wall: the execute waits for it."""
+        br = self.breach
+        if br is None:
+            return False
+        b = br["bot"]
+        return b.alive and b.brain.task.tag in ("breach", "breach_wait") and b.now < br["deadline"]
+
     def _breach_update(self, bots, now: float) -> None:
         team = self.team
-        if team.phase not in ("stage", "exec") or not team.site:
+        if team.phase != "stage" or not team.site:
             return
         br = self.breach
         if br is not None:
@@ -387,7 +395,12 @@ class GadgetAI:
             return
         if self._breach_site == team.site:
             return
+        # only from the group gathered outside the site, not on the way there
+        staged = [b for b in bots if id(b) in team.stage_arrived]
+        if not staged:
+            return
         self._breach_site = team.site
+        bots = staged
         tac = self.tac
         panels = [p for p in self._panels_for(team.site, reinforceable=False, breach=True)
                   if p.destroyed_fraction() < 0.5 and p.spec.kind == "wall"]
@@ -410,7 +423,10 @@ class GadgetAI:
                 stand = self._stand_for(p, team.site, inside=False)
                 if stand is None:
                     continue
-                cost = (stand - b.position()).length() + (25.0 if b is carrier else 0.0)
+                dist = (stand - b.position()).length()
+                if dist > 32.0:
+                    continue
+                cost = dist + (25.0 if b is carrier else 0.0)
                 options.append((cost, b, p, tool, stand))
         if not options:
             tac.log("breach_none", f"no breach at {team.site}: {len(panels)} wall(s), "
@@ -461,7 +477,7 @@ class GadgetAI:
         b.brain.deferred = None
         b.brain.set_task(task, force=True)
         tac.log("breach_plan", f"{b.name} will breach {p.spec.name or p.index} with the {tool.replace('_', ' ')}")
-        self.breach = {"bot": b, "panel": p, "deadline": now + 40.0}
+        self.breach = {"bot": b, "panel": p, "deadline": now + 30.0}
         team.radio(b, {"wall_charge": "Placing a breach charge.", "thermal_lance": "Burning through the wall.",
                        "breach_hammer": "Opening the wall up."}[tool], key="breach", every=10.0)
 
