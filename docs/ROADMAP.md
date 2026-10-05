@@ -7,8 +7,109 @@
 | 3 | Full map, post-processing pipeline, graphics settings | **done** |
 | 4 | Rounds, economy, buy menu, bomb objective | **done** |
 | 5 | AI bots | **done** |
-| 6 | Destructible walls, lean, gadgets, specialists | next |
-| 7 | HUD polish, audio, menus, performance pass | |
+| 6 | Destructible walls, lean, gadgets, specialists | **done** |
+| 7 | HUD polish, audio, menus, performance pass | next |
+
+## Milestone 6 - delivered
+
+* **Destructible panels** (`gameplay/destruction.py`, `data/destruction.json`).
+  * Soft walls, sheet walls and hatches are cut into 25 cm chunks, each with
+    hit points from its surface: plaster, wood, sheet metal, block.
+  * Bullets chip the chunk they hit (a shotgun's pellets open a hole at once).
+    Melee and the hammer smash an area. Explosions destroy everything within a
+    radius that scales with their power: frags blow holes, the bomb levels
+    walls. Wall charges and the lance cut a door-sized opening from the floor.
+  * A damaged panel rebuilds once per tick: its mesh (numpy, both faces plus
+    the edges of every hole) and its Bullet collision (surviving chunks merged
+    into a few boxes). Bullets, sight, grenades and movement all go through
+    the holes.
+  * Dust, fragments and up to 48 tumbling debris pieces fly out. Bullet decals
+    over removed chunks disappear.
+  * A new round restores every wall.
+* **Reinforcement**: defenders hold F (2.5 s) on marked walls and the hatch,
+  two per player per round (three for a Recruit). Steel plates make the
+  panel bullet-proof and immune to everything but the thermal lance.
+* **Kestrel Compound** gained destructible pieces: the barracks and HQ
+  interior walls; the armory (site A) office walls; its east wall (a breach
+  wall facing mid) and west wall in block; a roof hatch above the site with
+  steel stairs up the armory's west side; and the motor pool's (site B) sheet
+  walls, the east one reinforceable. Six security cameras cover the approaches
+  and both sites.
+* **Navmesh links through holes** (`ai/navlinks.py`). The navmesh is still
+  baked with every panel intact. When a wall opens from the floor to crouch
+  height over at least 0.8 m, a two-way off-mesh link joins the floors on
+  either side. A hatch open over 0.8 m square adds a one-way drop link. A* and
+  the funnel treat links like portals, so bots path through breaches and drop
+  into the site.
+* **Prep phase**: freeze time (8 s) -> preparation (20 s) -> live. Defenders
+  move, reinforce, shoot murder holes and place gadgets; attackers stay at
+  spawn and drone. Nobody can be hurt before the round goes live.
+* **Lean** (`gameplay/lean.py`), Q/E for the player and decided by the bots:
+  * the eye moves 36 cm sideways and the view rolls 12°, limited by a ray so
+    you cannot lean through a wall;
+  * the spine rolls so the head hit box follows the camera;
+  * bullets leave from the leaned eye;
+  * bots lean when what they watch is hidden from their upright eye but
+    visible from one side, and keep peeking while they shoot.
+* **Specialists and gadgets** (`gameplay/tactical.py`, `gameplay/gadgets.py`,
+  `data/specialists.json`, models in `data/weapon_models.json`):
+  * Vanguard: Kiln (thermal lance), Vesper (pulse scanner), Maul (breaching
+    hammer), Static (EMP grenades).
+  * Bastion: Bramble (razor wire), Lantern (motion sensors), Bulwark
+    (deployable shield), Ember (signal jammer).
+  * The fifth player on a side is a Recruit, with an extra charge or
+    reinforcement instead of a gadget.
+  * Attackers get one wall charge and can buy two more ($300).
+  * The specialist is picked on the buy menu's last tab; bots take the rest.
+  * Placed gadgets are world objects. Electronics have a one-bullet hit box
+    and EMPs switch them off. The shield is solid cover. Wire slows and
+    rattles. The jammer pauses charges and lances and cuts drone signal.
+* **Drones and cameras** (`gameplay/observation.py`):
+  * drones are tiny kinematic characters: they drive, hop, fall through
+    hatches and die to one bullet; attackers have two each per round;
+  * map cameras pan within ±55°;
+  * the view overlay shows REC, the view name, help and jam/EMP static;
+  * a left click in a view (or middle mouse in first person) pings an enemy,
+    a gadget or a spot. Pings show as markers through walls and feed the bot
+    team's knowledge.
+* **Bots use all of it** (`ai/gadget_ai.py`):
+  * Defenders: in prep they reinforce their site (breach walls first), lay
+    wire across the attack lanes, mount sensors facing an entrance and put
+    shields and jammers at their hold spots. Dead defenders watch the cameras
+    and call out what they see.
+  * Attackers: they drive drones down a lane in prep. Before an execute one
+    of them breaches a site wall (charge, lance on a reinforced wall, or
+    hammer) and the team pushes through. Vesper pulses near the site and
+    Static EMPs electronics there.
+  * Both sides shoot enemy cameras, sensors, jammers and drones in sight when
+    there is no fight.
+* **HUD**: specialist kit (bottom right), ping markers, view overlay,
+  reinforcement progress, prep hints; console `specialist`, `gadgets`,
+  `walls`, `prep`.
+* `--demo m6` tour with screenshots; the bot match demo reports gadget use.
+
+### Milestone 6 decisions to confirm
+
+1. **A separate prep phase** (20 s) after an 8 s freeze time, instead of
+   Siege's 45 s or making the whole freeze time a prep phase. Rounds start
+   about 16 s later than in Milestone 5.
+2. **One specialist per player, picked in the buy menu, kept until you
+   change it.** Picks are unique per team: bots take the free ones and swap
+   with you. The fifth player is a Recruit. A change applies at once during
+   freeze/prep if your gadget is unused, otherwise next round.
+3. **Wall charges are standard kit plus buyable** (one free, up to two more at
+   $300), so the economy matters for breaching. They blow on a 3 s fuse
+   rather than remote detonation (simpler for players and bots). Gadgets are
+   free.
+4. **Gadget names and numbers** (`data/specialists.json`) are first guesses:
+   the lance takes 4 s, the pulse reaches 15 m, the jammer 5 m, the EMP
+   lasts 12 s.
+5. **Off-mesh links instead of rebuilding navmesh cells** when walls break
+   (the Milestone 5 plan): links are cheap, exact for doors cut in walls,
+   and they vanish with the round reset.
+6. **Destruction granularity**: 25 cm chunks. Holes are blocky by design, so
+   they are readable and their collision is exact. Bullet holes are one or
+   two chunks.
 
 ## Milestone 5 - delivered
 

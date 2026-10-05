@@ -212,6 +212,19 @@ class DecalMaskTests(unittest.TestCase):
         self.assertEqual(_decals_in_holes(p, pts).tolist(), [True, False, False, True])
 
 
+class DoorSizedTests(unittest.TestCase):
+    def test_only_full_height_wall_panels_and_hatches(self):
+        from ai.gadget_ai import GadgetAI
+        g = FakeGame()
+        specs = [wall_spec("full", x0=0, x1=4, h=3.2),
+                 PanelSpec((10, 0, 0.5), (1.4, 0.15, 1.0), (0, 0, 0), "plaster", "plaster", "plaster", name="sill"),
+                 PanelSpec((20, 0, 2.7), (1.0, 0.15, 1.0), (0, 0, 0), "plaster", "plaster", "plaster", name="lintel"),
+                 PanelSpec((30, 0, 2.85), (1.2, 1.2, 0.3), (0, 0, 0), "wood", "wood", "wood", kind="floor", name="hatch"),
+                 PanelSpec((40, 0, 1.6), (4.0, 0.15, 3.2), (90, 0, 0), "plaster", "plaster", "plaster", name="turned")]
+        mgr = DestructionManager(g, specs)
+        self.assertEqual([GadgetAI.door_sized(p) for p in mgr.panels], [True, False, False, True, True])
+
+
 def box(x0, y0, z0, x1, y1, z1):
     return ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), (x1 - x0, y1 - y0, z1 - z0), (0, 0, 0), "concrete"
 

@@ -213,5 +213,126 @@
     "anchors": {"muzzle": [0, 0.1, 0], "eject": [0, 0, 0], "sight": [0, 0, 0.06], "grip_r": [0.12, -0.03, -0.02], "grip_l": [-0.12, -0.03, -0.02], "mag": [0, 0, 0]},
     "viewmodel": {"offset": [0.02, 0.4, -0.25], "ads_distance": 0.4, "elbow_r": [0.3, -0.18, -0.42], "elbow_l": [-0.28, -0.18, -0.42]},
     "radius": 0.15
+  },
+  "gadget_drone": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0, 0.075], "size": [0.15, 0.19, 0.06], "bevel": 0.01, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0, 0.0, 0.11], "size": [0.11, 0.12, 0.02], "bevel": 0.004, "mat": "gun_metal"},
+      {"shape": "cyl", "pos": [0.1, 0, 0.065], "radius": 0.065, "length": 0.035, "axis": "x", "mat": "dummy_polymer"},
+      {"shape": "cyl", "pos": [-0.1, 0, 0.065], "radius": 0.065, "length": 0.035, "axis": "x", "mat": "dummy_polymer"},
+      {"shape": "cyl", "pos": [0.1, 0, 0.065], "radius": 0.03, "length": 0.04, "axis": "x", "mat": "gun_metal_light"},
+      {"shape": "cyl", "pos": [-0.1, 0, 0.065], "radius": 0.03, "length": 0.04, "axis": "x", "mat": "gun_metal_light"},
+      {"shape": "sphere", "pos": [0, 0.095, 0.085], "radius": 0.022, "mat": "glass_dark"},
+      {"shape": "box", "pos": [-0.045, -0.085, 0.16], "size": [0.006, 0.006, 0.12], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0.03, 0.097, 0.11], "size": [0.012, 0.006, 0.008], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ],
+    "radius": 0.07
+  },
+  "gadget_camera": {
+    "parts": [
+      {"shape": "box", "pos": [0, -0.03, 0], "size": [0.09, 0.06, 0.09], "bevel": 0.006, "mat": "steel_painted"},
+      {"shape": "box", "pos": [0, 0.0, 0.05], "size": [0.03, 0.05, 0.04], "bevel": 0.004, "mat": "steel_painted"},
+      {"shape": "cyl", "pos": [0, 0.07, 0.02], "radius": 0.045, "length": 0.15, "axis": "y", "mat": "pbr_white_rough"},
+      {"shape": "cyl", "pos": [0, 0.15, 0.02], "radius": 0.03, "length": 0.02, "axis": "y", "mat": "gun_metal"},
+      {"shape": "sphere", "pos": [0, 0.16, 0.02], "radius": 0.024, "mat": "glass_dark"},
+      {"shape": "box", "pos": [0.03, 0.12, 0.06], "size": [0.012, 0.012, 0.008], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ]
+  },
+  "gadget_charge": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0.012, 0], "size": [0.62, 0.024, 1.0], "bevel": 0.01, "mat": "canvas"},
+      {"shape": "box", "pos": [0, 0.026, 0.42], "size": [0.62, 0.012, 0.04], "bevel": 0.002, "mat": "hazard"},
+      {"shape": "box", "pos": [0, 0.026, -0.42], "size": [0.62, 0.012, 0.04], "bevel": 0.002, "mat": "hazard"},
+      {"shape": "box", "pos": [0, 0.045, 0.18], "size": [0.1, 0.05, 0.07], "bevel": 0.006, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0.025, 0.072, 0.19], "size": [0.014, 0.006, 0.01], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ]
+  },
+  "gadget_lance": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0.015, 0], "size": [0.74, 0.03, 1.3], "bevel": 0.01, "mat": "hazard"},
+      {"shape": "box", "pos": [0, 0.034, 0], "size": [0.6, 0.01, 1.12], "bevel": 0.004, "mat": "gun_metal"},
+      {"shape": "cyl", "pos": [-0.22, 0.09, 0.0], "radius": 0.055, "length": 0.5, "axis": "z", "mat": "metal_olive"},
+      {"shape": "cyl", "pos": [0.22, 0.09, 0.0], "radius": 0.055, "length": 0.5, "axis": "z", "mat": "metal_olive"},
+      {"shape": "box", "pos": [0, 0.07, 0.36], "size": [0.12, 0.06, 0.08], "bevel": 0.006, "mat": "steel_painted"},
+      {"shape": "box", "pos": [0.03, 0.102, 0.37], "size": [0.014, 0.006, 0.01], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ]
+  },
+  "gadget_wire": {
+    "parts": [
+      {"shape": "box", "pos": [-0.81, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [-0.81, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [-0.81, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [-0.6300000000000001, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [-0.6300000000000001, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [-0.6300000000000001, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [-0.45000000000000007, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [-0.45000000000000007, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [-0.45000000000000007, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [-0.27, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [-0.27, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [-0.27, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [-0.09000000000000008, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [-0.09000000000000008, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [-0.09000000000000008, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0.08999999999999986, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [0.08999999999999986, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [0.08999999999999986, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0.27, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [0.27, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [0.27, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0.44999999999999996, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [0.44999999999999996, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [0.44999999999999996, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0.6299999999999999, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [0.6299999999999999, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [0.6299999999999999, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0.8099999999999998, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 55]},
+      {"shape": "box", "pos": [0.8099999999999998, 0, 0.22], "size": [0.012, 0.012, 0.5], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, -55]},
+      {"shape": "box", "pos": [0.8099999999999998, 0, 0.22], "size": [0.012, 0.42, 0.012], "bevel": 0.001, "mat": "steel", "hpr": [0, 0, 0]},
+      {"shape": "box", "pos": [0, 0.18, 0.38], "size": [1.8, 0.008, 0.008], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0, -0.18, 0.38], "size": [1.8, 0.008, 0.008], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0, 0.18, 0.08], "size": [1.8, 0.008, 0.008], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0, -0.18, 0.08], "size": [1.8, 0.008, 0.008], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0, 0, 0.43], "size": [1.8, 0.008, 0.008], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [-0.88, 0, 0.22], "size": [0.025, 0.025, 0.46], "bevel": 0.003, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0.0, 0, 0.22], "size": [0.025, 0.025, 0.46], "bevel": 0.003, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0.88, 0, 0.22], "size": [0.025, 0.025, 0.46], "bevel": 0.003, "mat": "metal_olive"}
+    ]
+  },
+  "gadget_sensor": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0.015, 0], "size": [0.11, 0.03, 0.15], "bevel": 0.006, "mat": "metal_olive"},
+      {"shape": "sphere", "pos": [0, 0.03, 0.02], "radius": 0.034, "mat": "glass_dark"},
+      {"shape": "box", "pos": [0, 0.035, -0.05], "size": [0.05, 0.012, 0.012], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ]
+  },
+  "gadget_shield": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0, 0.62], "size": [1.05, 0.07, 1.1], "bevel": 0.01, "mat": "steel_painted"},
+      {"shape": "box", "pos": [0, 0.04, 0.62], "size": [0.95, 0.01, 1.0], "bevel": 0.003, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0, 0.01, 0.98], "size": [0.3, 0.08, 0.05], "bevel": 0.004, "mat": "glass_dark"},
+      {"shape": "box", "pos": [-0.4, -0.2, 0.18], "size": [0.05, 0.42, 0.05], "bevel": 0.004, "mat": "steel", "hpr": [0, -35, 0]},
+      {"shape": "box", "pos": [0.4, -0.2, 0.18], "size": [0.05, 0.42, 0.05], "bevel": 0.004, "mat": "steel", "hpr": [0, -35, 0]},
+      {"shape": "box", "pos": [0, -0.03, 0.07], "size": [1.0, 0.08, 0.06], "bevel": 0.004, "mat": "steel"}
+    ]
+  },
+  "gadget_jammer": {
+    "parts": [
+      {"shape": "box", "pos": [0, 0, 0.06], "size": [0.3, 0.2, 0.12], "bevel": 0.01, "mat": "metal_olive"},
+      {"shape": "box", "pos": [0, 0.101, 0.08], "size": [0.2, 0.004, 0.05], "bevel": 0.002, "mat": "glass_dark"},
+      {"shape": "box", "pos": [-0.1, -0.06, 0.24], "size": [0.008, 0.008, 0.26], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0.0, -0.06, 0.26], "size": [0.008, 0.008, 0.3], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0.1, -0.06, 0.24], "size": [0.008, 0.008, 0.26], "bevel": 0.001, "mat": "steel"},
+      {"shape": "box", "pos": [0.08, 0.103, 0.08], "size": [0.02, 0.006, 0.012], "bevel": 0.001, "mat": "pbr_red_plastic", "group": "led"}
+    ]
+  },
+  "grenade_emp": {
+    "parts": [
+      {"shape": "cyl", "pos": [0, 0, 0], "radius": 0.029, "length": 0.1, "axis": "z", "mat": "steel_painted"},
+      {"shape": "cyl", "pos": [0, 0, 0.0], "radius": 0.0295, "length": 0.03, "axis": "z", "mat": "glass_dark"},
+      {"shape": "cyl", "pos": [0, 0, 0.06], "radius": 0.01, "length": 0.02, "axis": "z", "mat": "gun_metal"},
+      {"shape": "box", "pos": [0, -0.011, 0.03], "size": [0.012, 0.004, 0.06], "bevel": 0.001, "mat": "gun_metal_light"}
+    ],
+    "radius": 0.03
   }
 }

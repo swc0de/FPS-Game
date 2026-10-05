@@ -222,6 +222,10 @@ class Game(ShowBase):
 
     # ---------------------------------------------------- match services
     @property
+    def tactical(self):
+        return self.director.tactical if self.director is not None else None
+
+    @property
     def player_agent(self):
         return self.director.player_agent if self.director is not None else None
 

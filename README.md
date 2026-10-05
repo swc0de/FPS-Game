@@ -6,22 +6,25 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 5 of 7.** Milestone 5 fills the match with **AI bots**: you play with four bot
-> teammates against five bots (5v5).
-> * Bots walk a navigation mesh generated from the map. Attackers take different lanes to the sites;
->   defenders hold angles, rotate on information, retake and defuse.
-> * They see and hear like players and use cover and grenades.
-> * They fight with the same guns, recoil and accuracy rules as you.
-> * Four difficulty levels set reaction time and aim.
-> * When you die you spectate your teammates, and `--spectate` watches a full bot match.
+> **Status: Milestone 6 of 7.** Milestone 6 adds the Siege side of the game:
+> * **Destructible walls and floors.** Soft walls, a roof hatch and sheet-metal walls break chunk by chunk
+>   under bullets, shotguns, knives, frags and charges, with dust and debris. Bots path through the holes.
+> * **Reinforcement.** Defenders hold F to plate marked walls and hatches (2 each per round).
+> * **Lean** with Q / E: the camera tilts and peeks, and your hit boxes lean with it. Bots peek too.
+> * **A prep phase** before each round: defenders set up, attackers scout with **drones**; defenders
+>   watch the map's **security cameras**. Anything you see can be **pinged** for your team.
+> * **Eight specialists**, four per side, each with a unique gadget (thermal lance, pulse scanner,
+>   breaching hammer, EMP grenade / razor wire, motion sensor, deployable shield, signal jammer),
+>   plus buyable **wall charges**. Specialists and gadgets are data in `data/specialists.json`.
 >
-> Earlier milestones delivered rounds, economy and the bomb (4), the full map and post-processing (3), the
-> weapons and hit detection (2), and the player controller and renderer (1). See [docs/ROADMAP.md](docs/ROADMAP.md).
+> Earlier milestones delivered the AI bots (5), rounds, economy and the bomb (4), the full map and
+> post-processing (3), the weapons and hit detection (2), and the player controller and renderer (1).
+> See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 5: AI bots](docs/images/milestone5.jpg)
+![Milestone 6: destruction, gadgets, drones](docs/images/milestone6.jpg)
 
-*From `python main.py --demo bots` (a spectated 5v5 bot match) and the bot body poses: fights at the sites,
-a plant, a retake and a defuse.*
+*From `python main.py --demo m6`: a shotgun hole and a frag breach in the barracks, a wall charge on the
+armory and the door it cuts, a thermal lance on a reinforced wall, a drone view, a camera view and a lean.*
 
 ## Requirements
 
@@ -65,7 +68,8 @@ Useful options (`python main.py --help` lists them all):
 | `--demo weapons` | scripted tour of the Milestone 2 features on the test range. It saves screenshots and prints the damage results |
 | `--demo routes` | walks every lane of the compound and prints PASS/FAIL per route |
 | `--demo round` | plays scripted rounds against stand-ins: buying, a pistol round, a plant and detonation, then a defuse on the defending side. Prints the money after each step and saves `user/screenshots/demo_m4_*.png` |
-| `--demo bots` | watches a fast-forwarded 5v5 bot match (8 rounds; `BOT_DEMO_ROUNDS=n` to change). Prints every kill with context, a summary and any stuck bot, and saves `user/screenshots/demo_bots_*.png` |
+| `--demo m6` | Milestone 6 tour against stand-ins: drone, soft walls, hatch, wall charge, thermal lance through a reinforced wall, defender gadgets, jammer vs. charge, EMP, pulse, lean and the round reset. Prints what broke and saves `user/screenshots/demo_m6_*.png` |
+| `--demo bots` | watches a fast-forwarded 5v5 bot match (8 rounds; `BOT_DEMO_ROUNDS=n` to change, `BOT_DEMO_GADGETS=1` logs every gadget). Prints every kill with context, a summary with gadget use and any stuck bot, and saves `user/screenshots/demo_bots_*.png` |
 | `--team attack` / `--team defend` | start the match on that side and skip the side selection |
 | `--difficulty easy/normal/hard/expert` | bot difficulty (the side selection screen also sets it and remembers it) |
 | `--opponents 5 --teammates 4` | roster size (also `bots <n> [mates]` in the console) |
@@ -85,16 +89,22 @@ Useful options (`python main.py --help` lists them all):
 | Shift (hold) | walk: quiet footsteps, slower |
 | Ctrl (hold) | crouch (crouch in the air = crouch-jump) |
 | Space | jump |
+| Q / E (hold) | lean left / right (peek; your hit boxes lean too) |
 | Left mouse | fire / knife slash / throw grenade (hold to prime, release to throw) |
 | Right mouse | aim down sights (hold) / sniper scope (click cycles 2 zoom levels) / knife stab / underhand grenade lob |
 | R | reload |
 | F | pick up the weapon or ammo you are looking at |
+| F (hold) | reinforce the marked wall or hatch you look at (defenders, 2.5 s, 2 per round) |
+| X | specialist gadget: place / throw / swing / scan |
+| C | wall charge (attackers): stick it on a soft wall or hatch, it blows after 3 s |
+| 6 | drones (attackers: throws one if you have none out) / cameras (defenders). In a view: mouse looks, WASD drives the drone, Space hops, left mouse pings, Q / E switch view, 6 leaves |
+| Middle mouse | ping what you look at (an enemy, a gadget, or a spot) for your team |
 | G | drop the current weapon |
 | Y | inspect weapon |
 | 1 2 3 4 | primary / pistol / knife / grenades (press 4 again to cycle grenade types) |
 | 5 | breach charge (attackers). Hold left mouse inside a bomb site to plant (3.2 s) |
 | F (hold) | defuse the planted charge while looking at it (10 s, 5 s with a defuse kit) |
-| B | buy menu (in your buy zone during buy time) |
+| B | buy menu (in your buy zone during buy time); its last tab (7) picks your specialist |
 | Tab (hold) | scoreboard |
 | ` or F10 | developer console (`help` lists the commands) |
 | Mouse wheel, Z | next/previous weapon, last weapon |
@@ -107,6 +117,48 @@ Useful options (`python main.py --help` lists them all):
 | F12 | screenshot to `user/screenshots/` |
 
 Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
+
+## Milestone 6 - what to test
+
+Start with `python main.py`. Rounds now go **freeze time (8 s, buy) -> preparation (20 s) -> live**. In the
+preparation phase defenders can move, reinforce and set up; attackers stay at spawn and scout with drones;
+nobody can be hurt. Open the buy menu (B) and pick a specialist on the last tab (7); bots take the others.
+
+1. **Soft walls.** Barracks and HQ have plaster interior walls; site A (the armory) has an office with
+   plaster walls and block outer walls; site B (the motor pool) has sheet-metal walls; the armory roof has a
+   hatch above the site (stairs up on the armory's west side).
+   * A rifle chips a small hole after a few rounds in the same place; a shotgun blast opens one at once.
+   * The knife and Maul's hammer smash holes; a frag blows a big one; the bomb levels nearby walls.
+   * Block walls shrug off bullets: they need charges, the lance or the bomb.
+   * Look and shoot through holes; walk or crouch through big ones; drop through an opened hatch.
+2. **Reinforcement** (defend). Look at the armory office walls, the armory's east/west walls, the motor
+   pool's east wall or the hatch (from below) and hold **F** for 2.5 s. Reinforced walls stop bullets,
+   frags and wall charges; only Kiln's thermal lance cuts through.
+3. **Lean** with Q / E, standing still or moving. Peek a corner and see how little of you shows; bots
+   watching an angle from cover lean out to look and shoot.
+4. **Drones** (attack, key 6 in prep or later). Drive into the map, hop up steps, left-click enemies to
+   ping them. A ping shows a red marker through walls for your team, and bot teammates use it.
+   Defenders shoot drones; Ember's jammer cuts their signal.
+5. **Cameras** (defend, key 6). Six cameras cover the approaches and both sites; pan with the mouse, switch
+   with Q / E, ping with left mouse. Attackers shoot them out; dead defender bots keep watching them.
+6. **Gadgets** (X) - try each specialist:
+   * Attack: **Kiln** thermal lance (any wall, 4 s burn), **Vesper** pulse (enemies within 15 m pinged),
+     **Maul** breaching hammer, **Static** EMP grenade (disables cameras, sensors, jammers and drones for
+     12 s).
+   * Defence: **Bramble** razor wire (slows to a crawl and rattles), **Lantern** motion sensors (ping runners
+     in front of them), **Bulwark** bullet-proof shield, **Ember** signal jammer (charges and lances inside
+     5 m stop, drones lose signal).
+   * Buy **wall charges** (gear tab, attackers, $300, 2 extra) and use them with C.
+7. **Bots and gadgets.** Spectate (`--spectate`) or play with bots:
+   * in prep, defenders reinforce their site and put wire, sensors, shields and jammers down, and
+     attackers drive drones towards the target site;
+   * in the round one attacker breaches a site wall before the execute (charge, lance or hammer) and the
+     team pushes through the hole; Vesper pulses, Static EMPs known electronics, and everyone shoots
+     enemy cameras, sensors, jammers and drones they see.
+8. **Console** (`): `specialist kiln`, `gadgets` (refill), `walls` (rebuild), `prep 40`.
+
+Please tell me how the destruction feels (chunk size, how many bullets a wall takes), whether the prep phase
+length is right, and which gadgets feel too strong or too weak.
 
 ## Milestone 5 - what to test
 
@@ -157,7 +209,7 @@ Run `python main.py --bots off` and pick **Vanguard** (attack). The match is the
 24, and the sides swap after round 12. In this practice mode the 5 opponents are stand-ins: they stand or
 crouch at common angles, do not move or shoot, and die and drop their rifle like players.
 
-1. **Freeze time and buying.** Each round starts with 12 s of freeze time: you can look around and buy but
+1. **Freeze time and buying.** Each round starts with freeze time (12 s in Milestone 4; since Milestone 6 it is 8 s followed by a 20 s preparation phase): you can look around and buy but
    not move or shoot. Buying is allowed for 20 s after that while you are in your spawn's buy zone. The
    HUD shows `[B] BUY` and the time left.
    * Press **B**. Number keys pick a category, then an item (e.g. **3 1** = first rifle), or click.
@@ -335,20 +387,24 @@ main.py                 entry point
 engine/                 app/game loop, fixed timestep (64 Hz), settings, input, physics, mesh building
 gameplay/               character controller (shared by player & bots), player, damage model, hitboxes, dummies,
                         match rules (match.py), director (match <-> world), shop, bomb, stand-in agents,
-                        third-person soldier body (body.py), spectator camera
+                        third-person soldier body (body.py), spectator camera, lean, destructible panels
+                        (destruction.py), the Siege layer (tactical.py: kits, pings, views), gadgets.py,
+                        drones and cameras (observation.py)
 render/                 renderer, PBR materials, procedural textures, CSM, local lights, IBL, sky visibility,
                         post pipeline (pre-pass, GTAO, bloom, eye adaptation, tonemap, AA), particles, decals, effects
 render/shaders/         GLSL (commented: every technique is explained in place)
 maps/                   level builder, prefabs (prefabs.py basics, prefabs_military.py compound pieces),
                         map JSON files in maps/data/ (compound, test_range, showroom)
 data/                   data-driven configs: materials, graphics presets, movement, weapons, weapon models, surfaces,
-                        match rules and economy (match.json), bot difficulty and behaviour (bots.json)
+                        match rules and economy (match.json), bot difficulty and behaviour (bots.json),
+                        specialists and gadgets (specialists.json), destruction (destruction.json)
 weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
 ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py),
                         match HUD + scoreboard, buy menu, team select, developer console
 audio/                  procedural sound synthesis (placeholder library) + 3D audio system
-ai/                     bots: navmesh (generation, A*, funnel), path following, perception, aiming, brain
-                        (modes and combat), team tactics, buying
+ai/                     bots: navmesh (generation, A*, funnel), off-mesh links through holes (navlinks.py),
+                        path following, perception, aiming, brain (modes and combat), team tactics, buying,
+                        gadget use (gadget_ai.py)
 assets/                 downloaded / generated textures, HDRIs, caches (not committed)
 tools/                  download_assets.py, generate_textures.py
 tests/                  unit tests (python -m unittest discover -s tests -t .)
@@ -362,6 +418,10 @@ Maps are JSON files in `maps/data/` built from prefabs:
 * **Basic pieces:** `floor`, `wall` (door/window openings, a different material on each side), `stairs`,
   `ramp`, `box`, `crate`, `crate_stack`, `container`, `sandbags`, `barrel`, `pillar`, `railing`,
   `catwalk`, `light`, `spawn` and `group` (an offset and rotated block of pieces).
+* **Destructible pieces:** any `wall` with `"soft": true` becomes chunked panels (`"reinforce": true` lets
+  defenders reinforce it, `"breach": true` marks it for the bots' breaches, `"surface"` picks its strength in
+  `data/destruction.json`); a `building` takes `"soft": {"e": {...}}` per side, `"hatches"` in the roof and
+  `"parapet_gaps"`; a `canopy` takes the same flags per sheet wall. `camera` places a security camera.
 * **Compound pieces:**
   * `building`: a shell with openings per side, a parapet and an interior finish
   * barriers: `twall`, `jersey`, `gabion`, `boom_gate`
@@ -403,6 +463,9 @@ The tests cover:
   lane of the compound
 * bot aiming (turn speed, convergence, aim error decay, spray control), grenade arcs, bot buying and lanes
 * bot perception: view cone, walls, peripheral vision, reaction delay, flash blindness, hearing
+* destruction: chunk damage, collision through holes, explosions, door-sized cuts, reinforcement, the thermal
+  lance, round reset, decal removal, navmesh links through wall holes and one-way drops through hatches
+* lean (timing, wall clearance, body roll), the prep phase, specialist data and gadget models
 
 ## Troubleshooting
 

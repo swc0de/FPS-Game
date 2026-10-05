@@ -175,7 +175,8 @@ class HUD:
             spec = d.spectator.target
         if spec is not None:
             p = spec.damageable
-        self.crosshair.set_visible(self.visible and not self.scoped and g.player.damageable.alive)
+        observing = g.tactical is not None and g.tactical.observing
+        self.crosshair.set_visible(self.visible and not self.scoped and g.player.damageable.alive and not observing)
         self.health.setText(f"+ {int(math.ceil(p.health))}")
         self.health.setFg((1, 0.35, 0.3, 1) if p.health <= 25 else WHITE)
         self.armor.setText((f"[A] {int(p.armor)}" + ("  [H]" if p.helmet else "")) if p.armor > 0 else "")

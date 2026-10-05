@@ -75,7 +75,7 @@
   "time": 2.5,
   "per_player": 2,
   "max_damaged_fraction": 0.15,
-  "plate_mat": "steel_painted"
+  "plate_mat": "metal_tan"
  },
  "debris": {
   "max_bodies": 48,

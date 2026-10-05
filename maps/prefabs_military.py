@@ -59,7 +59,7 @@ def building(ctx, e):
                "bottom" (0 = door), "top"} in absolute map coordinates
     frame_mat door/window trim material
     soft      {"e": {"reinforce": true, "breach": true}, ...}: destructible sides
-    hatches   [{"x", "y", "size": [sx, sy]}]: destructible roof hatches
+    hatches   [{"x", "y", "size": [sx, sy], "mat"}]: destructible roof hatches
               (reinforceable; attackers blow them open to drop in)
     parapet_gaps [{"side": "w", "from": y0, "to": y1}] (x for s/n sides)
     """
@@ -114,7 +114,7 @@ def building(ctx, e):
             sx, sy = hd.get("size", (1.2, 1.2))
             hx0, hy0 = hd["x"] - sx / 2, hd["y"] - sy / 2
             holes.append((hx0, hy0, hx0 + sx, hy0 + sy))
-            ctx.panel((hd["x"], hd["y"], top - roof_t / 2), (sx, sy, roof_t), roof_mat, ceil_mat,
+            ctx.panel((hd["x"], hd["y"], top - roof_t / 2), (sx, sy, roof_t), hd.get("mat", roof_mat), ceil_mat,
                       reinforce=hd.get("reinforce", True), breach=hd.get("breach", False), kind="floor",
                       name=hd.get("name", "hatch"), surface=hd.get("surface", "wood"))
             # steel rim around the opening
@@ -534,6 +534,15 @@ def furniture(ctx, e):
 
 
 # --------------------------------------------------------------- gameplay
+@prefab("camera")
+def camera(ctx, e):
+    """Defender security camera: pos (lens), heading (view direction), pitch.
+    Built and run by gameplay/observation.py (it can be shot out)."""
+    c, r = ctx._xf(e["pos"], (e.get("heading", 0.0), 0.0, 0.0))
+    ctx.cameras.append({"name": e.get("name", ""), "pos": tuple(c), "heading": float(r[0]),
+                        "pitch": float(e.get("pitch", -15.0))})
+
+
 @prefab("zone")
 def zone(ctx, e):
     """Gameplay volume: {"name": "A", "kind": "bombsite" | "buyzone", "team": "attack"

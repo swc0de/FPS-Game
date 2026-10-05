@@ -38,7 +38,9 @@
  "equipment": {
   "kevlar": {"name": "Body armour", "price": 650, "category": "gear"},
   "kevlar_helmet": {"name": "Armour + helmet", "price": 1000, "helmet_upgrade_price": 350, "category": "gear"},
-  "defuse_kit": {"name": "Defuse kit", "price": 400, "teams": ["defend"], "category": "gear"}
+  "defuse_kit": {"name": "Defuse kit", "price": 400, "teams": ["defend"], "category": "gear"},
+  "wall_charge": {"name": "Wall charge", "price": 300, "teams": ["attack"], "category": "gear",
+                  "info": "opens a door in a soft wall or hatch [C]  |  carry 2 extra"}
  },
  "grenade_limit": 4,
  "bomb": {

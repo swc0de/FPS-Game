@@ -89,6 +89,8 @@ class TeamBrain:
         self._enemies_t = -1.0
         self._enemies: list = []
         self._bias_seed: dict[int, int] = {}
+        from ai.gadget_ai import GadgetAI
+        self.gadgets = GadgetAI(self)
         self.reset_round()
 
     # ------------------------------------------------------------- roster
@@ -174,6 +176,7 @@ class TeamBrain:
     # ------------------------------------------------------- round start
     def round_start(self, now: float) -> None:
         self.reset_round()
+        self.gadgets.reset()
         self.round_start_t = now
         bots = self.bots()
         if not bots:
@@ -300,6 +303,13 @@ class TeamBrain:
             self.radio(bot, f"Enemy spotted: {where}", key=f"seen:{where}", every=6.0)
         else:
             self.radio(bot, f"Footsteps near {where}", key=f"heard:{where}", every=8.0)
+
+    def intel(self, enemy, pos: Point3, now: float) -> None:
+        """Gadget/drone/camera information about an enemy (pings): every bot knows."""
+        self.reports.append((now, id(enemy), Point3(pos)))
+        self.last_contact_t = now
+        for b in self.alive_bots():
+            b.perception.on_callout(enemy, pos, now)
 
     def on_teammate_killed(self, victim, killer, now: float) -> None:
         if killer is not None and killer.side != self.side:

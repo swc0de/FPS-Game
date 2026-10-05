@@ -108,6 +108,9 @@ class PlayerWeapons:
         alive = player.damageable.alive
         if not alive:
             return
+        tac = self.game.tactical
+        if tac is not None and tac.observing:
+            return                   # looking through a drone or camera
         for action, slot in SLOT_KEYS:
             if inp.consume(action):
                 self.select(slot)
@@ -279,11 +282,13 @@ class PlayerWeapons:
         eye = self.eye()
         d = Vec3(*angles_to_dir(self.player.yaw, self.player.pitch))
         rng = float(ws.d.raw.get("melee_range", 1.6))
-        res = self.game.physics.world.rayTestClosest(eye, eye + d * rng, MASK_BULLETS)
-        if not res.hasHit():
+        # the first thing hit that is not your own hit boxes (your arms are in front of the eye)
+        hit = next((h for h in self.game.physics.ray_cast_all(eye, eye + d * rng, MASK_BULLETS)
+                    if h.node.getPythonTag("owner") is not self.player), None)
+        if hit is None:
             return
-        node = res.getNode()
-        pos = Point3(res.getHitPos())
+        node = hit.node
+        pos = Point3(hit.pos)
         owner = node.getPythonTag("owner")
         if owner is not None and owner is not self.player and hasattr(owner, "damageable"):
             dmg = float(ws.d.raw.get("heavy_damage", 65)) if heavy else ws.d.damage
@@ -297,11 +302,11 @@ class PlayerWeapons:
                 if hasattr(owner, "on_hit"):
                     owner.on_hit(r, pos, d)
                 self.game.hud.hit_marker(r.killed, False)
-            self.game.effects.impact(pos, Vec3(res.getHitNormal()), node.getTag("surface") or "flesh", d)
+            self.game.effects.impact(pos, Vec3(hit.normal), node.getTag("surface") or "flesh", d)
             self.game.audio.play_at("knife_hit_body", pos)
         else:
             from engine.physics import surface_of
-            self.game.effects.impact(pos, Vec3(res.getHitNormal()), surface_of(node), d)
+            self.game.effects.impact(pos, Vec3(hit.normal), surface_of(node), d)
             self.game.audio.play_at("knife_hit_wall", pos)
             dmg = float(ws.d.raw.get("heavy_damage", 65)) if heavy else ws.d.damage
             self.game.destruction.melee_hit(node, pos, d, dmg)

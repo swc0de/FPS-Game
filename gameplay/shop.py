@@ -100,6 +100,13 @@ class Shop:
             return False, "already wearing armour and helmet"
         elif item.key == "defuse_kit" and getattr(agent, "has_kit", False):
             return False, "already carried"
+        elif item.key == "wall_charge":
+            tac = getattr(d, "tactical", None)
+            if tac is None:
+                return False, "not available"
+            ok, why = tac.can_buy_charge(agent)
+            if not ok:
+                return False, why
         if agent.money < self.price(agent, item):
             return False, "not enough money"
         return True, ""
@@ -133,6 +140,8 @@ class Shop:
                 agent.damageable.helmet = True
         elif item.key == "defuse_kit":
             agent.has_kit = True
+        elif item.key == "wall_charge":
+            self.director.tactical.buy_charge(agent)
         if agent.is_human:
             self.bought.append((item.key, price, bought))
             self.game.audio.play_ui("buy", 0.6)

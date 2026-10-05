@@ -87,10 +87,12 @@ def main(argv=None) -> int:
     parser.add_argument("--seed", type=int, help="random seed for spawns, bot decisions and stand-in positions")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
     args = parser.parse_args(argv)
-    if args.demo in ("routes", "m6") and args.mode == "auto":
+    if args.demo in ("routes",) and args.mode == "auto":
         args.mode = "sandbox"            # walking tests: no freeze time or round resets
-    if args.demo == "round":
-        args.bots = "off"                # the Milestone 4 demo shoots stand-ins
+    if args.demo in ("round", "m6"):
+        args.bots = "off"                # the Milestone 4/6 demos work against stand-ins
+    if args.demo == "m6" and args.team is None:
+        args.team = "attack"
     if args.demo == "bots":
         args.spectate = True
     if args.map is None:

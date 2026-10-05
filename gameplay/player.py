@@ -46,6 +46,9 @@ class PlayerController:
         self.on_step = None                      # callback(StepEvent) -> audio / AI noise
         self.sens_scale = 1.0                    # zoomed scopes slow the mouse down
         self.move_lock = False                   # freeze time, planting, defusing: look but don't move
+        self.lean_lock = False
+        self.slow = 1.0                          # razor wire (gameplay/gadgets.py)
+        self.external_view = None                # drone/camera view: gets the mouse instead of the body
         self.agent = None                        # match participant (gameplay/agents.py)
 
     # ------------------------------------------------------------- spawning
@@ -96,6 +99,11 @@ class PlayerController:
     # ---------------------------------------------------------- fixed tick
     def fixed_update(self, dt: float) -> None:
         inp = self.input
+        if self.external_view is not None and not self.noclip:
+            # looking through a drone or camera: the body stands still, the keys drive the view
+            self.char.step(dt, MoveInput(crouch=not self.damageable.alive))
+            self._update_lean(dt)
+            return
         f = float(inp.is_down("forward")) - float(inp.is_down("back"))
         s = float(inp.is_down("right")) - float(inp.is_down("left"))
         forward, right = self._basis()
@@ -114,7 +122,7 @@ class PlayerController:
             self._noclip_move(dt, wish)
             return
         move = MoveInput(wish_dir=wish, walk=inp.is_down("walk"), crouch=inp.is_down("crouch"),
-                         jump=self._jump_buffer > 0.0, speed_scale=self.speed_scale())
+                         jump=self._jump_buffer > 0.0, speed_scale=self.speed_scale() * self.slow)
         if not self.damageable.alive:
             move = MoveInput(crouch=True)
         was_ground = self.char.on_ground
@@ -140,8 +148,12 @@ class PlayerController:
     def frame_update(self, dt: float, alpha: float) -> None:
         sens = float(self.settings.input.get("sensitivity", 2.0)) * self.sens_scale
         dx, dy = self.input.mouse_delta()
-        self.last_mouse = (dx, dy)
         invert = -1.0 if self.settings.input.get("invert_y", False) else 1.0
+        if self.external_view is not None:
+            self.last_mouse = (0.0, 0.0)
+            self.external_view(dx * YAW_PER_COUNT * sens, dy * YAW_PER_COUNT * sens * invert)
+            return
+        self.last_mouse = (dx, dy)
         self.yaw = (self.yaw - dx * YAW_PER_COUNT * sens) % 360.0
         self.pitch = max(-89.0, min(89.0, self.pitch - dy * YAW_PER_COUNT * sens * invert))
 

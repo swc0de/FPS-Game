@@ -78,6 +78,8 @@ class MatchHUD:
         self.sub = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.4), scale=0.042, fg=W.TEXT, shadow=SHADOW,
                                 mayChange=True)
         self._banner_t = 0.0
+        from ui.tactical_hud import TacticalHUD
+        self.tactical = TacticalHUD(game, director)
         self.prog_bg = DirectFrame(parent=a2.aspect2d, frameColor=(0, 0, 0, 0.6), frameSize=(-0.32, 0.32, -0.018, 0.018),
                                    pos=(0, 0, -0.42))
         self.prog_fill = DirectFrame(parent=self.prog_bg, frameColor=W.ACCENT, frameSize=(0, 0.62, -0.011, 0.011),
@@ -146,6 +148,7 @@ class MatchHUD:
         nodes += [p for row in self.pips.values() for p in row]
         for n in nodes:
             n.show() if v else n.hide()
+        self.tactical.set_visible(v)
         if not v:
             self.prog_bg.hide()
             self.prog_label.setText("")
@@ -155,6 +158,7 @@ class MatchHUD:
         m = d.match
         g = self.game
         human = d.player_agent
+        self.tactical.update(dt)
         if not self.visible:
             return
         # clock / phase
@@ -252,7 +256,8 @@ class MatchHUD:
             self.prog_bg.show()
             self.prog_fill["frameSize"] = (0, 0.62 * frac, -0.011, 0.011)
             kit = (spec or human).has_kit
-            label = "PLANTING" if kind == "plant" else ("DEFUSING (kit)" if kit else "DEFUSING")
+            label = {"plant": "PLANTING", "reinforce": "REINFORCING"}.get(
+                kind, "DEFUSING (kit)" if kit else "DEFUSING")
             self.prog_label.setText(label)
         else:
             self.prog_bg.hide()

@@ -12,7 +12,11 @@
     spectate                  leave the match and watch ten bots play
     give <weapon>             e.g. give sr90 (r7 c9 mx5 s12 p9 frag smoke flash)
     god / noclip / kill       invulnerable / fly / suicide
-    freeze|buytime|roundtime <s>   change match timers
+    freeze|prep|buytime|roundtime <s>   change match timers
+    specialist <name>         pick your specialist (kiln vesper maul static /
+                              bramble lantern bulwark ember / recruit)
+    gadgets                   refill your gadget, charges, drones, reinforcements
+    walls                     rebuild every destructible wall
     pos / tp x y z            print / set your position
 """
 from __future__ import annotations
@@ -153,8 +157,20 @@ class Console:
             from gameplay.damage import DamageInfo
             g.player.damageable.take_damage(DamageInfo(999, 1.0, "chest", "fall", None, "world"))
             return "you died"
-        if cmd in ("freeze", "buytime", "roundtime") and args:
-            key = {"freeze": "freeze_time", "buytime": "buy_time", "roundtime": "round_time"}[cmd]
+        if cmd == "specialist" and args:
+            ok = d.tactical.choose(d.player_agent, args[0].lower())
+            return f"specialist: {args[0]}" if ok else "unknown specialist for your side"
+        if cmd == "gadgets":
+            tac = d.tactical
+            tac._fill_kit(d.player_agent)
+            k = tac.kit(d.player_agent)
+            k.charges = max(k.charges, 3)
+            return "gadgets refilled"
+        if cmd == "walls":
+            g.destruction.reset()
+            return "walls rebuilt"
+        if cmd in ("freeze", "prep", "buytime", "roundtime") and args:
+            key = {"freeze": "freeze_time", "prep": "prep_time", "buytime": "buy_time", "roundtime": "round_time"}[cmd]
             d.rules["timers"][key] = float(args[0])
             return f"{key} = {args[0]} s"
         return f"unknown command '{cmd}' (try help)"

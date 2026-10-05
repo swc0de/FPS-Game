@@ -49,6 +49,18 @@ class Task:
     wait: bool = False           # stay when arrived (until the team gives a new task)
     tag: str = ""
     issued: float = 0.0
+    # gadget work (ai/gadget_ai.py): on arrival look at ``look`` and call
+    # action(bot) every action_time seconds until it returns True; ``until``
+    # (callable(bot) -> bool) ends a waiting task; then the bot moves on to
+    # ``then`` (a Task, or callable(bot) -> Task | None)
+    action: object = None
+    action_time: float = 0.0
+    until: object = None
+    then: object = None
+    timeout: float = 0.0
+
+
+BREACH_TAGS = ("breach", "breach_wait")
 
 
 @dataclass
@@ -131,6 +143,9 @@ class Brain:
         self.defuse_t = 0.0
         self.lean = 0.0
         self.lean_check = 0.0
+        self.gadget_target = None         # enemy gadget/drone/camera to shoot (ai/gadget_ai.py)
+        self.deferred: Task | None = None  # team order that arrived during a breach
+        self.action_t = 0.0
         self.scan_t = 0.0
         self.scan_offset = 0.0
         self.throw: ThrowOrder | None = None
@@ -145,13 +160,26 @@ class Brain:
         self.debug = ""
 
     # ------------------------------------------------------------- orders
-    def set_task(self, task: Task) -> None:
+    def set_task(self, task: Task, force: bool = False) -> None:
+        if not force and self.task.tag in BREACH_TAGS and task.tag not in BREACH_TAGS:
+            # finish blowing the wall first; the team's order runs afterwards
+            self.deferred = task
+            return
         task.issued = self.bot.now
         self.task = task
         self._path_for = None
         self.arrived = False
         self.plant_t = 0.0
         self.defuse_t = 0.0
+        self.action_t = 0.0
+
+    def _next_task(self) -> None:
+        nxt = self.task.then
+        if callable(nxt):
+            nxt = nxt(self.bot)
+        if self.deferred is not None and not (isinstance(nxt, Task) and nxt.tag in BREACH_TAGS):
+            nxt, self.deferred = self.deferred, None
+        self.set_task(nxt if isinstance(nxt, Task) else Task("idle"), force=True)
 
     def order_throw(self, key: str, target: Point3, within: float = 6.0) -> bool:
         if self.bot.weapons.inv.grenades.get(key, 0) <= 0:
@@ -224,7 +252,32 @@ class Brain:
         if self.throw is not None and self.mode in ("task", "alert") and self._do_throw(dt, now):
             return
         getattr(self, "_" + self.mode)(dt, now)
+        self._shoot_gadget(dt, now)
         self._choose_lean(now)
+
+    def _shoot_gadget(self, dt: float, now: float) -> None:
+        """Shoot an enemy camera, drone or sensor when nothing else is going on."""
+        g = self.gadget_target
+        if g is None:
+            return
+        if not g.alive or self.mode != "task" or self.task.kind in ("plant", "defuse", "use"):
+            self.gadget_target = None
+            return
+        bot = self.bot
+        eye = bot.eye()
+        point = g.center()
+        if (point - eye).length() > 25.0:
+            self.gadget_target = None
+            return
+        rest = bot.aim.look_at(eye, point, dt, 1.0)
+        ws = bot.weapons.inv.current()
+        if ws is None or ws.d.fire_mode == "melee":
+            self._ensure_weapon((point - eye).length(), now)
+            return
+        if rest < 1.2 and now >= self.pause_until:
+            bot.intent.trigger = True
+            bot.intent.pressed = True
+            self.pause_until = now + 0.18
 
     def _watch_point(self) -> Point3 | None:
         """What the bot is looking at right now (for peeking)."""
@@ -232,8 +285,12 @@ class Brain:
             return self.target.agent.head_pos()
         if self.mode == "alert" and self.alert_pos is not None:
             return self.alert_pos + Vec3(0, 0, 1.5)
-        if self.mode == "task" and self.arrived and self.task.look is not None:
-            return self.task.look
+        if self.mode == "task" and self.arrived and self.task.kind == "hold":
+            if self.task.look is not None:
+                return self.task.look
+            if self.task.yaw is not None:
+                h = math.radians(self.task.yaw)
+                return self.bot.eye() + Vec3(-math.sin(h), math.cos(h), 0) * 8.0
         return None
 
     def _choose_lean(self, now: float) -> None:
@@ -639,6 +696,9 @@ class Brain:
         if kind == "defuse":
             self._do_defuse(dt, now)
             return
+        if t.timeout and now - t.issued > t.timeout:
+            self._next_task()
+            return
         if t.pos is None:
             self._idle_look(dt, now)
             self._reload_if_needed(now, 0.7)
@@ -659,6 +719,18 @@ class Brain:
         if d.length() > 1.2:
             self.arrived = False
             self._path_for = None
+            return
+        if kind == "use" and t.look is not None:
+            rest = bot.aim.look_at(bot.eye(), t.look, dt, 0.8)
+            if rest < 2.5:
+                self.action_t += dt
+                if self.action_t >= t.action_time:
+                    self.action_t = 0.0
+                    if t.action is None or t.action(bot):
+                        self._next_task()
+            return
+        if t.until is not None and t.until(bot):
+            self._next_task()
             return
         if look_override is not None:
             bot.aim.look_at(bot.eye(), look_override, dt)

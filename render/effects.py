@@ -269,6 +269,26 @@ class Effects:
             dist = (cam - p).length()
             self.add_shake(max(0.0, 2.2 * (1.0 - dist / (radius * 3.0))))
 
+    def sparks(self, pos, direction, n: int = 10, color=(12.0, 6.0, 2.0), speed=(2.0, 6.0), spread: float = 1.0,
+               light: float = 0.0) -> None:
+        """Hot sparks (thermal lance, wrecked electronics, hammer on steel)."""
+        p = Point3(*pos)
+        self.add.emit(n, _jitter(n, p, 0.03), _cone(n, direction, spread, speed), np.random.uniform(0.2, 0.6, n),
+                      0.015, 0.006, (color[0], color[1], color[2], 1.0), (color[0] * 0.3, color[1] * 0.2, color[2] * 0.1, 0.0),
+                      drag=1.0, grav=9.0, stretch=0.02, frame=P.F_SPARK)
+        if light > 0:
+            self.light_pulse(p, (1.0, 0.55, 0.25), light, 4.0, 0.12)
+
+    def emp_burst(self, pos, radius: float) -> None:
+        """EMP grenade: a blue flash and crackling arcs."""
+        p = Point3(*pos)
+        self.light_pulse(p + Vec3(0, 0, 0.3), (0.45, 0.6, 1.0), 500.0, radius * 1.6, 0.35)
+        self.add.emit(1, p, (0, 0, 0), 0.15, 0.6, radius * 0.5, (4, 6, 14, 1.0), (1, 2, 6, 0.0), frame=P.F_GLOW)
+        n = 30
+        self.add.emit(n, _jitter(n, p, 0.1), _cone(n, (0, 0, 1), 1.7, (3.0, 9.0)), np.random.uniform(0.15, 0.4, n),
+                      0.02, 0.006, (4.0, 7.0, 16.0, 1.0), (1.0, 2.0, 6.0, 0.0), drag=2.0, grav=1.0, stretch=0.03,
+                      frame=P.F_SPARK)
+
     def flashbang(self, pos: Point3) -> None:
         p = Point3(*pos)
         self.light_pulse(p, (1.0, 0.98, 0.95), 1600.0, 28.0, 0.15)

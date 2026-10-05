@@ -106,6 +106,8 @@ class Grenade:
             self.game.audio.play_at("explosion", p, volume=1.0)
             self.game.destruction.explosion(p, float(self.d.get("wall_damage", 260)),
                                             float(self.d.get("wall_radius", 1.1)))
+            if self.game.tactical is not None:
+                self.game.tactical.on_explosion(p, 2.5)
             self._apply_blast(p)
             self.game.notify_noise(p, 1.0, 60.0, source=self.thrower)
             self.destroy()
@@ -114,6 +116,16 @@ class Grenade:
             self.game.audio.play_at("flashbang", p, volume=1.0)
             self._apply_flash(p)
             self.game.notify_noise(p, 1.0, 45.0, source=self.thrower)
+            self.destroy()
+        elif kind == "emp":
+            r = float(self.d.get("radius", 7.0))
+            self.game.effects.emp_burst(p, r)
+            self.game.audio.play_at("emp", p, volume=1.0)
+            tac = self.game.tactical
+            if tac is not None:
+                side = getattr(self.thrower, "side", None) or getattr(getattr(self.thrower, "agent", None), "side", "")
+                tac.emp(p, r, float(self.d.get("duration", 12.0)), side)
+            self.game.notify_noise(p, 0.7, 30.0, source=self.thrower)
             self.destroy()
         elif kind == "smoke":
             self.cloud = self.game.effects.smoke_grenade(p, float(self.d.get("radius", 3.7)),

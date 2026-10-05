@@ -17,8 +17,10 @@ class DebugHud:
                                  fg=(0.92, 0.95, 0.9, 1), shadow=(0, 0, 0, 0.8), align=TextNode.ALeft,
                                  mayChange=True)
         self.help = OnscreenText(
-            text="WASD move  SHIFT walk  CTRL crouch  SPACE jump  LMB fire  RMB aim/scope  R reload  "
-                 "1-4/wheel weapons  F use  G drop  Y inspect  V noclip  ESC menu  F1 hud  F3 buffers  F12 screenshot",
+            text="WASD move  SHIFT walk  CTRL crouch  SPACE jump  Q/E lean  LMB fire  RMB aim/scope  R reload  "
+                 "1-4/wheel weapons  F use/reinforce  G drop  Y inspect\n"
+                 "X gadget  C wall charge  6 drones/cameras  MMB ping  V noclip  ESC menu  F1 hud  F3 buffers  "
+                 "F12 screenshot",
             parent=app.a2dTopLeft, pos=(0.04, -0.29), scale=0.034, fg=(0.85, 0.88, 0.85, 0.85),
             shadow=(0, 0, 0, 0.8), align=TextNode.ALeft)
         self.message = OnscreenText(text="", parent=app.aspect2d, pos=(0, 0.25), scale=0.055,

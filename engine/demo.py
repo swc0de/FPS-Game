@@ -18,7 +18,7 @@ Each script is a list of steps executed on fixed ticks:
   ("call", fn)                             run fn(game)
 
     python main.py --map compound --demo routes   # walk every lane of the map
-    python main.py --mode sandbox --demo m6        # destruction (milestone 6)
+    python main.py --demo m6                       # milestone 6 tour (destruction, gadgets, drones)
 """
 from __future__ import annotations
 
@@ -182,46 +182,132 @@ def _panel_named(game, name: str, near=None):
     return best
 
 
+def _give_gadget(game, agent, gadget: str, n: int) -> None:
+    kit = game.tactical.kit(agent)
+    kit.gadget, kit.gadget_left, kit.ready_t = gadget, n, 0.0
+
+
+def _defender(game):
+    return next(a for a in game.director.match.participants if a.side == "defend")
+
+
+def _place_for(game, gadget: str, eye, target) -> None:
+    """A defender stand-in puts a gadget down (aiming from eye at target)."""
+    from ai.aim import angles_to
+    a = _defender(game)
+    _give_gadget(game, a, gadget, 1)
+    yaw, pitch = angles_to(target[0] - eye[0], target[1] - eye[1], target[2] - eye[2])
+    ok, msg = game.tactical.deploy(a, gadget, Point3(*eye), yaw, pitch)
+    game.log(f"[demo]   {a.name} places {gadget}: {msg}")
+
+
+def _tac_report(game, label: str) -> None:
+    t = game.tactical
+    k = t.kit(game.director.player_agent)
+    game.log(f"[demo] --- {label}: deployables {[d.kind for d in t.deployables]}, drones {len(t.drones)}, "
+             f"pings {sorted({p.kind for p in t.pings})}, kit {k.specialist} {k.gadget} x{k.gadget_left} "
+             f"charges {k.charges} drones {k.drones}, message '{t.message}'")
+
+
+def _lean_report(game, label: str) -> None:
+    """Eye (camera) and head hit box relative to the body: they move together."""
+    p = game.player
+    c = p.char.pos
+    head = game.director.player_body.parts["head"].getPos(game.render)
+    eye = p.eye()
+    r = Vec3(math.cos(math.radians(p.yaw)), math.sin(math.radians(p.yaw)), 0)
+    game.log(f"[demo] --- {label}: lean {p.lean.amount:+.2f}, eye {(eye - c).dot(r):+.2f} m sideways, "
+             f"head hit box {(head - c).dot(r):+.2f} m sideways, view roll {p.lean.roll():+.1f} deg")
+
+
 def m6_script(game) -> list:
-    """Milestone 6: soft walls (rifle, shotgun, frag, melee), the roof hatch,
-    reinforcement and the round reset."""
+    """Milestone 6 tour (match vs. stand-ins, you attack, invulnerable): the
+    prep phase with a drone, soft walls (rifle, shotgun, frag, knife), the
+    roof hatch, a wall charge on the armory, a thermal lance through a
+    reinforced wall, defender gadgets, jammer vs. charge, EMP, the pulse
+    scanner, leaning, a camera view and the round reset."""
     s = [("call", lambda g: setattr(g.player.damageable, "damage_filter", lambda d, info: False)),
-         ("pose", -39.5, -14.0, EYE, 180, 0), ("select", "primary"), ("wait", 40)]
-    # rifle: a tight group chips a murder hole through the barracks hallway wall
+         ("wait_phase", "prep", 1500), ("wait", 10), ("shot", "m6_prep"),
+         # --- prep: throw a drone and drive it out of spawn
+         ("press", "observe"), ("wait", 80), ("hold", "forward", 200), ("wait", 4), ("shot", "m6_drone"),
+         ("call", lambda g: _tac_report(g, "drone out")), ("press", "observe"), ("wait", 4),
+         ("wait_phase", "live", 3000), ("wait", 4), ("select", "primary"), ("give", "r7")]
+    # --- soft walls in the barracks hallway
+    s += [("pose", -39.5, -14.0, EYE, 180, 0), ("wait", 40)]
     for k in range(9):
         s += [("aim", -39.5 + (k % 3) * 0.1, -15.5, 1.5 + (k // 3) * 0.1), ("press", "fire"), ("wait", 14)]
     s += [("wait", 4), ("shot", "m6_rifle_hole"), ("call", lambda g: _panel_report(g, "after 9 rifle rounds"))]
-    # shotgun at 2 m: one blast opens a hole
     s += [("give", "s12"), ("pose", -35.0, -13.6, EYE, 180, 0), ("wait", 50), ("aim", -35.0, -15.5, 1.2),
           ("press", "fire"), ("wait", 3), ("shot", "m6_shotgun_burst"), ("wait", 50), ("aim", -35.0, -15.5, 1.0),
-          ("press", "fire"), ("wait", 40), ("aim", -35.0, -15.5, 1.3), ("shot", "m6_shotgun_hole"),
+          ("press", "fire"), ("wait", 40), ("aim", -35.0, -15.5, 1.3), ("wait", 2), ("shot", "m6_shotgun_hole"),
           ("call", lambda g: _panel_report(g, "after 2 shotgun blasts"))]
-    # frag against the wall: a big hole, debris flying
     s += [("pose", -41.0, -13.0, EYE, 220, -5), ("call", lambda g: _frag_at(g, -43.0, -15.3, 0.9)), ("wait", 6),
           ("shot", "m6_frag_blast"), ("wait", 30), ("shot", "m6_frag_debris"), ("wait", 120),
-          ("aim", -43.0, -15.5, 1.1), ("shot", "m6_frag_hole"),
+          ("aim", -43.0, -15.5, 1.1), ("wait", 3), ("shot", "m6_frag_hole"),
           ("call", lambda g: _panel_report(g, "after a frag against the wall"))]
-    # walk through the hole into the room behind
     s += [("route", "frag_hole", -43.0, -13.8, 0.02, 180), ("goto", -43.0, -18.0), ("expect_z", -0.1, 0.2),
           ("end_route",), ("aim", -43.0, -12.0, 1.4), ("wait", 4), ("shot", "m6_through_hole")]
-    # knife a hole
-    s += [("select", "melee"), ("pose", -33.5, -13.4, EYE, 180, 0), ("wait", 40), ("aim", -33.5, -15.5, 1.3)]
+    s += [("select", "melee"), ("pose", -33.5, -14.4, EYE, 180, 0), ("wait", 40), ("aim", -33.5, -15.5, 1.3)]
     for _ in range(6):
         s += [("press", "aim"), ("wait", 70)]
     s += [("shot", "m6_knife"), ("call", lambda g: _panel_report(g, "after 6 heavy knife hits"))]
-    # roof hatch over site A: blow it open from the roof and look down, then up from inside
-    s += [("pose", -43.5, 27.5, 4.5 + EYE, 90, -40), ("wait", 20), ("shot", "m6_hatch_closed"),
-          ("call", lambda g: _frag_at(g, -41.5, 27.5, 4.6)), ("wait", 150), ("aim", -41.5, 27.5, 4.4),
+    # --- leaning around the hallway door frame
+    s += [("select", "primary"), ("pose", -36.3, -14.6, EYE, 180, 0), ("wait", 30), ("shot", "m6_lean_none"),
+          ("call", lambda g: _lean_report(g, "upright")),
+          ("hold_async", "lean_right", 40), ("wait", 25), ("call", lambda g: _lean_report(g, "lean right")),
+          ("shot", "m6_lean_right"), ("wait", 30), ("hold_async", "lean_left", 40), ("wait", 25),
+          ("call", lambda g: _lean_report(g, "lean left")), ("shot", "m6_lean_left"), ("wait", 30)]
+    # --- roof hatch over site A
+    s += [("pose", -43.6, 27.5, 4.5 + EYE, 270, -40), ("aim", -41.5, 27.5, 4.4), ("wait", 20),
+          ("shot", "m6_hatch_closed"), ("call", lambda g: _frag_at(g, -41.5, 27.5, 4.6)), ("wait", 150),
           ("shot", "m6_hatch_open"), ("pose", -41.5, 24.5, EYE, 0, 45), ("wait", 10), ("shot", "m6_hatch_below"),
           ("call", lambda g: _panel_report(g, "after a frag on the hatch"))]
-    # reinforcement: the armory office wall takes no bullet or frag damage
-    s += [("call", lambda g: _panel_named(g, "armory_office", (-47.0, 32.0)).reinforce()), ("select", "primary"),
-          ("pose", -47.0, 29.0, EYE, 0, 0), ("wait", 40), ("aim", -47.0, 32.0, 1.5), ("hold", "fire", 30),
-          ("call", lambda g: _frag_at(g, -47.0, 31.7, 0.6)), ("wait", 150), ("aim", -47.0, 32.0, 1.5),
-          ("shot", "m6_reinforced"), ("call", lambda g: _panel_report(g, "reinforced office wall after 30 shots + frag"))]
-    # round reset rebuilds everything
-    s += [("call", lambda g: g.destruction.reset()), ("pose", -38.0, -14.0, EYE, 180, 0), ("wait", 10),
-          ("shot", "m6_reset"), ("call", lambda g: _panel_report(g, "after reset (expect nothing listed)"))]
+    # --- wall charge on the armory's east (breach) wall, from outside
+    s += [("pose", -28.9, 30.0, EYE, 90, 0), ("aim", -30.0, 30.0, 1.0), ("wait", 20), ("press", "charge"),
+          ("wait", 30), ("shot", "m6_charge_placed"), ("call", lambda g: _tac_report(g, "charge placed")),
+          ("pose", -25.5, 31.5, EYE, 90, 0), ("aim", -30.0, 30.0, 1.2), ("wait", 190), ("shot", "m6_charge_blast"),
+          ("wait", 160), ("shot", "m6_charge_hole"), ("call", lambda g: _panel_report(g, "after the wall charge")),
+          ("route", "breach", -28.6, 30.0, 0.02, 90), ("goto", -33.0, 30.0), ("expect_z", -0.1, 0.2), ("end_route",)]
+    # --- reinforced west wall: bullets and a frag do nothing, the thermal lance cuts through
+    s += [("call", lambda g: _panel_named(g, "armory_west", (-49.8, 36.2, 2.0)).reinforce()), ("wait", 2),
+          ("pose", -46.5, 36.2, EYE, 90, 0), ("aim", -49.8, 36.2, 1.5), ("wait", 30), ("shot", "m6_reinforced"),
+          ("hold", "fire", 20), ("call", lambda g: _frag_at(g, -49.4, 36.2, 0.6)), ("wait", 150),
+          ("call", lambda g: _panel_report(g, "reinforced wall after 20 shots + frag (expect 0%)")),
+          ("call", lambda g: _give_gadget(g, g.director.player_agent, "thermal_lance", 1)),
+          ("pose", -51.3, 36.4, EYE, 270, 0), ("aim", -49.8, 36.4, 1.0), ("wait", 10), ("press", "gadget"),
+          ("wait", 4), ("pose", -53.5, 37.5, EYE, 270, 0), ("aim", -49.8, 36.4, 1.1), ("wait", 120),
+          ("shot", "m6_lance_burning"), ("wait", 160), ("shot", "m6_lance_hole"),
+          ("call", lambda g: _panel_report(g, "after the thermal lance"))]
+    # --- defender gadgets in front of the armory door
+    s += [("call", lambda g: _place_for(g, "razor_wire", (-40.0, 23.4, 1.7), (-40.0, 21.0, 0.0))),
+          ("call", lambda g: _place_for(g, "deploy_shield", (-37.0, 25.0, 1.7), (-37.0, 24.0, 0.0))),
+          ("call", lambda g: _place_for(g, "motion_sensor", (-36.0, 23.0, 1.7), (-36.0, 22.36, 2.4))),
+          ("pose", -40.0, 17.5, EYE, 0, -8), ("aim", -39.0, 23.0, 0.8), ("wait", 20), ("shot", "m6_defender_gadgets"),
+          ("route", "wire", -40.0, 18.5, 0.02, 0), ("goto", -40.0, 28.5), ("end_route",),
+          ("call", lambda g: _tac_report(g, "after running through the wire (sensor ping, slowed)")),
+          ("wait", 4), ("shot", "m6_sensor_ping")]
+    # --- jammer stops a charge until an EMP knocks it out
+    s += [("call", lambda g: _place_for(g, "signal_jammer", (-32.0, 35.0, 1.7), (-31.6, 35.0, 0.0))),
+          ("pose", -28.9, 35.6, EYE, 90, 0), ("aim", -30.0, 35.6, 1.0), ("wait", 10),
+          ("call", lambda g: setattr(g.tactical.kit(g.director.player_agent), "charges", 2)), ("press", "charge"),
+          ("wait", 260), ("call", lambda g: _tac_report(g, "charge under the jammer (expect the charge still there)")),
+          ("shot", "m6_jammed"),
+          ("call", lambda g: _give_gadget(g, g.director.player_agent, "emp_grenade", 1)), ("pose", -27.0, 33.0, EYE, 90, 0),
+          ("aim", -31.5, 35.0, 1.2), ("wait", 10), ("press", "gadget"), ("wait", 100), ("shot", "m6_emp"),
+          ("wait", 260), ("call", lambda g: _tac_report(g, "after the EMP (expect jammer off, charge fired)")),
+          ("call", lambda g: _panel_report(g, "armory east wall after the EMP'd jammer"))]
+    # --- pulse scanner near the defenders' positions
+    s += [("call", lambda g: _give_gadget(g, g.director.player_agent, "pulse_scanner", 1)),
+          ("pose", -40.0, 14.0, EYE, 0, 0), ("wait", 10), ("press", "gadget"), ("wait", 6), ("shot", "m6_pulse"),
+          ("call", lambda g: _tac_report(g, "after a pulse"))]
+    # --- a defender's camera (normally key 6 on the defending side)
+    s += [("call", lambda g: g.tactical.enter_view(g.tactical.cameras[1])), ("wait", 6), ("shot", "m6_camera"),
+          ("call", lambda g: g.tactical.exit_view()), ("wait", 2)]
+    # --- round reset rebuilds everything
+    s += [("call", lambda g: g.director.match.force_end_round("attack")), ("wait_phase", "freeze", 2000),
+          ("wait", 10), ("pose", -38.0, -14.0, EYE, 180, 0), ("wait", 10), ("shot", "m6_reset"),
+          ("call", lambda g: _panel_report(g, "after the round reset (expect nothing listed)")),
+          ("call", lambda g: _tac_report(g, "after the round reset"))]
     return s
 
 
@@ -272,6 +358,7 @@ class BotDemo:
         for b in d.bots:
             b.damageable.on_damage.append(lambda res, b=b: self._hit(res))
         game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds")
+        d.tactical.verbose = self.trace or os.environ.get("BOT_DEMO_GADGETS", "") == "1"
 
     def _hit(self, res) -> None:
         if res.info.kind == "bullet":
@@ -405,6 +492,8 @@ class BotDemo:
         for b in sorted(d.bots, key=lambda b: -b.stats.kills):
             st = b.stats
             log(f"[bots]   {b.name:9s} {b.side:7s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}  ${b.money}")
+        tac = d.tactical
+        log("[bots] gadgets: " + ", ".join(f"{k} {v}" for k, v in sorted(tac.stats.items())))
         log(f"[bots] stuck reports: {len(self.stuck_reports)}")
         for msg in self.stuck_reports[:20]:
             log(f"[bots]   {msg}")

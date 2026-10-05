@@ -116,6 +116,8 @@ class Bomb:
         g.notify_noise(self.pos, 1.0, 120.0)
         center = self.pos + Vec3(0, 0, 0.5)
         g.destruction.explosion(center, float(self.cfg.get("wall_damage", 900)), float(self.cfg.get("wall_radius", 4.5)))
+        if g.tactical is not None:
+            g.tactical.on_explosion(center, 8.0)
         for target in g.damageables():
             if not target.damageable.alive:
                 continue

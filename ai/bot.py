@@ -165,11 +165,12 @@ class BotWeapons:
         d = Vec3(*angles_to_dir(bot.aim.yaw, bot.aim.pitch))
         rng = float(ws.d.raw.get("melee_range", 1.6))
         self.game.audio.play_at("knife_swing", eye, 0.5)
-        res = self.game.physics.world.rayTestClosest(eye, eye + d * rng, MASK_BULLETS)
-        if not res.hasHit():
+        hit = next((h for h in self.game.physics.ray_cast_all(eye, eye + d * rng, MASK_BULLETS)
+                    if h.node.getPythonTag("owner") is not bot), None)
+        if hit is None:
             return
-        node = res.getNode()
-        pos = Point3(res.getHitPos())
+        node = hit.node
+        pos = Point3(hit.pos)
         owner = node.getPythonTag("owner")
         if owner is not None and owner is not bot and hasattr(owner, "damageable"):
             dmg = ws.d.damage
@@ -181,10 +182,10 @@ class BotWeapons:
             r = owner.damageable.take_damage(info)
             if r is not None and hasattr(owner, "on_hit"):
                 owner.on_hit(r, pos, d)
-            self.game.effects.impact(pos, Vec3(res.getHitNormal()), node.getTag("surface") or "flesh", d)
+            self.game.effects.impact(pos, Vec3(hit.normal), node.getTag("surface") or "flesh", d)
             self.game.audio.play_at("knife_hit_body", pos)
         else:
-            self.game.effects.impact(pos, Vec3(res.getHitNormal()), surface_of(node), d)
+            self.game.effects.impact(pos, Vec3(hit.normal), surface_of(node), d)
             self.game.audio.play_at("knife_hit_wall", pos)
             self.game.destruction.melee_hit(node, pos, d, ws.d.damage)
 
@@ -222,6 +223,7 @@ class BotAgent(Participant):
         self.body = self._make_body(side)
         self.aim = AimController(self.profile, self.rng)
         self.lean = Lean()
+        self.slow = 1.0                 # razor wire
         self.perception = Perception(self, cfg.get("vision", {}), self.profile)
         self.weapons = BotWeapons(self)
         self.has_kit = False
@@ -324,7 +326,7 @@ class BotAgent(Participant):
         if self.scoped and ws is not None and ws.d.scope:
             scale *= float(ws.d.scope.get("speed", 0.6)) / max(ws.d.speed, 1e-3)
         self.char.step(dt, MoveInput(wish_dir=it.wish, walk=it.walk, crouch=it.crouch, jump=it.jump,
-                                     speed_scale=scale))
+                                     speed_scale=scale * self.slow))
         it.pressed = False
         c = self.char
         target = 0.0 if locked else it.lean

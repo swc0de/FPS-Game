@@ -2,7 +2,8 @@
 
 Keyboard: a number picks the category, the next number buys an item
 (CS 1.6 style); or click with the mouse. Right-click an item bought this
-round to sell it back while buy time lasts.
+round to sell it back while buy time lasts. The last tab picks your
+specialist (Milestone 6).
 """
 from __future__ import annotations
 
@@ -29,9 +30,10 @@ class BuyMenu(DirectObject):
         self.money = W.label(self.root, "", (1.02, 0.6), scale=0.05, fg=(0.55, 0.95, 0.45, 1), align=TextNode.ARight)
         self.timer = W.label(self.root, "", (1.02, 0.54), scale=0.03, fg=W.DIM, align=TextNode.ARight)
         self.cat_buttons = {}
-        for i, (key, name) in enumerate(CATEGORIES):
-            self.cat_buttons[key] = W.button(self.root, f"{i + 1}  {name.upper()}", (-0.9 + i * 0.36, 0.46),
-                                             self.select_category, width=0.34, height=0.07, scale=0.032, extra=(key,))
+        tabs = list(CATEGORIES) + [("specialist", "Specialist")]
+        for i, (key, name) in enumerate(tabs):
+            self.cat_buttons[key] = W.button(self.root, f"{i + 1}  {name.upper()}", (-0.915 + i * 0.305, 0.46),
+                                             self.select_category, width=0.29, height=0.07, scale=0.028, extra=(key,))
         self.list_frame = DirectFrame(parent=self.root, frameColor=(0, 0, 0, 0))
         self.info_title = W.label(self.root, "", (0.12, 0.3), scale=0.045, fg=W.TEXT)
         self.info_price = W.label(self.root, "", (0.12, 0.22), scale=0.04, fg=(0.55, 0.95, 0.45, 1))
@@ -63,7 +65,7 @@ class BuyMenu(DirectObject):
         self.status["text"] = ""
         self.select_category(self.category)
         self.game.input.set_captured(False)
-        for i in range(1, 7):
+        for i in range(1, 8):
             self.accept(str(i), self._number, [i])
         self._first_key = None
         return True
@@ -89,6 +91,9 @@ class BuyMenu(DirectObject):
             b.destroy()
         self.items = []
         d = self.director
+        if key == "specialist":
+            self._list_specialists()
+            return
         cat = catalogue(self.game.weapon_db, d.rules, d.player_agent.side).get(key, [])
         for i, it in enumerate(cat):
             b = W.button(self.list_frame, f"{i + 1}   {it.name}", (-0.56, 0.3 - i * 0.1), self.buy, width=0.96,
@@ -103,6 +108,44 @@ class BuyMenu(DirectObject):
             b.bind(DGG.B3PRESS, lambda _e, it=it: self.refund(it))
             self.items.append(b)
         self._show_info(cat[0] if cat else None)
+
+    def _specialists(self) -> list[dict]:
+        tac = self.director.tactical
+        return tac.specialists(self.director.player_agent.side) + [tac.cfg["recruit"]]
+
+    def _list_specialists(self) -> None:
+        d = self.director
+        tac = d.tactical
+        current = tac.human_choice.get(d.player_agent.side)
+        taken = {tac.kit(a).specialist: a.name for a in d.match.participants
+                 if a.side == d.player_agent.side and a is not d.player_agent}
+        for i, sp in enumerate(self._specialists()):
+            mark = "  (you)" if sp["key"] == current else (f"  ({taken[sp['key']]})" if sp["key"] in taken else "")
+            b = W.button(self.list_frame, f"{i + 1}   {sp['name']}  -  {sp.get('role', '')}{mark}", (-0.56, 0.3 - i * 0.1),
+                         self.pick_specialist, width=0.96, height=0.085, scale=0.034, extra=(sp,), align=TextNode.ALeft,
+                         active=sp["key"] == current)
+            b.bind(DGG.ENTER, lambda _e, sp=sp: self._show_specialist(sp))
+            self.items.append(b)
+        sel = next((sp for sp in self._specialists() if sp["key"] == current), None)
+        self._show_specialist(sel)
+
+    def _show_specialist(self, sp) -> None:
+        self.hover = None
+        if sp is None:
+            return
+        tac = self.director.tactical
+        self.info_title["text"] = sp["name"]
+        g = sp.get("gadget", "")
+        self.info_price["text"] = tac.gcfg[g].get("name", g) if g else "no gadget"
+        self.info_text["text"] = sp.get("desc", "")
+        self.info_why["text"] = "bots swap with you if they had this one; applies now during freeze/prep, " \
+                                "otherwise next round"
+
+    def pick_specialist(self, sp) -> None:
+        d = self.director
+        if d.tactical.choose(d.player_agent, sp["key"]):
+            self.status["text"] = f"specialist: {sp['name']}"
+        self.select_category("specialist")
 
     def _show_info(self, it) -> None:
         self.hover = it
@@ -123,6 +166,14 @@ class BuyMenu(DirectObject):
             if n <= len(CATEGORIES):
                 self._first_key = n
                 self.select_category(CATEGORIES[n - 1][0])
+            elif n == len(CATEGORIES) + 1:
+                self._first_key = n
+                self.select_category("specialist")
+        elif self.category == "specialist":
+            sps = self._specialists()
+            if n <= len(sps):
+                self.pick_specialist(sps[n - 1])
+            self._first_key = None
         else:
             d = self.director
             cat = catalogue(self.game.weapon_db, d.rules, d.player_agent.side).get(self.category, [])

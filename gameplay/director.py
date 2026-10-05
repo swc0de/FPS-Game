@@ -66,6 +66,8 @@ class MatchDirector:
             self.player_agent.team = None
         self.bomb = Bomb(game, self.rules)
         self.shop = Shop(self)
+        from gameplay.tactical import Tactical
+        self.tactical = Tactical(game, self)
         self.team_brains: dict = {}
         if self.use_bots:
             from ai.tactics import TeamBrain
@@ -207,7 +209,9 @@ class MatchDirector:
                 tb.round_start(now)
         planting = self._update_plant(dt)
         defusing = self._update_defuse(dt)
-        player.move_lock = self.move_locked(human) or planting or defusing
+        tac = self.tactical
+        player.move_lock = self.move_locked(human) or planting or defusing or tac.human_busy
+        player.lean_lock = tac.human_busy
         if m.phase == "planted" and m.bomb_time_left() <= 0.0 and self.bomb.state == "planted":
             self.bomb.explode()
             m.on_bomb_exploded()
@@ -229,9 +233,11 @@ class MatchDirector:
         if human.alive and not self.spectate_only and not player.noclip and player.char.pos.z < self._kill_z:
             self._out_of_world(human)
         self._separate_characters()
+        tac.fixed_update(dt)
         if now >= self._team_t:
             self._team_t = now + TEAM_THINK
             for tb in self.team_brains.values():
+                tb.gadgets.update(now)
                 tb.update(now)
         # the human's hit boxes follow the first-person character
         if human.alive and not self.spectate_only:
@@ -259,6 +265,7 @@ class MatchDirector:
         for b in self.bots:
             b.frame_update(dt, alpha)
         self.spectator.frame_update(dt)
+        self.tactical.frame_update(dt, alpha)
         now = self.game.loop.time
         self.feed = [f for f in self.feed if now - f["t"] < 7.0]
         self.radio_log = [r for r in self.radio_log if now - r["t"] < 6.0]
@@ -362,6 +369,7 @@ class MatchDirector:
         if not self.spectate_only:
             g.weapons.select(inv.best_slot(), force=True)
         self._bots_buy = bool(self.bots)
+        self.tactical.round_reset()
         if self.spectate_only:
             self.spectator.start()
         g.renderer.post.reset_adaptation()
