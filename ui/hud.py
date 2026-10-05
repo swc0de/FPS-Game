@@ -1,14 +1,17 @@
-"""In-game HUD: health/armour, ammo, weapon, crosshair, hit markers,
-scope overlay, flashbang blindness and damage feedback."""
+"""In-game HUD: health/armour with bars, ammo, weapon, crosshair, hit
+markers, scope overlay, flashbang blindness and damage feedback (a red
+vignette plus arcs around the crosshair pointing at the damage source)."""
 from __future__ import annotations
 
 import math
 
 import numpy as np
-from panda3d.core import CardMaker, SamplerState, TextNode, Texture, TransparencyAttrib
+from direct.gui.DirectGui import DirectFrame
+from panda3d.core import CardMaker, Point3, SamplerState, TextNode, Texture, TransparencyAttrib
 
 from ui import widgets as W
 from ui.crosshair import Crosshair
+from ui.radar import world_to_radar
 
 AMBER = (1.0, 0.86, 0.55, 1.0)
 WHITE = (0.95, 0.96, 0.92, 1.0)
@@ -31,6 +34,57 @@ def _radial_texture(name: str, inner: float, outer: float, size: int = 256, inve
     tex.setWrapU(SamplerState.WM_clamp)
     tex.setWrapV(SamplerState.WM_clamp)
     return tex
+
+
+def _arc_texture(size: int = 256, half_angle: float = 28.0) -> Texture:
+    """Ring segment centred on 'up' with soft ends (damage direction arc)."""
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32)
+    u = (x + 0.5) / size * 2 - 1
+    v = (y + 0.5) / size * 2 - 1
+    r = np.sqrt(u * u + v * v)
+    ang = np.degrees(np.abs(np.arctan2(u, v)))
+    radial = np.clip(1 - np.abs(r - 0.86) / 0.08, 0, 1)
+    ends = np.clip((half_angle - ang) / 10.0, 0, 1)
+    img = np.zeros((size, size, 4), np.float32)
+    img[..., 0] = 1.0
+    img[..., 1] = 0.12 + 0.2 * radial
+    img[..., 2] = 0.08
+    img[..., 3] = radial * ends
+    tex = Texture("damage_arc")
+    tex.setup2dTexture(size, size, Texture.T_unsigned_byte, Texture.F_rgba8)
+    tex.setRamImageAs((img * 255).astype(np.uint8).tobytes(), "RGBA")
+    tex.setWrapU(SamplerState.WM_clamp)
+    tex.setWrapV(SamplerState.WM_clamp)
+    return tex
+
+
+def arc_angle(dx: float, dy: float, yaw_deg: float) -> float:
+    """Screen angle (degrees clockwise from straight up) of a world offset seen with this heading."""
+    u, v = world_to_radar(dx, dy, yaw_deg, 1.0)
+    return math.degrees(math.atan2(u, v))
+
+
+class _Bar:
+    def __init__(self, parent, pos, width: float, color):
+        self.width = width
+        self.bg = DirectFrame(parent=parent, frameColor=(0, 0, 0, 0.45), frameSize=(0, width, -0.006, 0.006),
+                              pos=(pos[0], 0, pos[1]))
+        self.fill = DirectFrame(parent=self.bg, frameColor=color, frameSize=(0, width, -0.004, 0.004))
+        self.frac = -1.0
+
+    def set(self, frac: float, color=None) -> None:
+        frac = max(0.0, min(frac, 1.0))
+        if abs(frac - self.frac) > 1e-3:
+            self.frac = frac
+            self.fill.setSx(max(frac, 1e-3))
+        if color is not None:
+            self.fill["frameColor"] = color
+
+    def show(self) -> None:
+        self.bg.show()
+
+    def hide(self) -> None:
+        self.bg.hide()
 
 
 class HUD:
@@ -58,6 +112,9 @@ class HUD:
         # map location (callout areas) and bomb-site indicator, bottom left
         self.location = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.2), scale=0.042, fg=AMBER,
                                      shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
+        self.health_bar = _Bar(a2.a2dBottomLeft, (0.08, 0.065), 0.28, WHITE)
+        self.armor_bar = _Bar(a2.a2dBottomLeft, (0.42, 0.065), 0.2, (0.55, 0.75, 1.0, 0.9))
+        self._health_col = None
         self._msg_t = 0.0
         self.crosshair = Crosshair(game, game.settings.data["gameplay"]["crosshair"])
 
@@ -92,6 +149,11 @@ class HUD:
         self._blind_strength = 0.0
         self.damage_card = fullscreen("damage", _radial_texture("dmg_vignette", 0.35, 1.35, rgb=(0.6, 0.02, 0.02)))
         self._dmg_t = 0.0
+        # damage direction arcs around the crosshair: [node, source point, time left]
+        self.arc_tex = _arc_texture()
+        self.arc_root = game.aspect2d.attachNewNode("damage_arcs")
+        self.arc_root.setBin("fixed", 45)
+        self.arcs: list[list] = []
 
         # sniper scope: circular window + black borders + fine reticle
         self.scope = game.aspect2d.attachNewNode("scope")
@@ -135,6 +197,28 @@ class HUD:
         self._dmg_t = min(0.3 + amount / 60.0, 1.0)
         self.damage_card.show()
 
+    ARC_TIME = 1.6
+
+    def damage_from(self, source, amount: float) -> None:
+        """Show an arc pointing at a world position the damage came from."""
+        if source is None:
+            return
+        source = Point3(source)
+        for arc in self.arcs:
+            if (arc[1] - source).length() < 2.0:
+                arc[1] = source
+                arc[2] = self.ARC_TIME
+                arc[3] = max(arc[3], amount)
+                return
+        if len(self.arcs) >= 4:
+            self.arcs.pop(0)[0].removeNode()
+        cm = CardMaker("arc")
+        cm.setFrame(-0.34, 0.34, -0.34, 0.34)
+        n = self.arc_root.attachNewNode(cm.generate())
+        n.setTexture(self.arc_tex)
+        n.setTransparency(TransparencyAttrib.MAlpha)
+        self.arcs.append([n, source, self.ARC_TIME, amount])
+
     def flash_msg(self, text: str, seconds: float = 1.6) -> None:
         self.message.setText(text)
         self._msg_t = seconds
@@ -155,8 +239,11 @@ class HUD:
 
     def set_visible(self, v: bool) -> None:
         self.visible = v
-        for w in (self.health, self.armor, self.ammo, self.reserve, self.weapon, self.status, self.location):
+        for w in (self.health, self.armor, self.ammo, self.reserve, self.weapon, self.status, self.location,
+                  self.health_bar, self.arc_root):
             w.show() if v else w.hide()
+        if not v:
+            self.armor_bar.hide()
         self.crosshair.set_visible(v and not self.scoped)
 
     def on_resize(self) -> None:
@@ -178,8 +265,17 @@ class HUD:
         observing = g.tactical is not None and g.tactical.observing
         self.crosshair.set_visible(self.visible and not self.scoped and g.player.damageable.alive and not observing)
         self.health.setText(f"+ {int(math.ceil(p.health))}")
-        self.health.setFg((1, 0.35, 0.3, 1) if p.health <= 25 else WHITE)
+        low = p.health <= 25
+        self.health.setFg((1, 0.35, 0.3, 1) if low else WHITE)
+        col = (1, 0.35, 0.3, 1) if low else WHITE
+        self.health_bar.set(p.health / max(p.max_health, 1.0), col if col != self._health_col else None)
+        self._health_col = col
         self.armor.setText((f"[A] {int(p.armor)}" + ("  [H]" if p.helmet else "")) if p.armor > 0 else "")
+        if p.armor > 0 and self.visible:
+            self.armor_bar.show()
+            self.armor_bar.set(p.armor / 100.0)
+        else:
+            self.armor_bar.hide()
         c = spec.char.pos if spec is not None else g.player.char.pos
         loc = g.level.callout_at(c.x, c.y)
         site = g.level.zone_at((c.x, c.y, c.z))
@@ -234,3 +330,17 @@ class HUD:
             self.damage_card.setAlphaScale(max(self._dmg_t, 0))
             if self._dmg_t <= 0:
                 self.damage_card.hide()
+        if self.arcs:
+            pl = g.player
+            pos = pl.char.pos
+            keep = []
+            for arc in self.arcs:
+                arc[2] -= dt
+                if arc[2] <= 0 or not pl.damageable.alive:
+                    arc[0].removeNode()
+                    continue
+                n, src, left, amount = arc
+                n.setR(arc_angle(src.x - pos.x, src.y - pos.y, pl.yaw))
+                n.setAlphaScale(min(left / 0.5, 1.0) * min(0.55 + amount / 60.0, 1.0))
+                keep.append(arc)
+            self.arcs = keep

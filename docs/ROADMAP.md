@@ -8,7 +8,92 @@
 | 4 | Rounds, economy, buy menu, bomb objective | **done** |
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
-| 7 | HUD polish, audio, menus, performance pass | next |
+| 7 | HUD polish, audio, menus, performance pass | **done** |
+
+## Milestone 7 - delivered
+
+* **Main menu** (`ui/main_menu.py`): title over a slow camera tour of the
+  map's shots, Play (side, difficulty, 0-4 teammates, 1-5 opponents), Watch
+  bot match, How to play (lists your current binds), Settings, Quit. The
+  pause menu has "Quit to main menu", which ends the match
+  (`Director.stop`) and brings the menu back; any setup can be started
+  again without restarting the game.
+* **Settings** (`ui/menus.py`):
+  * a CONTROLS tab: every action in two columns, click and press a key or
+    mouse button; a key that is in use moves to the old key of the changed
+    action; Esc, F1, F3, F10, F12, V and the console key are reserved;
+  * GAMEPLAY: crosshair options with a live preview, HUD options (radar,
+    rotate, zoom, compass, first-person spectating);
+  * AUDIO: master, effects, ambience, music and interface volumes;
+  * DISPLAY: the debug overlay default (off / FPS / full); a Defaults button
+    per tab.
+* **HUD**:
+  * radar (`ui/radar.py`): the image is rasterised from the navmesh once per
+    map (floors shaded by height, walls, breakable panels, sites, tunnels)
+    and shown through a texture transform centred on the viewed player;
+    markers for teammates, spotted enemies (pings and the team's sightings
+    of the last 3 s), the bomb and the sites;
+  * a compass strip with site, ping and bomb markers;
+  * damage direction arcs (`ui/hud.py`), health and armour bars;
+  * the FPS counter moved to the top right (F1 cycles off / FPS / full).
+* **First-person spectating** (option): the camera sits at the bot's eyes and
+  its head is collapsed in the skinning palette.
+* **Audio** (`audio/system.py`, `audio/synth.py`):
+  * occlusion: a ray from the listener; blocked sounds play a low-passed
+    "_muffled" recording at 60 % volume (Panda's OpenAL has no live
+    filters, so the variants are synthesised offline like everything else);
+  * gunshots beyond 45 m play a "_far" recording (dull boom and echo);
+    shots under a roof add a room or hall tail;
+  * ambience loops (wind, room tone, tunnel rumble) crossfade by the
+    listener's surroundings (a ray up finds the roof), plus random distant
+    creaks, birds and clanks outdoors;
+  * music: a menu loop and stings for round start, win, loss and the plant;
+  * 270 synthesised files, about 7 s to build on the first start (cached).
+* **Performance**:
+  * character bodies are GPU-skinned: one mesh per material with a 24-bone
+    rigid palette (`render/shaders/skinning.glsl`) instead of a node per
+    part;
+  * static props, weapon models and gadget bodies are flattened, and intact
+    destructible panels are drawn from one batch per material; a panel
+    gets its own mesh only once it is damaged;
+  * about 506 -> 190 geometry nodes in a full 5v5 match;
+  * HUD text only rebuilds when it changes; the render-state cache is swept
+    at a fifth of the default rate;
+  * `--benchmark [SECONDS]` reports average FPS, 1 % / 0.1 % lows,
+    frame-time percentiles and the game-logic time, and writes
+    `user/benchmark.json`.
+* `--demo m7` tour with screenshots and an ambience report; 13 new unit
+  tests (radar, compass and arc maths, audio rules, synthesis), 4 more for
+  rebinding and destruction batching.
+
+### Milestone 7 decisions to confirm
+
+1. **A square radar that rotates with you**, 28 m from the centre to the
+   edge (zoom changes it). CS2 uses a rotating radar by default, too.
+2. **Enemies on the radar only when spotted** by a teammate, a camera, a
+   drone or a gadget, for 3 s (pings last their own time). Your own sight
+   doesn't add markers: you can see them anyway.
+3. **First-person spectating is off by default.** The bots' third-person
+   pose holds the gun lower than a real viewmodel, so the over-the-shoulder
+   camera reads better.
+4. **Music only in the menu and as short stings.** No music during rounds,
+   so footsteps stay audible.
+5. **The audio is still fully synthesised** (no third-party sounds). A CC0
+   pack could replace the gunshots and footsteps later.
+
+### Milestone 7 known issues
+
+* I could not listen to any of the audio: the container has no sound
+  device. I checked it with OpenAL's null device (every path plays without
+  errors), unit tests on the signals, and the logged mixer state. Levels
+  and the ambience mix probably need tuning by ear.
+* All performance numbers come from software OpenGL in a headless
+  container (2-3 FPS), so they don't say anything about real GPUs. The
+  draw-node count and the CPU-side profile are the reliable parts: about
+  5-6 ms per 64 Hz tick for a 10-bot match on this slow CPU, dominated by bot
+  AI, character movement and Bullet. Please run `--benchmark` on your
+  machine.
+* The radar image is static: holes blown in walls don't show on it.
 
 ## Milestone 6 - delivered
 

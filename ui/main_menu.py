@@ -119,7 +119,7 @@ class MainMenu:
             g.match_hud.set_visible(False)
         g.debug_hud.set_hidden(True)
         g.taskMgr.add(self._update, "main-menu", sort=20)
-        g.audio.set_ambient_enabled(False) if hasattr(g.audio, "set_ambient_enabled") else None
+        g.audio.set_menu(True)
 
     def hide(self) -> None:
         g = self.game
@@ -136,7 +136,7 @@ class MainMenu:
         if g.match_hud is not None:
             g.match_hud.set_visible(True)
         g.debug_hud.set_hidden(False)
-        g.audio.set_ambient_enabled(True) if hasattr(g.audio, "set_ambient_enabled") else None
+        g.audio.set_menu(False)
 
     def destroy(self) -> None:
         self.hide()

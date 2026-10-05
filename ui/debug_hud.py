@@ -21,16 +21,21 @@ class DebugHud:
         self._frames = 0
         self._fps = 0.0
         self._ms = 0.0
-        self.text = W.Text(text="", parent=app.a2dTopLeft, pos=(0.04, -0.07), scale=0.042,
-                                 fg=(0.92, 0.95, 0.9, 1), shadow=(0, 0, 0, 0.8), align=TextNode.ALeft,
-                                 mayChange=True)
+        # compact line (FPS mode) in the top right corner, above the kill feed
+        self.fps_text = W.Text(text="", parent=app.a2dTopRight, pos=(-0.04, -0.035), scale=0.03,
+                               fg=(0.92, 0.95, 0.9, 1), shadow=(0, 0, 0, 0.8), align=TextNode.ARight,
+                               mayChange=True)
+        # full overlay: stats under the radar, key help at the bottom
+        self.text = W.Text(text="", parent=app.a2dTopLeft, pos=(0.04, -0.64), scale=0.032,
+                           fg=(0.92, 0.95, 0.9, 1), shadow=(0, 0, 0, 0.8), align=TextNode.ALeft,
+                           mayChange=True)
         self.help = W.Text(
             text="WASD move  SHIFT walk  CTRL crouch  SPACE jump  Q/E lean  LMB fire  RMB aim/scope  R reload  "
                  "1-4/wheel weapons  F use/reinforce  G drop  Y inspect\n"
                  "X gadget  C wall charge  6 drones/cameras  MMB ping  V noclip  ESC menu  F1 hud  F3 buffers  "
                  "F12 screenshot",
-            parent=app.a2dTopLeft, pos=(0.04, -0.29), scale=0.034, fg=(0.85, 0.88, 0.85, 0.85),
-            shadow=(0, 0, 0, 0.8), align=TextNode.ALeft)
+            parent=app.aspect2d, pos=(0, -0.72), scale=0.03, fg=(0.85, 0.88, 0.85, 0.85),
+            shadow=(0, 0, 0, 0.8), align=TextNode.ACenter)
         self.message = W.Text(text="", parent=app.aspect2d, pos=(0, 0.25), scale=0.055,
                                     fg=(1, 1, 1, 1), shadow=(0, 0, 0, 0.9), mayChange=True)
         self._msg_timer = 0.0
@@ -54,8 +59,10 @@ class DebugHud:
 
     def _apply(self) -> None:
         show = self.visible and not getattr(self, "_hidden", False)
-        self.text.show() if show else self.text.hide()
-        self.help.show() if show and self.mode == "full" else self.help.hide()
+        full = show and self.mode == "full"
+        self.fps_text.show() if show else self.fps_text.hide()
+        self.text.show() if full else self.text.hide()
+        self.help.show() if full else self.help.hide()
 
     def flash(self, msg: str, seconds: float = 2.5) -> None:
         self.message.setText(msg)
@@ -79,13 +86,13 @@ class DebugHud:
         if not self.visible:
             return
         fps_line = f"{self._fps:4.0f} fps  {self._ms:5.1f} ms  (logic {getattr(self, '_logic_ms', 0.0):4.1f} ms)"
+        self.fps_text.setText(fps_line)
         if self.mode != "full":
-            self.text.setText(fps_line)
             return
         p = self.app.player
         c = p.char
         lines = [
-            f"{fps_line}   preset {self.app.settings.video['preset']}",
+            f"preset {self.app.settings.video['preset']}",
             f"pos {c.pos.x:7.2f} {c.pos.y:7.2f} {c.pos.z:6.2f}   yaw {p.yaw:6.1f} pitch {p.pitch:5.1f}",
             f"speed {c.horizontal_speed:4.2f} m/s  vz {c.vel.z:5.2f}  {p.state_text}  surface {c.ground_surface}",
         ]

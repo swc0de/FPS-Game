@@ -6,25 +6,28 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 6 of 7.** Milestone 6 adds the Siege side of the game:
-> * **Destructible walls and floors.** Soft walls, a roof hatch and sheet-metal walls break chunk by chunk
->   under bullets, shotguns, knives, frags and charges, with dust and debris. Bots path through the holes.
-> * **Reinforcement.** Defenders hold F to plate marked walls and hatches (2 each per round).
-> * **Lean** with Q / E: the camera tilts and peeks, and your hit boxes lean with it. Bots peek too.
-> * **A prep phase** before each round: defenders set up, attackers scout with **drones**; defenders
->   watch the map's **security cameras**. Anything you see can be **pinged** for your team.
-> * **Eight specialists**, four per side, each with a unique gadget (thermal lance, pulse scanner,
->   breaching hammer, EMP grenade / razor wire, motion sensor, deployable shield, signal jammer),
->   plus buyable **wall charges**. Specialists and gadgets are data in `data/specialists.json`.
+> **Status: Milestone 7 of 7 - feature complete.** Milestone 7 adds the polish:
+> * **A main menu** over a camera tour of the map: play (side, difficulty, team sizes), watch a bot match,
+>   how to play, settings. The pause menu can quit back to it.
+> * **Settings:** rebind every key in the new CONTROLS tab (conflicts swap), HUD options, a live
+>   crosshair preview, music / ambience / interface volumes, per-tab defaults.
+> * **HUD:** a radar (minimap) that turns with you and shows teammates, spotted enemies, the bomb and the
+>   sites; a compass strip; health and armour bars; red arcs that point at whoever hurt you; an optional
+>   first-person spectator camera.
+> * **Audio:** ambience (wind outside, room tone inside, tunnel rumble) that crossfades as you move;
+>   gunshots muffled behind walls, distant shots heard as a dull boom with echo, room tails indoors;
+>   music stings for round start, win, loss and the plant; menu music. Still all synthesised.
+> * **Performance:** skinned character meshes, merged static props and walls (about 500 -> 190 draw
+>   nodes in a full match) and `--benchmark` for FPS and frame-time numbers on your machine.
 >
-> Earlier milestones delivered the AI bots (5), rounds, economy and the bomb (4), the full map and
-> post-processing (3), the weapons and hit detection (2), and the player controller and renderer (1).
-> See [docs/ROADMAP.md](docs/ROADMAP.md).
+> Earlier milestones delivered the destruction, lean, gadgets and specialists (6), the AI bots (5),
+> rounds, economy and the bomb (4), the full map and post-processing (3), the weapons and hit detection (2),
+> and the player controller and renderer (1). See [docs/ROADMAP.md](docs/ROADMAP.md).
 
-![Milestone 6: destruction, gadgets, drones](docs/images/milestone6.jpg)
+![Milestone 7: menus, HUD, spectating](docs/images/milestone7.jpg)
 
-*From `python main.py --demo m6`: a shotgun hole and a frag breach in the barracks, a wall charge on the
-armory and the door it cuts, a thermal lance on a reinforced wall, a drone view, a camera view and a lean.*
+*From `python main.py --demo m7`: the main menu, key rebinding, the HUD with radar, compass and damage arcs,
+enemy intel on the radar, first-person spectating and the pause menu.*
 
 ## Requirements
 
@@ -45,8 +48,9 @@ python tools/download_assets.py
 python main.py
 ```
 
-`python main.py` starts a match on Kestrel Compound. Pick a side (Vanguard attacks, Bastion defends) and the
-bot difficulty, and the first round starts with freeze time. The first match on a map also builds the bots'
+`python main.py` opens the main menu. **Play** picks a side (Vanguard attacks, Bastion defends), the bot
+difficulty and the team sizes, and the first round starts with freeze time; **Watch bot match** spectates a
+5v5. The first match on a map also builds the bots'
 navigation mesh (~2 s, cached in `assets/cache/nav`). The first start of a map takes
 ~30-90 s: procedural fallback textures are generated, the sky lighting is prefiltered and the map's
 sky visibility is baked. Everything is cached in `assets/`, so later starts take a few seconds. If you are offline
@@ -69,9 +73,11 @@ Useful options (`python main.py --help` lists them all):
 | `--demo routes` | walks every lane of the compound and prints PASS/FAIL per route |
 | `--demo round` | plays scripted rounds against stand-ins: buying, a pistol round, a plant and detonation, then a defuse on the defending side. Prints the money after each step and saves `user/screenshots/demo_m4_*.png` |
 | `--demo m6` | Milestone 6 tour against stand-ins: drone, soft walls, hatch, wall charge, thermal lance through a reinforced wall, defender gadgets, jammer vs. charge, EMP, pulse, lean and the round reset. Prints what broke and saves `user/screenshots/demo_m6_*.png` |
+| `--demo m7` | Milestone 7 tour: main menu pages, rebinding a key, the HUD (radar, compass, bars, damage arcs, enemy intel), an ambience report, third- and first-person spectating and quitting to the menu. Saves `user/screenshots/demo_m7_*.png` |
+| `--benchmark [SECONDS]` | watches a 5v5 bot match at real speed for 60 s (or SECONDS) and prints average FPS, 1% / 0.1% lows and frame-time percentiles; also writes `user/benchmark.json` |
 | `--demo bots` | watches a fast-forwarded 5v5 bot match (8 rounds; `BOT_DEMO_ROUNDS=n` to change, `BOT_DEMO_GADGETS=1` logs every gadget). Prints every kill with context, a summary with gadget use and any stuck bot, and saves `user/screenshots/demo_bots_*.png` |
-| `--team attack` / `--team defend` | start the match on that side and skip the side selection |
-| `--difficulty easy/normal/hard/expert` | bot difficulty (the side selection screen also sets it and remembers it) |
+| `--team attack` / `--team defend` | start the match on that side and skip the main menu |
+| `--difficulty easy/normal/hard/expert` | bot difficulty (the main menu also sets it and remembers it) |
 | `--opponents 5 --teammates 4` | roster size (also `bots <n> [mates]` in the console) |
 | `--spectate` | watch a 5v5 bot match |
 | `--bots off` | Milestone 4 practice: stand-ins that hold positions and do not shoot back |
@@ -111,12 +117,50 @@ Useful options (`python main.py --help` lists them all):
 | V | noclip fly mode (debug) |
 | Left / right mouse (dead) | spectate the next / previous player (teammates first) |
 | Space (dead) | free spectator camera (WASD to fly), Space again to follow players |
-| Esc | pause menu (resume, settings, quit); Esc again goes back |
-| F1 | toggle debug overlay |
+| Esc | pause menu (resume, settings, quit to main menu, quit); Esc again goes back |
+| F1 | debug overlay: off -> FPS counter -> full -> off (the default is set in Settings > Display) |
 | F3 | cycle post-processing debug views (final, AO, bloom, normals, depth) |
 | F12 | screenshot to `user/screenshots/` |
 
-Key bindings live in `user/settings.json` (`input.binds`) after the first `--save-settings`.
+Every key except Esc, F1, F3, F10, F12, V and the console key can be rebound in **Settings > Controls**: click
+a row, press a key or mouse button. A key that is already used swaps over to the old key of the action you
+changed. Bindings are saved in `user/settings.json` (`input.binds`).
+
+## Milestone 7 - what to test
+
+Start with `python main.py`.
+
+1. **Main menu.** The camera tours the map behind the title. **Play** -> choose side, difficulty,
+   teammates (0-4) and opponents (1-5) -> **Start**. **Watch bot match** spectates; **How to play** lists
+   your current keys. In a match, Esc -> **Quit to main menu** ends it and returns here.
+2. **Settings > Controls.** Click "Reload", press E: lean right moves to R. Esc cancels a capture; the
+   **Defaults** button resets the tab. Mouse buttons and the wheel can be bound too.
+3. **Settings > Gameplay.** Change the crosshair and watch the preview in the middle of the screen. HUD
+   options: radar on/off, rotate with view, zoom, compass, first-person spectating.
+4. **HUD.**
+   * **Radar** (top left): you are the white arrow, teammates are coloured arrows, enemies show as red dots
+     when a teammate, camera, drone or gadget spots them (they fade after a few seconds), the bomb is an
+     orange diamond (attackers always see it; it blinks once planted), A and B mark the sites and stay at
+     the edge when they are out of range. Brown lines are breakable walls, blue floors have a tunnel
+     under them.
+   * **Compass** under the score bar, with markers for the sites, pings and the planted bomb.
+   * **Damage arcs** around the crosshair point at whoever shot you (or the explosion) and turn as you turn.
+   * Health and armour bars under the numbers.
+5. **Spectating.** Die (or `--spectate`) and switch players with the mouse buttons. Turn on
+   Settings > Gameplay > first-person spectating to see through the bot's eyes.
+6. **Audio** (headphones help):
+   * walk from the yard into a building and down into the tunnel: the wind fades into room tone or
+     tunnel rumble; outdoors you hear the odd distant creak, birds or clank;
+   * gunfire behind a wall sounds muffled; fights across the map are a dull boom with a rolling echo;
+     shots inside buildings have a short room tail (the hangar and armory a longer one);
+   * music stings at round start, round win / loss and the plant; music in the main menu;
+   * Settings > Audio has separate effects, ambience, music and interface volumes.
+7. **Performance.** `python main.py --benchmark` (60 s) or `--benchmark 30 --preset ultra --res 2560x1440`
+   prints average FPS, 1% / 0.1% lows and frame times; F1 shows FPS and the game-logic time while playing.
+   Please send me the benchmark line from your machine.
+
+Please tell me how the radar and audio feel (radar size and zoom, how loud the ambience is), and the
+benchmark numbers on your GPU.
 
 ## Milestone 6 - what to test
 
@@ -399,9 +443,10 @@ data/                   data-driven configs: materials, graphics presets, moveme
                         match rules and economy (match.json), bot difficulty and behaviour (bots.json),
                         specialists and gadgets (specialists.json), destruction (destruction.json)
 weapons/                weapon defs, gunplay model, ballistics, viewmodel + animations, inventory, grenades, pickups
-ui/                     HUD, crosshair, debug overlay, pause + settings menus (menus.py on widgets.py),
-                        match HUD + scoreboard, buy menu, team select, developer console
-audio/                  procedural sound synthesis (placeholder library) + 3D audio system
+ui/                     main menu, HUD, radar + compass (radar.py), crosshair, debug overlay, pause + settings
+                        menus (menus.py on widgets.py), match HUD + scoreboard, buy menu, developer console
+audio/                  procedural sound synthesis (effects, ambience, music) + 3D audio system with
+                        occlusion, distance variants and ambience zones
 ai/                     bots: navmesh (generation, A*, funnel), off-mesh links through holes (navlinks.py),
                         path following, perception, aiming, brain (modes and combat), team tactics, buying,
                         gadget use (gadget_ai.py)
@@ -466,6 +511,11 @@ The tests cover:
 * destruction: chunk damage, collision through holes, explosions, door-sized cuts, reinforcement, the thermal
   lance, round reset, decal removal, navmesh links through wall holes and one-way drops through hatches
 * lean (timing, wall clearance, body roll), the prep phase, specialist data and gadget models
+* key rebinding (conflict swaps, every action has a row, defaults per tab)
+* the radar: image (floors, walls, panels, sites, tunnels), marker and texture mappings with rotation, compass
+  bearings and damage arc directions
+* audio rules (distance and occlusion variants, environments, fades) and the synthesised loops, muffled and
+  distant variants and music cues
 
 ## Troubleshooting
 

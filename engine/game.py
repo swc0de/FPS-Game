@@ -268,6 +268,19 @@ class Game(ShowBase):
 
     def _player_damaged(self, res) -> None:
         self.hud.damage_taken(res.health)
+        info = res.info
+        source = None
+        attacker = info.attacker
+        # bullets and melee point at the attacker, blasts at the explosion
+        if info.kind != "explosion" and attacker is not None and hasattr(attacker, "position") \
+                and attacker is not getattr(self.player, "agent", None) and attacker is not self.player:
+            source = attacker.position()
+        elif info.kind != "fall" and Vec3(*info.direction).lengthSquared() > 1e-6:
+            d = Vec3(*info.direction)
+            d.normalize()
+            source = self.player.char.pos - d * 5.0
+        if source is not None:
+            self.hud.damage_from(source, res.health + res.armor)
         if res.killed and self.director is None:
             self._respawn_timer = RESPAWN_TIME
             self.hud.flash_msg("killed by " + (res.info.weapon or "the world"), 2.5)
@@ -556,6 +569,7 @@ class Game(ShowBase):
         if self.buy_menu is not None:
             self.buy_menu.update()
         self.debug_hud.update(dt)
+        self.audio.frame_update(dt)
         self._frame += 1
         if self.args.trace:
             self._trace_t = getattr(self, "_trace_t", 0.0) + dt

@@ -1,6 +1,6 @@
 """Match HUD: score bar with round clock and alive pips, money with reward
 pop-ups, kill feed, round banners, plant/defuse progress, hints, the buy
-indicator and the scoreboard (Tab)."""
+indicator, the radar and compass (ui/radar.py) and the scoreboard (Tab)."""
 from __future__ import annotations
 
 import math
@@ -93,6 +93,9 @@ class MatchHUD:
         self.bomb_icon = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.28), scale=0.038,
                                       fg=(1.0, 0.45, 0.25, 1), shadow=SHADOW, align=TextNode.ARight, mayChange=True)
         self.scoreboard = Scoreboard(game, director)
+        from ui.radar import Compass, Radar
+        self.radar = Radar(game, director)
+        self.compass = Compass(game, director)
         self.visible = True
         director.listeners.append(self._on_event)
 
@@ -148,6 +151,8 @@ class MatchHUD:
         for n in nodes:
             n.show() if v else n.hide()
         self.tactical.set_visible(v)
+        self.radar.set_visible(v)
+        self.compass.set_visible(v)
         if not v:
             self.prog_bg.hide()
             self.prog_label.setText("")
@@ -160,6 +165,8 @@ class MatchHUD:
         self.tactical.update(dt)
         if not self.visible:
             return
+        self.radar.update(dt)
+        self.compass.update(dt, self.radar.viewer())
         # clock / phase
         clock = m.clock()
         self.clock.setText(_fmt_clock(clock) if m.phase not in ("waiting", "match_end") else "")

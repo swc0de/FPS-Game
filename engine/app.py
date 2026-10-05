@@ -1,6 +1,7 @@
 """Application: window/engine configuration and the main loop."""
 from __future__ import annotations
 
+import os
 import sys
 
 from panda3d.core import loadPrcFileData
@@ -48,6 +49,8 @@ def configure_engine(settings: Settings, args) -> None:
         prc.append(f"clock-frame-rate {int(v['max_fps'])}")
     if getattr(args, "offscreen", False):
         prc.append("window-type offscreen")
+    # extra PRC lines for experiments, e.g. FPS_PRC="garbage-collect-states #f;pstats-gpu-timing #t"
+    prc += [line.strip() for line in os.environ.get("FPS_PRC", "").split(";") if line.strip()]
     loadPrcFileData("cold-sector", "\n".join(prc))
 
 
@@ -96,7 +99,7 @@ def main(argv=None) -> int:
         args.mode = "sandbox"            # walking tests: no freeze time or round resets
     if args.demo in ("round", "m6"):
         args.bots = "off"                # the Milestone 4/6 demos work against stand-ins
-    if args.demo == "m6" and args.team is None:
+    if args.demo in ("m6", "m7") and args.team is None:
         args.team = "attack"
     if args.benchmark:
         args.demo = "benchmark"

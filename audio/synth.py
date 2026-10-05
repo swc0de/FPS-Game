@@ -36,8 +36,8 @@ def band(x: np.ndarray, lo: float, hi: float, soft: float = 0.25) -> np.ndarray:
     n = len(x)
     spec = np.fft.rfft(x)
     f = np.fft.rfftfreq(n, 1.0 / RATE)
-    w_lo = 1.0 / (1.0 + np.exp(-(f - lo) / max(lo * soft, 1.0)))
-    w_hi = 1.0 / (1.0 + np.exp((f - hi) / max(hi * soft, 1.0)))
+    w_lo = 1.0 / (1.0 + np.exp(np.clip(-(f - lo) / max(lo * soft, 1.0), -60, 60)))
+    w_hi = 1.0 / (1.0 + np.exp(np.clip((f - hi) / max(hi * soft, 1.0), -60, 60)))
     return np.fft.irfft(spec * w_lo * w_hi, n).astype(np.float32)
 
 
@@ -270,23 +270,34 @@ def build_library(out_dir: Path, weapons: dict, seed: int = 21) -> dict[str, lis
     rng = np.random.default_rng(seed)
     lib: dict[str, list[Path]] = {}
 
-    def add(name: str, gen, variants: int = 1):
-        paths = []
+    def add(name: str, gen, variants: int = 1, muffled: bool = False):
+        paths, mpaths = [], []
         for v in range(variants):
             p = out_dir / f"{name}_{v}.wav"
+            x = None
             if not p.exists():
-                write_wav(p, gen())
+                x = gen()
+                write_wav(p, x)
             paths.append(p)
+            if muffled:
+                # the same sound heard through a wall (audio/system.py occlusion)
+                pm = out_dir / f"{name}_muffled_{v}.wav"
+                if not pm.exists():
+                    write_wav(pm, muffle(x if x is not None else read_wav(p)))
+                mpaths.append(pm)
         lib[name] = paths
+        if muffled:
+            lib[f"{name}_muffled"] = mpaths
 
     for prof in GUN_PROFILES:
-        add(f"shot_{prof}", lambda prof=prof: gunshot(prof, rng), 3)
+        add(f"shot_{prof}", lambda prof=prof: gunshot(prof, rng), 3, muffled=True)
+        add(f"shot_{prof}_far", lambda prof=prof: gunshot_far(prof, rng), 2, muffled=True)
     for k in ("concrete", "metal", "wood", "dirt", "gravel", "glass", "flesh", "dummy", "fabric", "plaster", "tile"):
         add(f"impact_{k}", lambda k=k: impact(k, rng), 3)
     for k in ("concrete", "metal", "metal_grate", "wood", "dirt", "gravel", "tile", "fabric", "default", "brick",
               "plaster"):
-        add(f"step_{k}", lambda k=k: footstep(k, rng), 4)
-    add("explosion", lambda: explosion(rng), 2)
+        add(f"step_{k}", lambda k=k: footstep(k, rng), 4, muffled=True)
+    add("explosion", lambda: explosion(rng), 2, muffled=True)
     add("flashbang", lambda: flashbang(rng))
     add("smoke_pop", lambda: smoke_pop(rng))
     add("ear_ring", lambda: ring(rng))
@@ -342,6 +353,18 @@ def build_library(out_dir: Path, weapons: dict, seed: int = 21) -> dict[str, lis
     add("camera_switch", lambda: normalize(mix(sequence(0.2, [(0.0, "click")], rng), band(noise(0.2, rng), 1500, 6000)
                                                * env(_t(0.2), 0.001, 0.08) * 0.4), 0.6))
     add("ping", lambda: normalize(tone([1760, 2640], 0.25, 0.002, 0.15), 0.55))
+    # Milestone 7: ambience, room tails, music
+    add("tail_room", lambda: room_tail(rng), 2)
+    add("tail_hall", lambda: room_tail(rng, 0.45))
+    add("amb_wind", lambda: wind_loop(rng))
+    add("amb_room", lambda: room_loop(rng))
+    add("amb_tunnel", lambda: tunnel_loop(rng))
+    add("amb_creak", lambda: creak(rng), 3)
+    add("amb_birds", lambda: birds(rng), 3)
+    add("amb_clank", lambda: far_clank(rng), 2)
+    add("music_menu", lambda: menu_loop(rng))
+    for kind in ("round_start", "win", "lose", "planted"):
+        add(f"sting_{kind}", lambda kind=kind: sting(kind, rng))
     return lib
 
 
@@ -416,3 +439,204 @@ def radio_squelch(rng) -> np.ndarray:
     x = band(noise(0.16, rng), 900, 3200) * env(t, 0.004, 0.05) * 0.5
     x += tone([1250], 0.16, 0.002, 0.03) * 0.25
     return normalize(x, 0.4)
+
+
+# ------------------------------------------------- Milestone 7: ambience, distance, music
+def read_wav(path: Path) -> np.ndarray:
+    with wave.open(str(path), "rb") as w:
+        data = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+    return data.astype(np.float32) / 32767.0
+
+
+def muffle(x: np.ndarray, cutoff: float = 750.0) -> np.ndarray:
+    """A sound heard through a wall: high frequencies gone, a little quieter."""
+    return normalize(band(x, 25, cutoff, soft=0.35), 0.7)
+
+
+def seamless(x: np.ndarray, fade: float) -> np.ndarray:
+    """Loop a sound rendered ``fade`` seconds too long: the overhang is crossfaded
+    into the start so the end runs straight into the beginning."""
+    f = _n(fade)
+    n = len(x) - f
+    y = x[:n].copy()
+    ramp = np.linspace(0.0, 1.0, f, dtype=np.float32)
+    y[:f] = x[:f] * ramp + x[n:n + f] * (1.0 - ramp)
+    return y
+
+
+def gunshot_far(profile: str, rng) -> np.ndarray:
+    """The same gun 50+ m away: no crack, a dull boom and a long rolling echo."""
+    p = GUN_PROFILES[profile]
+    dur = p["dur"] + 0.9
+    t = _t(dur)
+    n = noise(dur, rng)
+    crack = band(n, 300, 2400) * env(t, 0.001, 0.03)
+    boom = band(n, 40, 380) * env(t, 0.004, 0.16) * p["body"]
+    roll = band(n, 90, 900) * env(t, 0.06, p["tail"] * 0.8, start=0.05) * 0.45
+    echo = band(n, 150, 1200) * env(t, 0.02, 0.3, start=0.35) * 0.25
+    x = crack * 0.8 + boom + roll + echo
+    return normalize(np.tanh(normalize(x, 1.0) * 1.3), 0.85)
+
+
+def room_tail(rng, size: float = 0.22) -> np.ndarray:
+    """Early reflections and a short dense tail: a shot fired under a roof."""
+    t = _t(size * 3.5)
+    n = noise(size * 3.5, rng)
+    x = band(n, 250, 4000) * env(t, 0.004, size) * 0.7
+    for d, a in ((0.013, 0.7), (0.027, 0.55), (0.041, 0.45), (0.063, 0.3)):
+        x += band(n, 400, 5000) * env(t, 0.0005, 0.012, d) * a
+    return normalize(x, 0.6)
+
+
+def wind_loop(rng, dur: float = 14.0) -> np.ndarray:
+    fade = 2.0
+    t = _t(dur + fade)
+    n = noise(dur + fade, rng)
+    gust = 0.55 + 0.25 * np.sin(2 * math.pi * t / 5.3 + 1.0) + 0.2 * np.sin(2 * math.pi * t / 2.3 + 0.3)
+    base = band(n, 50, 650) * gust
+    whistle = band(noise(dur + fade, rng), 520, 760, soft=0.05) * (0.5 + 0.5 * np.sin(2 * math.pi * t / 7.0)) ** 2
+    hiss = band(noise(dur + fade, rng), 2000, 7000) * gust * 0.12
+    return normalize(seamless(base + whistle * 0.5 + hiss, fade), 0.5)
+
+
+def room_loop(rng, dur: float = 8.0) -> np.ndarray:
+    """Indoor room tone: mains hum (whole cycles per loop) and soft low noise."""
+    fade = 1.0
+    t = _t(dur + fade)
+    n = noise(dur + fade, rng)
+    hum = np.sin(2 * math.pi * 50 * t) * 0.25 + np.sin(2 * math.pi * 100 * t) * 0.16 + \
+        np.sin(2 * math.pi * 150 * t) * 0.05
+    x = hum + band(n, 70, 450) * 0.6 + band(n, 1000, 4000) * 0.03
+    return normalize(seamless(x, fade), 0.35)
+
+
+def tunnel_loop(rng, dur: float = 10.0) -> np.ndarray:
+    fade = 1.5
+    total = dur + fade
+    t = _t(total)
+    n = noise(total, rng)
+    x = band(n, 25, 180) * (0.8 + 0.2 * np.sin(2 * math.pi * t / 3.7))
+    for _ in range(7):
+        x += modes(t, rng.uniform([1300, 2600], [1900, 3400]), [0.025, 0.012], [0.25, 0.1], rng.uniform(0, dur))
+    return normalize(seamless(x, fade), 0.45)
+
+
+def creak(rng) -> np.ndarray:
+    """A distant sheet of metal flexing in the wind."""
+    dur = 1.4
+    t = _t(dur)
+    f0 = rng.uniform(130, 210)
+    f = f0 * (1 + 0.12 * np.sin(2 * math.pi * rng.uniform(1.2, 2.6) * t))
+    ph = 2 * math.pi * np.cumsum(f) / RATE
+    grain = 1 + 0.6 * band(noise(dur, rng), 15, 70)
+    x = (np.sin(ph) + 0.5 * np.sin(2 * ph) + 0.25 * np.sin(3.1 * ph)) * grain * env(t, 0.25, 0.45, 0.1)
+    return normalize(band(x, 80, 2500), 0.5)
+
+
+def birds(rng) -> np.ndarray:
+    dur = 1.2
+    t = _t(dur)
+    x = np.zeros_like(t)
+    at = rng.uniform(0.0, 0.1)
+    for _ in range(int(rng.integers(3, 6))):
+        ln = rng.uniform(0.05, 0.1)
+        f0, f1 = rng.uniform(2600, 3400), rng.uniform(3600, 4600)
+        if rng.random() < 0.5:
+            f0, f1 = f1, f0
+        tt = np.clip(t - at, 0, ln)
+        f = f0 + (f1 - f0) * tt / ln
+        ph = 2 * math.pi * np.cumsum(f) / RATE
+        w = np.where((t >= at) & (t < at + ln), np.sin(math.pi * tt / ln) ** 2, 0.0)
+        x += np.sin(ph) * w
+        at += ln + rng.uniform(0.04, 0.14)
+    return normalize(x, 0.35)
+
+
+def far_clank(rng) -> np.ndarray:
+    t = _t(1.2)
+    x = modes(t, rng.uniform([220, 540, 1100], [300, 640, 1300]), [0.25, 0.15, 0.08], [0.6, 0.35, 0.2])
+    x += modes(t, rng.uniform([230, 560], [310, 650]), [0.2, 0.1], [0.3, 0.15], rng.uniform(0.15, 0.3))
+    return normalize(band(x, 100, 1500), 0.45)
+
+
+# ---------------------------------------------------------------- music
+def _note(n: float) -> float:
+    """MIDI note number -> Hz."""
+    return 440.0 * 2 ** ((n - 69) / 12)
+
+
+def _voice(t: np.ndarray, f: float, start: float, length: float, attack: float, release: float,
+           bright: float = 0.3) -> np.ndarray:
+    """Soft pad voice: two slightly detuned sines plus a quiet octave, shaped by a
+    linear attack and release."""
+    tt = t - start
+    a = np.clip(tt / attack, 0, 1) * np.clip((length + release - tt) / release, 0, 1)
+    a = np.where(tt < 0, 0.0, a) ** 1.5
+    w = np.sin(2 * math.pi * f * t) + np.sin(2 * math.pi * f * 1.003 * t) + \
+        bright * np.sin(2 * math.pi * 2 * f * t) + bright * 0.4 * np.sin(2 * math.pi * 3 * f * t)
+    return w * a
+
+
+def _pluck(t: np.ndarray, f: float, start: float, decay: float = 0.6) -> np.ndarray:
+    tt = t - start
+    return np.where(tt < 0, 0.0, (np.sin(2 * math.pi * f * tt) + 0.3 * np.sin(4 * math.pi * f * tt)) *
+                    np.exp(-np.maximum(tt, 0) / decay))
+
+
+def _drum(t: np.ndarray, start: float, rng, f: float = 55.0) -> np.ndarray:
+    tt = np.maximum(t - start, 0)
+    body = np.sin(2 * math.pi * f * tt * (1 + 1.5 * np.exp(-tt / 0.04))) * np.exp(-tt / 0.25)
+    hit = band(noise(len(t) / RATE, rng), 100, 3000) * env(t, 0.001, 0.03, start) * 0.4
+    return np.where(t < start, 0.0, body) + hit
+
+
+MENU_CHORDS = [(45, 57, 60, 64), (41, 57, 60, 65), (48, 55, 60, 64), (43, 55, 59, 62)]   # Am  F  C  G
+
+
+def menu_loop(rng, bar: float = 6.0) -> np.ndarray:
+    """Main menu: a slow four-chord pad with a sparse plucked line on top."""
+    fade = 2.0
+    dur = bar * len(MENU_CHORDS)
+    t = _t(dur + fade)
+    x = np.zeros_like(t)
+    for i, chord in enumerate(MENU_CHORDS + MENU_CHORDS[:1]):
+        start = i * bar - 0.6
+        for k, n in enumerate(chord):
+            x += _voice(t, _note(n), start, bar, 1.4, 1.8, 0.25) * (0.5 if k == 0 else 0.3)
+        top = chord[-1] + 12
+        for j, step in enumerate((0, 1.5, 3.0, 4.5)):
+            if rng.random() < 0.7:
+                x += _pluck(t, _note(top - (0, 3, 5, 7)[j % 4]), i * bar + step + 0.2, 0.9) * 0.12
+    x = band(x, 40, 3500)
+    return normalize(seamless(x, fade), 0.45)
+
+
+def sting(kind: str, rng) -> np.ndarray:
+    """Short music cues: round start, round won / lost, bomb planted."""
+    if kind == "round_start":
+        t = _t(2.4)
+        x = _drum(t, 0.0, rng, 50) * 0.9 + _drum(t, 0.45, rng, 50) * 0.6
+        for n, s in ((52, 0.0), (57, 0.45), (64, 0.9)):
+            x += _voice(t, _note(n), s, 0.5, 0.03, 0.8, 0.6) * 0.35
+        return normalize(band(x, 30, 5000), 0.6)
+    if kind == "win":
+        t = _t(3.2)
+        x = _drum(t, 0.0, rng, 55) * 0.6
+        for k, n in enumerate((57, 61, 64, 69)):
+            x += _voice(t, _note(n), 0.05 * k, 1.6, 0.08, 1.4, 0.5) * 0.3
+            x += _pluck(t, _note(n + 12), 0.08 * k, 1.0) * 0.15
+        return normalize(band(x, 30, 6000), 0.6)
+    if kind == "lose":
+        t = _t(3.2)
+        x = np.zeros_like(t)
+        for k, n in enumerate((57, 53, 50)):
+            x += _voice(t, _note(n), 0.35 * k, 0.6 if k < 2 else 1.6, 0.06, 1.2, 0.3) * 0.35
+        x += _voice(t, _note(38), 0.7, 1.6, 0.4, 1.2, 0.1) * 0.4
+        return normalize(band(x, 30, 3000), 0.55)
+    # planted: a low pulse and a rising dissonant pair
+    t = _t(3.0)
+    x = np.zeros_like(t)
+    for k in range(5):
+        x += _drum(t, k * 0.5, rng, 45) * (0.7 - k * 0.1)
+    x += _voice(t, _note(57), 0.0, 2.2, 1.2, 0.7, 0.4) * 0.25 + _voice(t, _note(58), 0.4, 1.8, 1.2, 0.7, 0.4) * 0.2
+    return normalize(band(x, 30, 4000), 0.6)

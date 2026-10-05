@@ -351,7 +351,7 @@ class SettingsMenu:
                                               width=0.29, height=0.07, scale=0.032, extra=(name,))
         self.capturing: Opt | None = None
         self._esc_frame = -1
-        self.reset_btn = W.button(self.root, "DEFAULTS", (0.6, -0.86), self.reset_tab, width=0.3, height=0.07,
+        self.reset_btn = W.button(self.root, "DEFAULTS", (0.25, -0.86), self.reset_tab, width=0.3, height=0.07,
                                   scale=0.032)
         self.preview_bg = DirectFrame(parent=game.aspect2d, frameColor=(0.03, 0.035, 0.035, 0.94),
                                       frameSize=(-0.15, 0.15, -0.15, 0.15), sortOrder=55)
@@ -359,8 +359,8 @@ class SettingsMenu:
         self.preview_bg.hide()
         self.preview = None
         self.content = DirectFrame(parent=self.root, frameColor=(0, 0, 0, 0))
-        self.desc = W.label(self.root, "", (0.1, -0.76), scale=0.031, fg=W.DIM, text_wordwrap=46)
-        self.status = W.label(self.root, "", (0.1, -0.86), scale=0.032, fg=W.WARN)
+        self.status = W.label(self.root, "", (0.1, -0.66), scale=0.032, fg=W.WARN)
+        self.desc = W.label(self.root, "", (0.1, -0.735), scale=0.031, fg=W.DIM, text_wordwrap=46)
         self.apply_btn = W.button(self.root, "APPLY", (0.98, -0.86), self.apply, width=0.3, height=0.07)
         self.back_btn = W.button(self.root, "BACK", (1.36, -0.86), self.close, width=0.3, height=0.07)
         self.root.hide()
@@ -451,6 +451,9 @@ class SettingsMenu:
                 self.preview.set_visible(False)
 
     def select_tab(self, name: str) -> None:
+        self._end_capture()
+        if name != self.tab:
+            self.status["text"] = ""
         self.tab = name
         for n, b in self.tab_buttons.items():
             W.set_active(b, n == name)

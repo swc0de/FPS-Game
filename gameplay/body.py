@@ -107,6 +107,7 @@ class CharacterBody:
         self.game = game
         self.owner = owner
         self.visible = visible
+        self.first_person = False
         self.root = game.render.attachNewNode(name)
         if not visible:
             self.root.hide()
@@ -215,12 +216,23 @@ class CharacterBody:
         self._update_bones()
         self.root.hide()
 
+    HEAD_BONES = ("head", "neck")
+
+    def set_first_person(self, on: bool) -> None:
+        """Collapse the head (and helmet, goggles) for a camera at this body's eyes."""
+        if on != self.first_person:
+            self.first_person = on
+            self._update_bones()
+
     def _update_bones(self) -> None:
         if not self.visible or self._bones is None:
             return
         root = self.root
         for k, name in enumerate(BONES):
-            self._bones[k] = self.parts[name].getMat(root)
+            m = self.parts[name].getMat(root)
+            if self.first_person and name in self.HEAD_BONES:
+                m = LMatrix4f.scaleMat(1e-4) * m
+            self._bones[k] = m
 
     # ------------------------------------------------------------ weapon
     def set_weapon(self, model_key: str | None, cls: str = "rifle") -> None:

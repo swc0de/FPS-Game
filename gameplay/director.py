@@ -662,10 +662,13 @@ class MatchDirector:
             self.feed.append({"t": g.loop.time, **data})
             self.feed = self.feed[-6:]
         elif kind == "round_end":
-            won = data["result"].winner_side == self.player_agent.side
-            g.audio.play_ui("round_win" if won else "round_lose", 0.7)
+            won = data["result"].winner_side == self.player_agent.side or self.spectate_only
+            g.audio.play_sting("win" if won else "lose")
         elif kind == "bomb_planted":
             g.audio.play_ui("bomb_planted", 0.6)
+            g.audio.play_sting("planted", 0.6)
+        elif kind == "phase" and data.get("phase") == "live":
+            g.audio.play_sting("round_start", 0.6)
         for cb in list(self.listeners):
             cb(kind, data)
         g.log(f"[match] {kind} " + ", ".join(f"{k}={_short(v)}" for k, v in data.items()))

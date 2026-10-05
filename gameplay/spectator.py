@@ -3,7 +3,9 @@
 Follows a living bot over the shoulder (third person, looking where the
 bot looks; the camera is pulled in when a wall is behind the bot).
 Left / right mouse switch to the next / previous player, Space toggles a
-free-flying camera. Teammates are followed first, like in CS.
+free-flying camera. Teammates are followed first, like in CS. With the HUD
+option "first-person spectating" the camera sits at the bot's eyes instead
+(its head is collapsed so it doesn't block the view).
 """
 from __future__ import annotations
 
@@ -12,6 +14,7 @@ import math
 from panda3d.core import Point3, Vec3
 
 from engine.physics import MASK_SIGHT
+from gameplay.lean import right_of
 from weapons.weapon import angles_to_dir
 
 BACK = 2.4
@@ -27,6 +30,7 @@ class Spectator:
         self.free = False
         self.target = None
         self._cam = None
+        self._fp_body = None
 
     def candidates(self) -> list:
         d = self.director
@@ -48,7 +52,21 @@ class Spectator:
         self.active = False
         self.free = False
         self.target = None
+        self._set_first_person(None)
         self.game.player.noclip = False
+
+    def _set_first_person(self, body) -> None:
+        if body is self._fp_body:
+            return
+        if self._fp_body is not None:
+            self._fp_body.set_first_person(False)
+        self._fp_body = body
+        if body is not None:
+            body.set_first_person(True)
+
+    @property
+    def first_person(self) -> bool:
+        return bool(self.game.settings.data["gameplay"]["hud"].get("first_person_spectate", False))
 
     def cycle(self, step: int) -> None:
         c = self.candidates()
@@ -89,15 +107,25 @@ class Spectator:
             else:
                 self._go_free()
         if self.free:
+            self._set_first_person(None)
             return
         t = self.target
         if t is None or not t.alive or not t.active:
             self.cycle(1)
             t = self.target
             if t is None or self.free:
+                self._set_first_person(None)
                 return
+        cam = self.game.camera
         root = t.body.root.getPos(self.game.render)
         eye = Point3(root.x, root.y, root.z + t.char.eye_height)
+        if self.first_person:
+            self._set_first_person(t.body)
+            cam.setPos(eye + right_of(t.aim.yaw) * t.lean.offset())
+            cam.setHpr(t.aim.yaw, t.aim.pitch, t.lean.roll())
+            self._cam = None
+            return
+        self._set_first_person(None)
         yaw, pitch = t.aim.yaw, t.aim.pitch
         fwd = Vec3(*angles_to_dir(yaw, pitch))
         h = math.radians(yaw)
@@ -111,7 +139,6 @@ class Spectator:
         else:
             k = 1.0 - math.exp(-dt * 14.0)
             self._cam = self._cam + (want - self._cam) * k
-        cam = self.game.camera
         cam.setPos(self._cam)
         cam.lookAt(eye + fwd * 12.0)
 

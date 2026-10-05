@@ -19,6 +19,7 @@ Each script is a list of steps executed on fixed ticks:
 
     python main.py --map compound --demo routes   # walk every lane of the map
     python main.py --demo m6                       # milestone 6 tour (destruction, gadgets, drones)
+    python main.py --demo m7                       # milestone 7 tour (menus, HUD, audio, spectating)
 """
 from __future__ import annotations
 
@@ -311,8 +312,151 @@ def m6_script(game) -> list:
     return s
 
 
+def _m7_menu(game, page: str | None = None, tab: str | None = None) -> None:
+    mm = game.main_menu
+    if page is not None:
+        mm._menu(page)
+    if tab is not None:
+        mm.settings.select_tab(tab)
+
+
+def _m7_rebind(game) -> None:
+    """Rebind 'reload' to E in the CONTROLS tab: lean right (E) swaps to R."""
+    from ui.menus import TABS
+    sm = game.main_menu.settings
+    opt = next(o for o in TABS["CONTROLS"] if o.key == "reload")
+    sm._capture(opt)
+    sm._captured("e")
+    game.log(f"[demo]   rebind: {sm.status['text']}")
+
+
+def _m7_hold_health(game) -> None:
+    """Keep the player alive (damage still lands and shows on the HUD)."""
+    d = game.player.damageable
+    orig = d.damage_filter
+
+    def keep(dmg, info):
+        if orig is not None and not orig(dmg, info):
+            return False
+        dmg.health = 100.0
+        return True
+    d.damage_filter = keep
+
+
+def _m7_hit_from(game, dx: float, dy: float, kind: str = "bullet") -> None:
+    from gameplay.damage import DamageInfo
+    d = game.director
+    p = game.player.char.pos
+    enemy = next(b for b in d.bots if b.side != d.player_agent.side and b.alive)
+    if kind == "bullet":
+        # a bot standing at the offset fires at us
+        enemy.char.pos = Point3(p.x + dx, p.y + dy, p.z)
+        info = DamageInfo(26, 1.0, "chest", "bullet", enemy, "r7", tuple(p), (0, 0, 0))
+    else:
+        v = Vec3(-dx, -dy, 0)
+        v.normalize()
+        info = DamageInfo(30, 0.5, "chest", "explosion", None, "frag", tuple(p), tuple(v))
+    res = game.player.damageable.take_damage(info)
+    if res is not None:
+        game.player.on_hit(res, p, info.direction)
+    from ui.hud import arc_angle
+    arcs = [round(arc_angle(a[1].x - p.x, a[1].y - p.y, game.player.yaw)) for a in game.hud.arcs]
+    game.log(f"[demo]   {kind} from ({dx:+.0f}, {dy:+.0f}) m: "
+             f"{f'hit, arcs at {arcs} degrees' if res else 'filtered'}")
+
+
+def _m7_ping_enemies(game) -> None:
+    d = game.director
+    side = d.player_agent.side
+    n = 0
+    for b in d.bots:
+        if b.side != side and b.alive:
+            game.tactical.ping(side, b.position(), "spot", 6.0, agent=b)
+            n += 1
+    game.log(f"[demo]   pinged {n} enemies for the radar and compass")
+
+
+def _m7_hud(game, **opts) -> None:
+    game.settings.data["gameplay"]["hud"].update(opts)
+
+
+def _m7_audio_report(game) -> None:
+    a = game.audio
+    lv = game.level
+    nav = game.navmesh()
+    import numpy as np
+    spots = {"attack spawn": lv.spawn_point("attack")["pos"], "defend spawn": lv.spawn_point("defend")["pos"]}
+    under = np.flatnonzero(nav.node_z < -1.0)
+    if len(under):
+        spots["tunnel"] = nav.node_pos(int(under[len(under) // 2]))
+    for z in lv.zones:
+        if z["kind"] == "bombsite":
+            spots[f"site {z['name']}"] = [(z["min"][0] + z["max"][0]) / 2, (z["min"][1] + z["max"][1]) / 2,
+                                          z["min"][2] + 0.6]
+    for name, p in spots.items():
+        p = Point3(*p) + Vec3(0, 0, 1.0)
+        roof = a.roof_height(p)
+        game.log(f"[demo]   audio: {name:13s} -> {a.environment_at(p):8s} "
+                 f"(roof {'none' if roof is None else f'{roof:.1f} m'})")
+    lp = a.listener_pos()
+    for name, p in spots.items():
+        p = Point3(*p)
+        dist = (p - lp).length()
+        from audio.system import shot_variant
+        game.log(f"[demo]   audio: a shot at {name:13s} {dist:5.1f} m away plays "
+                 f"'shot_rifle_heavy{shot_variant(dist, a.occluded(p, lp))}'")
+    loops = ", ".join(f"{k} {v:.2f}" for k, v in a.loop_gain.items())
+    game.log(f"[demo]   audio: listener {a.env}, ambience gains {loops}, {len(a.lib)} sound names "
+             f"({'device' if a.enabled else 'no device: muted'})")
+
+
+def _m7_kill(game) -> None:
+    from gameplay.damage import DamageInfo
+    game.player.damageable.damage_filter = None
+    game.player.damageable.take_damage(DamageInfo(500, 1.0, "head", "fall", None, "world"))
+
+
+def m7_script(game) -> list:
+    """Milestone 7 tour: the main menu and its pages, rebinding in the
+    settings, the HUD (radar, compass, health / armour bars, damage arcs,
+    enemy intel), the ambience report, first- and third-person spectating
+    and quitting back to the menu."""
+    def short_timers(g):
+        # the tour doesn't buy or set up: shorter freeze and preparation
+        g.director.rules["timers"].update(freeze_time=4.0, prep_time=3.0)
+    s = [("call", short_timers), ("call", lambda g: g.open_main_menu()), ("wait", 90), ("shot", "m7_menu"),
+         ("call", lambda g: _m7_menu(g, "play")), ("wait", 6), ("shot", "m7_menu_play"),
+         ("call", lambda g: _m7_menu(g, "settings", "CONTROLS")), ("wait", 4), ("call", _m7_rebind), ("wait", 4),
+         ("shot", "m7_settings_controls"),
+         ("call", lambda g: _m7_menu(g, None, "GAMEPLAY")), ("wait", 4), ("shot", "m7_settings_gameplay"),
+         ("call", lambda g: g.main_menu.settings.close()), ("wait", 2),
+         ("call", lambda g: g._play_from_menu("attack", "normal", 5, 4)), ("wait", 30), ("shot", "m7_freeze_hud"),
+         ("call", _m7_audio_report)]
+    # live: damage arcs from a rifle on the right and a blast behind, health and armour bars
+    s += [("wait_phase", "live", 3000), ("call", _m7_hold_health), ("wait", 10),
+          ("call", lambda g: setattr(g.player.damageable, "armor", 70.0)),
+          ("call", lambda g: _m7_hit_from(g, 14.0, 2.0)), ("call", lambda g: _m7_hit_from(g, -3.0, -6.0, "blast")),
+          ("wait", 6), ("shot", "m7_damage"),
+          ("call", _m7_ping_enemies), ("call", lambda g: _m7_hud(g, minimap_zoom=0.45)), ("wait", 6),
+          ("shot", "m7_intel"),
+          ("call", lambda g: _m7_hud(g, minimap_rotate=False)), ("pose", -2.0, -40.0, EYE, 90, 0), ("wait", 6),
+          ("shot", "m7_radar_north"),
+          ("call", lambda g: _m7_hud(g, minimap_rotate=True, minimap_zoom=1.0))]
+    # spectating: third person, then the first-person option
+    s += [("call", _m7_kill), ("wait", 60), ("shot", "m7_spectate"),
+          ("call", lambda g: _m7_hud(g, first_person_spectate=True)), ("wait", 20), ("shot", "m7_spectate_fp"),
+          ("call", lambda g: _m7_hud(g, first_person_spectate=False)), ("wait", 4)]
+    # pause menu -> quit to the main menu
+    s += [("call", lambda g: g.menu.open()), ("wait", 4), ("shot", "m7_pause"),
+          ("call", lambda g: g.menu.to_main_menu()), ("wait", 40), ("shot", "m7_back_to_menu"),
+          ("call", lambda g: g.log(f"[demo]   back at the menu: phase {g.director.match.phase}, "
+                                   f"menu {'open' if g.menu_open() else 'closed'}"))]
+    return s
+
+
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script, "routes": routes_script, "round": round_script, "m6": m6_script, "bots": None}
+           "flash": flash_script, "routes": routes_script, "round": round_script, "m6": m6_script, "m7": m7_script,
+           "bots": None}
 
 
 def make_demo(game, name: str):
