@@ -7,8 +7,9 @@ from panda3d.core import CardMaker, NodePath
 
 
 class Crosshair:
-    def __init__(self, app, cfg: dict):
+    def __init__(self, app, cfg: dict, bin_name: str = "fixed", bin_sort: int = 0):
         self.app = app
+        self.bin = (bin_name, bin_sort)
         self.root = app.pixel2d.attachNewNode("crosshair")
         self.root.setTransparency(True)
         self.cfg = cfg
@@ -41,18 +42,19 @@ class Crosshair:
             outline.setFrame(l - 1, r + 1, b - 1, t + 1)
             o = bar.attachNewNode(outline.generate())
             o.setColor(0, 0, 0, 0.5)
-            o.setBin("fixed", 0)
+            o.setBin(self.bin[0], self.bin[1])
             cm = CardMaker("b")
             cm.setFrame(l, r, b, t)
             p = bar.attachNewNode(cm.generate())
             p.setColor(*color)
-            p.setBin("fixed", 1)
+            p.setBin(self.bin[0], self.bin[1] + 1)
             self.bars.append((bar, (dx, dy)))
         if c.get("dot"):
             cm = CardMaker("dot")
             cm.setFrame(-thick / 2, thick / 2, -thick / 2, thick / 2)
             self.dot = self.root.attachNewNode(cm.generate())
             self.dot.setColor(*color)
+            self.dot.setBin(self.bin[0], self.bin[1] + 1)
         self.center()
         self._place()
 

@@ -31,9 +31,10 @@ from __future__ import annotations
 
 import math
 
-from panda3d.core import LVecBase4f, NodePath, Point3, Vec3
+from panda3d.core import (BoundingSphere, LMatrix4f, LVecBase4f, NodePath, Point3, PTA_LMatrix4f, TransformState,
+                          Vec3)
 
-from engine.geometry import MeshBuilder
+from engine.geometry import MeshBuilder, build_skinned
 from gameplay.lean import Lean
 from gameplay.hitboxes import PARTS, HitboxRig
 from weapons.models import build_weapon_model, segment_hpr
@@ -71,6 +72,16 @@ PART_MOUNT = {
     "calf_l": ("knee_l", (0, 0, -0.21), (0, 0, 0)),
     "calf_r": ("knee_r", (0, 0, -0.21), (0, 0, 0)),
 }
+
+
+BONES = [p.name for p in PARTS]          # skinning bone index = part order
+MAX_BONES = 24                            # render/shaders/skinning.glsl
+
+
+def _bind(pos, scale) -> list:
+    """Row-vector 4x4 matrix placing a mesh inside its bone (for build_skinned)."""
+    m = TransformState.makePosHprScale(Point3(*pos), Vec3(0, 0, 0), Vec3(*scale)).getMat()
+    return [[m.getCell(r, c) for c in range(4)] for r in range(4)]
 
 
 def two_bone_elbow(s: Vec3, h: Vec3, l1: float, l2: float, pole: Vec3) -> Vec3:
@@ -119,6 +130,7 @@ class CharacterBody:
         j["gun"] = j["chest"].attachNewNode("gun")
         self.joints = j
         self.parts: dict[str, NodePath] = {}
+        self._bones = None
         for part in PARTS:
             parent, off, hpr = PART_MOUNT[part.name]
             np_ = j[parent].attachNewNode(f"part:{part.name}")
@@ -147,49 +159,68 @@ class CharacterBody:
 
     # ------------------------------------------------------------ meshes
     def _build_meshes(self, uniform: str, helmet_mat: str) -> None:
+        """All parts merged into one GPU-skinned mesh per material (a handful of
+        draw calls per soldier instead of one per part; render/shaders/skinning.glsl)."""
         mats = self.game.materials
         body = mats.get(uniform)
-        dark = mats.get("glove")
+        groups: dict[str, list] = {}
+
+        def add(mat: str, mb: MeshBuilder, part: str, bind=None) -> None:
+            groups.setdefault(mat, []).append((mb, BONES.index(part), bind))
+
         for part in PARTS:
             mb = MeshBuilder()
             if part.shape == "sphere":
                 r = part.size[0]
                 mb.add_sphere((0, 0, 0), r * 0.97, rings=12, segments=20, uv_scale=body.uv_scale)
-                m = dark                                      # balaclava
+                m = "glove"                                   # balaclava
             else:
                 sx, sy, sz = part.size
                 mb.add_chamfer_box((0, 0, 0), (sx * 0.96, sy * 0.96, sz * 0.97), bevel=min(sx, sy) * 0.3,
                                    uv_scale=body.uv_scale)
-                m = dark if part.name == "neck" else body
-            np_ = self.parts[part.name].attachNewNode(mb.build(f"body:{part.name}"))
-            m.apply(np_)
+                m = "glove" if part.name == "neck" else uniform
+            add(m, mb, part.name)
         # helmet, goggles, vest, gloves, boots
         h = MeshBuilder()
         h.add_sphere((0, 0, 0), 0.128, rings=10, segments=20)
-        hn = self.parts["head"].attachNewNode(h.build("helmet"))
-        hn.setPos(0, -0.008, 0.035)
-        hn.setScale(1.0, 1.08, 0.82)
-        mats.get(helmet_mat).apply(hn)
+        add(helmet_mat, h, "head", _bind((0, -0.008, 0.035), (1.0, 1.08, 0.82)))
         g = MeshBuilder()
         g.add_chamfer_box((0, 0.095, 0.02), (0.17, 0.04, 0.05), bevel=0.012)
-        gn = self.parts["head"].attachNewNode(g.build("goggles"))
-        mats.get("glass_dark").apply(gn)
+        add("glass_dark", g, "head")
         v = MeshBuilder()
         v.add_chamfer_box((0, 0, 0), (0.44, 0.29, 0.34), bevel=0.03)
         v.add_chamfer_box((0, 0.155, -0.06), (0.32, 0.04, 0.14), bevel=0.012)
         v.add_chamfer_box((-0.1, 0.16, 0.06), (0.09, 0.03, 0.1), bevel=0.01)
-        vn = self.parts["chest"].attachNewNode(v.build("vest"))
-        mats.get("canvas").apply(vn)
+        add("canvas", v, "chest")
         for side in ("l", "r"):
             hand = MeshBuilder()
             hand.add_chamfer_box((0, 0, FOREARM * 0.5), (0.085, 0.07, 0.1), bevel=0.02)
-            hn = self.parts[f"forearm_{side}"].attachNewNode(hand.build("glove"))
-            dark.apply(hn)
+            add("glove", hand, f"forearm_{side}")
             boot = MeshBuilder()
             boot.add_chamfer_box((0, 0.04, -0.17), (0.14, 0.27, 0.12), bevel=0.03)
-            bn = self.parts[f"calf_{side}"].attachNewNode(boot.build("boot"))
-            mats.get("rubber").apply(bn)
+            add("rubber", boot, f"calf_{side}")
+        self.skin = self.root.attachNewNode("skin")
+        # the vertices sit at their bones' origins in the mesh, so the bounds must be given
+        self.skin.node().setBounds(BoundingSphere(Point3(0, 0, 0.9), 1.7))
+        self.skin.node().setFinal(True)
+        for mat, pieces in groups.items():
+            node = build_skinned(pieces, f"body:{mat}")
+            np_ = self.skin.attachNewNode(node)
+            mats.get(mat).apply(np_)
+        self._bones = PTA_LMatrix4f.emptyArray(MAX_BONES)
+        for k in range(MAX_BONES):
+            self._bones[k] = LMatrix4f.identMat()
+        self.skin.setShaderInput("u_bones", self._bones)
+        self.skin.setShaderInput("u_skinned", 1.0)
+        self._update_bones()
         self.root.hide()
+
+    def _update_bones(self) -> None:
+        if not self.visible or self._bones is None:
+            return
+        root = self.root
+        for k, name in enumerate(BONES):
+            self._bones[k] = self.parts[name].getMat(root)
 
     # ------------------------------------------------------------ weapon
     def set_weapon(self, model_key: str | None, cls: str = "rifle") -> None:
@@ -209,6 +240,8 @@ class CharacterBody:
             return
         if self.visible:
             self.weapon_model = build_weapon_model(self.game.materials, model_key, gun)
+            # third-person guns never animate their parts: merge them per material
+            self.weapon_model.root.flattenStrong()
             anchors = self.weapon_model.anchors
         else:
             from weapons.models import model_defs
@@ -238,6 +271,7 @@ class CharacterBody:
         self.tilt.setHpr(0, 0, 0)
         self.tilt.setPos(0, 0, 0)
         self.flash = 0.0
+        self._update_bones()
         if self.visible:
             self.root.show()
             self.root.setShaderInput("u_emission", LVecBase4f(0, 0, 0, 0))
@@ -273,7 +307,9 @@ class CharacterBody:
         self.root.setPos(Point3(*pos))
         self.root.setH(yaw)
         if self.dead_t >= 0.0:
-            self._animate_death(dt)
+            if self.dead_t < 1.0:
+                self._animate_death(dt)
+                self._update_bones()
             return
         # nothing changed (standing still, same view): the pose and hit boxes are current
         speed = math.hypot(vel.x, vel.y)
@@ -323,6 +359,7 @@ class CharacterBody:
             lift = max(0.0, math.sin(self.phase * 1.0 + (0 if sign > 0 else math.pi) + 1.2))
             j[f"knee_{side}"].setP(knee_base - lift * (40.0 if crouch < 0.5 else 18.0) * w)
         self._pose_arms()
+        self._update_bones()
         if self.flash > 0:
             self.flash -= dt
             k = max(self.flash, 0.0) / 0.1

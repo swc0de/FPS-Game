@@ -318,7 +318,89 @@ SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts":
 def make_demo(game, name: str):
     if name == "bots":
         return BotDemo(game)
+    if name == "benchmark":
+        return Benchmark(game, float(getattr(game.args, "benchmark", None) or 60.0))
     return DemoRunner(game, name)
+
+
+class Benchmark:
+    """``--benchmark [seconds]``: a spectated 5v5 bot match at real speed.
+
+    The spectator camera follows the action (fights, smoke, explosions,
+    destruction), which is the heaviest normal view. After a 6 s warm-up it
+    records every frame's time and the game-logic share of it, then prints
+    average FPS, 1% / 0.1% lows and frame-time percentiles and writes
+    user/benchmark.json. Freeze and preparation are shortened so the bots
+    fight right away."""
+
+    WARMUP = 6.0
+
+    def __init__(self, game, seconds: float):
+        import time
+        self.game = game
+        self.name = "benchmark"
+        self.seconds = seconds
+        self.frame_dt = None                 # real time, unlike the scripted demos
+        self.done = False
+        self.frames: list[float] = []
+        self.logic: list[float] = []
+        self._t0 = time.perf_counter()
+        self._last = self._t0
+        timers = game.director.rules["timers"]
+        timers["freeze_time"], timers["prep_time"] = 2.0, 4.0
+        game.debug_hud.set_mode(True)
+        game.log(f"[bench] {seconds:.0f} s bot match at {game.win.getXSize()}x{game.win.getYSize()}, preset "
+                 f"{game.settings.video['preset']} - {game.win.getGsg().getDriverRenderer()}")
+
+    def tick(self, dt: float) -> None:
+        pass
+
+    def frame(self) -> bool:
+        import time
+        now = time.perf_counter()
+        dt = now - self._last
+        self._last = now
+        if now - self._t0 < self.WARMUP:
+            return False
+        self.frames.append(dt)
+        self.logic.append(getattr(self.game, "logic_ms", 0.0) / 1000.0)
+        if now - self._t0 >= self.WARMUP + self.seconds and not self.done:
+            self.done = True
+            self.report()
+        return self.done
+
+    def report(self) -> None:
+        import json
+        import numpy as np
+        g = self.game
+        ft = np.array(self.frames) * 1000.0
+        lg = np.array(self.logic) * 1000.0
+        if len(ft) == 0:
+            return
+        worst = np.sort(ft)[::-1]
+        low1 = 1000.0 / worst[:max(1, len(ft) // 100)].mean()
+        low01 = 1000.0 / worst[:max(1, len(ft) // 1000)].mean()
+        geoms = len(g.render.findAllMatches("**/+GeomNode"))
+        res = {"frames": int(len(ft)), "seconds": float(ft.sum() / 1000.0), "avg_fps": float(len(ft) / (ft.sum() / 1000.0)),
+               "low_1pct_fps": float(low1), "low_01pct_fps": float(low01),
+               "frame_ms": {"p50": float(np.percentile(ft, 50)), "p95": float(np.percentile(ft, 95)),
+                            "p99": float(np.percentile(ft, 99)), "max": float(ft.max())},
+               "logic_ms_avg": float(lg.mean()), "logic_ms_p95": float(np.percentile(lg, 95)),
+               "resolution": [g.win.getXSize(), g.win.getYSize()], "preset": g.settings.video["preset"],
+               "renderer": g.win.getGsg().getDriverRenderer(), "geom_nodes": geoms,
+               "bots": len(g.director.bots)}
+        g.log(f"[bench] {res['frames']} frames in {res['seconds']:.1f} s: average {res['avg_fps']:.1f} fps, "
+              f"1% low {low1:.1f}, 0.1% low {low01:.1f}")
+        g.log(f"[bench] frame time p50 {res['frame_ms']['p50']:.1f} ms, p95 {res['frame_ms']['p95']:.1f} ms, "
+              f"p99 {res['frame_ms']['p99']:.1f} ms; game logic {res['logic_ms_avg']:.1f} ms average "
+              f"({res['logic_ms_p95']:.1f} ms p95), the rest is culling/drawing and the GPU")
+        g.log(f"[bench] {geoms} geometry nodes in the scene, {res['bots']} bots")
+        try:
+            with open(paths.USER_DIR / "benchmark.json", "w", encoding="utf-8") as f:
+                json.dump(res, f, indent=2)
+            g.log(f"[bench] written to {paths.USER_DIR / 'benchmark.json'}")
+        except OSError:
+            pass
 
 
 class BotDemo:
@@ -352,7 +434,7 @@ class BotDemo:
         self.plants = 0
         self.defuses = 0
         self.round_t0 = 0.0
-        game.debug_hud.toggle()
+        game.debug_hud.set_mode(False)
         d = game.director
         d.listeners.append(self._event)
         for b in d.bots:
@@ -521,7 +603,7 @@ class DemoRunner:
         self.ticks = 0
         game.input.virtual_mode = True
         game.input.captured = True
-        game.debug_hud.toggle()
+        game.debug_hud.set_mode(False)
         game.log(f"[demo] running '{name}' ({len(self.steps)} steps)")
 
     def _eye(self) -> Point3:

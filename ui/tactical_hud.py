@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 
 from direct.gui.DirectGui import DirectFrame
-from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import Point2, Point3, TextNode
 
 from ui import widgets as W
@@ -24,19 +23,19 @@ class TacticalHUD:
         a2 = game
         self.visible = True
         # --- kit, above the ammo counter
-        self.kit_title = OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.47), scale=0.036, fg=W.ACCENT,
+        self.kit_title = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.47), scale=0.036, fg=W.ACCENT,
                                       shadow=SHADOW, align=TextNode.ARight, mayChange=True)
-        self.kit_lines = [OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.42 - i * 0.042), scale=0.032,
+        self.kit_lines = [W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.42 - i * 0.042), scale=0.032,
                                        fg=W.TEXT, shadow=SHADOW, align=TextNode.ARight, mayChange=True)
                           for i in range(3)]
-        self.message = OnscreenText(text="", parent=a2.aspect2d, pos=(0, -0.3), scale=0.04, fg=W.ACCENT,
+        self.message = W.Text(text="", parent=a2.aspect2d, pos=(0, -0.3), scale=0.04, fg=W.ACCENT,
                                     shadow=SHADOW, mayChange=True)
         # --- ping markers
         self.markers = []
         for _ in range(MAX_MARKERS):
             f = DirectFrame(parent=a2.aspect2d, frameColor=(1, 0.3, 0.25, 1), frameSize=(-0.014, 0.014, -0.014, 0.014))
             f.setR(45)
-            t = OnscreenText(text="", parent=a2.aspect2d, scale=0.026, fg=W.TEXT, shadow=SHADOW, mayChange=True)
+            t = W.Text(text="", parent=a2.aspect2d, scale=0.026, fg=W.TEXT, shadow=SHADOW, mayChange=True)
             f.hide()
             t.hide()
             self.markers.append((f, t))
@@ -44,18 +43,18 @@ class TacticalHUD:
         self.view_root = a2.aspect2d.attachNewNode("view_overlay")
         for fs in ((-2.0, 2.0, 0.93, 1.2), (-2.0, 2.0, -1.2, -0.93), (-2.0, -1.3, -1.2, 1.2), (1.3, 2.0, -1.2, 1.2)):
             DirectFrame(parent=self.view_root, frameColor=(0, 0, 0, 0.35), frameSize=fs)
-        self.view_title = OnscreenText(text="", parent=self.view_root, pos=(0, 0.7), scale=0.05, fg=W.TEXT,
+        self.view_title = W.Text(text="", parent=self.view_root, pos=(0, 0.7), scale=0.05, fg=W.TEXT,
                                        shadow=SHADOW, mayChange=True)
-        self.view_rec = OnscreenText(text="", parent=self.view_root, pos=(-1.2, 0.7), scale=0.04,
+        self.view_rec = W.Text(text="", parent=self.view_root, pos=(-1.2, 0.7), scale=0.04,
                                      fg=(1, 0.25, 0.2, 1), shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
-        self.view_help = OnscreenText(text="", parent=self.view_root, pos=(0, -0.88), scale=0.036, fg=W.DIM,
+        self.view_help = W.Text(text="", parent=self.view_root, pos=(0, -0.88), scale=0.036, fg=W.DIM,
                                       shadow=SHADOW, mayChange=True)
-        self.view_state = OnscreenText(text="", parent=self.view_root, pos=(0, 0.1), scale=0.09,
+        self.view_state = W.Text(text="", parent=self.view_root, pos=(0, 0.1), scale=0.09,
                                        fg=(0.5, 0.75, 1.0, 1), shadow=SHADOW, mayChange=True)
         self.noise = DirectFrame(parent=self.view_root, frameColor=(0.35, 0.4, 0.5, 0.0), frameSize=(-2, 2, -1.2, 1.2))
         self.reticle = DirectFrame(parent=self.view_root, frameColor=(1, 1, 1, 0.8), frameSize=(-0.004, 0.004, -0.004, 0.004))
         self.view_root.hide()
-        self.lost = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.1), scale=0.08, fg=(1, 0.4, 0.3, 1),
+        self.lost = W.Text(text="", parent=a2.aspect2d, pos=(0, 0.1), scale=0.08, fg=(1, 0.4, 0.3, 1),
                                  shadow=SHADOW, mayChange=True)
 
     def set_visible(self, v: bool) -> None:

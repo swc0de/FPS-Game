@@ -106,15 +106,14 @@ class Game(ShowBase):
         self.console = Console(self)
         self.match_hud = None
         self.buy_menu = None
-        self.team_select = None
+        self.main_menu = None
         if self.director is not None:
             from ui.buy_menu import BuyMenu
             from ui.match_hud import MatchHUD
             self.match_hud = MatchHUD(self, self.director)
             self.buy_menu = BuyMenu(self, self.director)
         self.renderer.post.set_brightness(float(settings.video.get("brightness", 0.0)))
-        if not settings.video.get("show_fps", True):
-            self.debug_hud.toggle()
+        self.debug_hud.set_mode(settings.video.get("show_fps", True))
         self._loading.destroy()
         self.log(f"[game] ready in {time.time() - t0:.1f}s - "
                  f"{self.win.getGsg().getDriverRenderer()} / GL {self.win.getGsg().getDriverVersion()}")
@@ -125,9 +124,8 @@ class Game(ShowBase):
         self.accept("f12", self.screenshot)
         self.accept("f3", self.cycle_post_debug)
         self.accept("v", self.toggle_noclip)
-        self.accept("b", self._toggle_buy)
-        self.accept("tab", self._scoreboard, [True])
-        self.accept("tab-up", self._scoreboard, [False])
+        self._menu_keys: list[str] = []
+        self.bind_menu_keys()
         self.accept("`", self.console.toggle)
         self.accept("f10", self.console.toggle)
         self.accept("window-event", self._on_window_event)
@@ -146,11 +144,10 @@ class Game(ShowBase):
         elif not args.offscreen and not args.frames:
             self.input.set_captured(True)
         if self.director is not None and not args.shots:
-            if args.team or self.demo is not None or args.frames or args.offscreen:
+            if args.team or self.demo is not None or args.frames or args.offscreen or args.spectate:
                 self.director.start()
             else:
-                from ui.team_select import TeamSelect
-                self.team_select = TeamSelect(self, self._choose_side)
+                self.open_main_menu()
         self.hud.on_resize()
 
     # ------------------------------------------------------------- setup
@@ -317,25 +314,63 @@ class Game(ShowBase):
             self.console.close()
         elif self.buy_menu is not None and self.buy_menu.is_open:
             self.buy_menu.close()
-        elif self.team_select is not None:
-            return
+        elif self.menu_open:
+            self.main_menu.on_escape()
         else:
             self.menu.on_escape()
 
     def _overlay_open(self) -> bool:
-        return (self.console.is_open or self.team_select is not None
+        return (self.console.is_open or self.menu_open
                 or (self.buy_menu is not None and self.buy_menu.is_open))
 
-    def _choose_side(self, side: str) -> None:
-        self.team_select = None
-        if side == "spectate":
-            self.director.set_spectate()
+    # --------------------------------------------------------- main menu
+    @property
+    def menu_open(self) -> bool:
+        return self.main_menu is not None and self.main_menu.visible
+
+    def open_main_menu(self) -> None:
+        """Title screen (start of the game, or 'Quit to main menu')."""
+        if self.director is None:
+            return
+        if self.director.match.phase != "waiting":
+            self.director.stop()
+        if self.paused:
+            self.menu.resume()
+        if self.buy_menu is not None:
+            self.buy_menu.close()
+        if self.main_menu is None:
+            from ui.main_menu import MainMenu
+            self.main_menu = MainMenu(self, self._play_from_menu, self._watch_from_menu)
         else:
-            self.director.restart(side)
+            self.main_menu.show()
+
+    def _play_from_menu(self, side: str, difficulty: str, opponents: int, teammates: int) -> None:
+        self.main_menu.hide()
+        self.director.configure(side, opponents, teammates, difficulty)
         self.input.set_captured(True)
 
+    def _watch_from_menu(self) -> None:
+        self.main_menu.hide()
+        if self.director.spectate_only:
+            self.director.start()
+        else:
+            self.director.set_spectate()
+        self.input.set_captured(True)
+
+    def bind_menu_keys(self) -> None:
+        """Buy menu and scoreboard keys (they work while the mouse is released, so they are
+        plain Panda3D events rather than InputManager actions)."""
+        for ev in self._menu_keys:
+            self.ignore(ev)
+        binds = self.settings.input["binds"]
+        buy, board = binds.get("buy_menu", "b"), binds.get("scoreboard", "tab")
+        self.accept(buy, self._toggle_buy)
+        self.accept(board, self._scoreboard, [True])
+        self.accept(board + "-up", self._scoreboard, [False])
+        self._menu_keys = [buy, board, board + "-up"]
+
     def _toggle_buy(self) -> None:
-        if self.buy_menu is None or self.console.is_open or self.paused or self.team_select is not None:
+        if self.buy_menu is None or self.console.is_open or self.paused or self.menu_open:
             return
         self.buy_menu.toggle()
 
@@ -383,12 +418,13 @@ class Game(ShowBase):
         self.apply_fov()
         self.weapons.vm.base_fov = float(v.get("viewmodel_fov", 54.0))
         self.renderer.post.set_brightness(float(v.get("brightness", 0.0)))
-        if bool(v.get("show_fps", True)) != self.debug_hud.visible:
-            self.debug_hud.toggle()
+        self.debug_hud.set_mode(v.get("show_fps", True))
         self.audio.settings = self.settings.audio
         self.audio.set_volume(float(self.settings.audio.get("master", 0.8)))
         self.hud.crosshair.cfg = self.settings.data["gameplay"]["crosshair"]
         self.hud.crosshair.rebuild()
+        self.input.set_binds(self.settings.input["binds"])
+        self.bind_menu_keys()
         self.log(f"[settings] applied (preset {v['preset']}, overrides {sorted(self.settings.data.get('graphics', {}))})"
                  + (f"; restart needed for {restart}" if restart else ""))
 
@@ -436,7 +472,7 @@ class Game(ShowBase):
             shots = [s for s in shots if s["name"] in names]
         self._shot_queue = list(shots)
         self._shot_wait = 0
-        self.debug_hud.toggle()
+        self.debug_hud.set_mode(False)
         self.hud.set_visible(False)
         if self.match_hud is not None:
             self.match_hud.set_visible(False)
@@ -495,8 +531,9 @@ class Game(ShowBase):
                 self.weapons.select(self.weapons.inv.best_slot(), force=True)
 
     def _update(self, task):
+        t_logic = time.perf_counter()
         dt = min(ClockObject.getGlobalClock().getDt(), 0.25)
-        if self.demo is not None:
+        if self.demo is not None and self.demo.frame_dt:
             dt = self.demo.frame_dt   # deterministic: simulation and animation advance identically
         self.input.poll_mouse()
         alpha = self.loop.advance(dt, self._fixed_update)
@@ -540,6 +577,7 @@ class Game(ShowBase):
             if self.args.screenshot:
                 self.screenshot(self.args.screenshot)
             self.userExit()
+        self.logic_ms = (time.perf_counter() - t_logic) * 1000.0
         return task.cont
 
     def save_json(self, name: str, data) -> None:

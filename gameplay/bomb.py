@@ -46,6 +46,8 @@ class Bomb:
         model = build_weapon_model(game.materials, "bomb_charge", game.render, "bomb_world")
         self.np = model.root
         self.led = model.groups.get("led")
+        if model.groups.get("body") is not None:
+            model.groups["body"].flattenStrong()
         self.np.setScale(1.6)          # the world model reads better slightly larger than the hand-held one
         self.np.hide()
         self.light: LocalLight | None = None

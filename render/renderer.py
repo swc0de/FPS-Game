@@ -5,7 +5,9 @@ from panda3d.core import (
     BitMask32,
     ColorWriteAttrib,
     CullFaceAttrib,
+    LMatrix4f,
     LVecBase4f,
+    PTA_LMatrix4f,
     RenderState,
     ShaderAttrib,
     Vec3,
@@ -78,6 +80,12 @@ class Renderer:
         root.setShader(self.scene_shader)
         root.setShaderInput("u_camPos", Vec3(0, 0, 0))
         root.setShaderInput("u_emission", LVecBase4f(0, 0, 0, 0))
+        # rigid skinning (render/shaders/skinning.glsl): off for everything but soldier bodies
+        bones = PTA_LMatrix4f.emptyArray(24)
+        for k in range(24):
+            bones[k] = LMatrix4f.identMat()
+        root.setShaderInput("u_bones", bones)
+        root.setShaderInput("u_skinned", 0.0)
         root.setShaderInput("u_matParams", LVecBase4f(0, 1, 1, 1))
         self.csm.apply_inputs(root)
         self.lights.apply_inputs(root)

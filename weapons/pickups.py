@@ -40,6 +40,7 @@ class Pickup:
             model_key = game.weapon_db.grenades[item].model
         if model_key:
             m = build_weapon_model(game.materials, model_key, self.visual)
+            m.root.flattenStrong()
             lo, hi = m.root.getTightBounds()
             ext = (hi - lo) * 0.5
             center = (hi + lo) * 0.5

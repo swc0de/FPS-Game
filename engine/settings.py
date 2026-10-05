@@ -53,7 +53,7 @@ DEFAULTS: dict[str, Any] = {
         "viewmodel_fov": 54.0,  # vertical FOV of the weapon viewmodel camera
         "preset": "high",
         "max_fps": 0,           # 0 = unlimited (vsync still applies)
-        "show_fps": True,
+        "show_fps": True,       # performance overlay: False | True (FPS) | "full"
     },
     "graphics": {},             # per-key overrides of the active preset
     "input": {
@@ -66,14 +66,31 @@ DEFAULTS: dict[str, Any] = {
         "master": 0.8,
         "effects": 1.0,
         "ambient": 0.6,
+        "music": 0.5,
         "ui": 0.8,
     },
     "gameplay": {
         "crosshair": {"style": "classic", "size": 6, "gap": 3, "thickness": 2,
                       "color": [0.3, 1.0, 0.4, 1.0], "dynamic": True, "dot": False},
         "bot_difficulty": "normal",
+        "hud": {"minimap": True, "minimap_rotate": True, "minimap_zoom": 1.0, "compass": True,
+                "first_person_spectate": False},
     },
 }
+
+# CONTROLS tab order and labels (every action in DEFAULT_KEYBINDS)
+BIND_LABELS = [
+    ("forward", "Move forward"), ("back", "Move back"), ("left", "Strafe left"), ("right", "Strafe right"),
+    ("walk", "Walk (quiet)"), ("crouch", "Crouch"), ("jump", "Jump"), ("lean_left", "Lean left"),
+    ("lean_right", "Lean right"), ("fire", "Fire"), ("aim", "Aim / scope"), ("reload", "Reload"),
+    ("use", "Use / defuse / reinforce"), ("drop", "Drop weapon"), ("inspect", "Inspect weapon"),
+    ("slot1", "Primary weapon"), ("slot2", "Pistol"), ("slot3", "Knife"), ("slot4", "Grenades"),
+    ("slot5", "Breach charge (bomb)"), ("last_weapon", "Last weapon"), ("gadget", "Specialist gadget"),
+    ("charge", "Wall charge"), ("observe", "Drones / cameras"), ("ping", "Ping"), ("buy_menu", "Buy menu"),
+    ("scoreboard", "Scoreboard"), ("wheel_up", "Previous weapon"), ("wheel_down", "Next weapon"),
+]
+# keys the game itself uses (menus, console, debug)
+RESERVED_KEYS = ("escape", "`", "f1", "f3", "f10", "f12", "v")
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

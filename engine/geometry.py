@@ -45,6 +45,65 @@ def vertex_format() -> GeomVertexFormat:
     return _FORMAT
 
 
+_SKIN_FORMAT = None
+
+
+def skinned_vertex_format() -> GeomVertexFormat:
+    """The standard format plus a float 'bone' column (render/shaders/skinning.glsl)."""
+    global _SKIN_FORMAT
+    if _SKIN_FORMAT is None:
+        arr = GeomVertexArrayFormat()
+        arr.addColumn(InternalName.getVertex(), 3, Geom.NTFloat32, Geom.CPoint)
+        arr.addColumn(InternalName.getNormal(), 3, Geom.NTFloat32, Geom.CNormal)
+        arr.addColumn(InternalName.getTangent(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getBinormal(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getTexcoord(), 2, Geom.NTFloat32, Geom.CTexcoord)
+        arr.addColumn(InternalName.make("bone"), 1, Geom.NTFloat32, Geom.COther)
+        _SKIN_FORMAT = GeomVertexFormat.registerFormat(GeomVertexFormat(arr))
+    return _SKIN_FORMAT
+
+
+def build_skinned(pieces, name: str = "skinned") -> GeomNode | None:
+    """One mesh from several builders, each moved by its own bone.
+
+    pieces: [(MeshBuilder, bone index, 4x4 bind matrix or None)], the matrix
+    (row-vector convention) places the builder's vertices in the bone's frame."""
+    verts, indices, base = [], [], 0
+    for mb, bone, mat in pieces:
+        if not mb._verts:
+            continue
+        v = np.concatenate(mb._verts).astype(np.float64)
+        if mat is not None:
+            m = np.asarray(mat, np.float64)
+            v[:, 0:3] = v[:, 0:3] @ m[:3, :3] + m[3, :3]
+            for a in (3, 6, 9):
+                d = v[:, a:a + 3] @ m[:3, :3]
+                v[:, a:a + 3] = d / np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
+        out = np.zeros((len(v), FLOATS_PER_VERTEX + 1), np.float32)
+        out[:, :FLOATS_PER_VERTEX] = v
+        out[:, FLOATS_PER_VERTEX] = bone
+        verts.append(out)
+        indices.append(np.concatenate(mb._indices).astype(np.uint32) + np.uint32(base))
+        base += len(v)
+    if not verts:
+        return None
+    allv = np.concatenate(verts).astype(np.float32)
+    alli = np.concatenate(indices).astype(np.uint32)
+    vdata = GeomVertexData(name, skinned_vertex_format(), Geom.UHStatic)
+    vdata.uncleanSetNumRows(len(allv))
+    memoryview(vdata.modifyArray(0)).cast("B")[:] = allv.tobytes()
+    prim = GeomTriangles(Geom.UHStatic)
+    prim.setIndexType(Geom.NTUint32)
+    handle = prim.modifyVertices()
+    handle.uncleanSetNumRows(len(alli))
+    memoryview(handle).cast("B")[:] = alli.tobytes()
+    geom = Geom(vdata)
+    geom.addPrimitive(prim)
+    node = GeomNode(name)
+    node.addGeom(geom)
+    return node
+
+
 def hpr_matrix(hpr) -> np.ndarray:
     """3x3 rotation (row-vector convention, like Panda) for heading/pitch/roll."""
     m = TransformState.makeHpr(tuple(hpr)).getMat()

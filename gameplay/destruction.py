@@ -132,6 +132,7 @@ class Panel:
         self.reinforcing = None          # (agent, progress) while plates go up
         self.root = mgr.root.attachNewNode(f"panel:{spec.name or index}")
         self.mesh_np = None
+        self.intact = True               # drawn by the manager's shared batch until damaged
         self.plates = None
         self.body_np = None
         self.dirty = True
@@ -214,6 +215,9 @@ class Panel:
         self.alive[dead] = False
         self.hp[dead] = 0.0
         self.dirty = True
+        if self.intact:
+            self.intact = False
+            self.mgr.batch_dirty = True
         self.version += 1
         self.mgr.on_chunks_destroyed(self, dead, point, kind, direction)
 
@@ -223,8 +227,23 @@ class Panel:
         if self.mesh_np is not None:
             self.mesh_np.removeNode()
             self.mesh_np = None
-        self._build_mesh()
+        if not self.intact:
+            self._build_mesh()
         self._build_body()
+
+    def add_intact_box(self, builders: dict) -> None:
+        """The whole panel as one box into per-material builders (the shared batch).
+        World-planar UVs make it look exactly like the chunked mesh."""
+        spec = self.spec
+        mats = self.mgr.materials
+        half = self.size / 2
+        centers = np.zeros((1, 3))
+        for face in range(6):
+            mat = spec.mat2 if face == self.thin * 2 + 1 else spec.mat
+            mb = builders.get(mat)
+            if mb is None:
+                mb = builders[mat] = MeshBuilder()
+            _faces(mb, self.R, self.center, centers, half, face, mats.get(mat).uv_scale)
 
     def _cell_arrays(self, mask: np.ndarray):
         ii, jj = np.nonzero(mask)
@@ -306,6 +325,9 @@ class Panel:
         self.alive[:] = True
         self.hp[:] = self.max_hp
         self.version += 1
+        if not self.intact:
+            self.intact = True
+            self.mgr.batch_dirty = True
         mats = self.mgr.materials
         plate_mat = self.mgr.cfg["reinforce"].get("plate_mat", "steel_painted")
         mb = MeshBuilder()
@@ -422,6 +444,8 @@ class DestructionManager:
         self.debris = Debris(game, self.cfg.get("debris", {}))
         self.listeners: list = []            # callback(panel) when a panel changes shape
         self.version = 0
+        self.batch_np = None                 # every intact panel, one mesh per material
+        self.batch_dirty = True
         self.build()
 
     def surface_props(self, surface: str) -> dict:
@@ -434,6 +458,24 @@ class DestructionManager:
         self.panels = [Panel(self, spec, i) for i, spec in enumerate(self.specs)]
         for p in self.panels:
             p.rebuild()
+        self._rebuild_batch()
+
+    def _rebuild_batch(self) -> None:
+        """Intact panels are drawn together: a few draw calls for all of them
+        instead of two per panel. A panel gets its own chunked mesh once it
+        is damaged (and comes back here when the round resets)."""
+        self.batch_dirty = False
+        if self.batch_np is not None:
+            self.batch_np.removeNode()
+        self.batch_np = self.root.attachNewNode("intact_panels")
+        builders: dict = {}
+        for p in self.panels:
+            if p.intact:
+                p.add_intact_box(builders)
+        for mat, mb in builders.items():
+            node = mb.build(f"panels:{mat}")
+            if node is not None:
+                self.materials.get(mat).apply(self.batch_np.attachNewNode(node))
 
     def reset(self) -> None:
         """New round: every wall is whole again, plates come off."""
@@ -441,6 +483,9 @@ class DestructionManager:
         for p in changed:
             p.alive[:] = True
             p.hp[:] = p.max_hp
+            if not p.intact:
+                p.intact = True
+                self.batch_dirty = True
             p.reinforced = False
             p.reinforcing = None
             if p.plates is not None:
@@ -449,6 +494,8 @@ class DestructionManager:
             p.version = 0
             p.rebuild()
         self.debris.clear()
+        if self.batch_dirty:
+            self._rebuild_batch()
         if changed:
             self.version += 1
             for cb in list(self.listeners):
@@ -537,6 +584,8 @@ class DestructionManager:
         changed = [p for p in self.panels if p.dirty]
         for p in changed:
             p.rebuild()
+        if self.batch_dirty:
+            self._rebuild_batch()
         if changed:
             self.version += 1
             for cb in list(self.listeners):

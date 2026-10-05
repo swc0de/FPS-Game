@@ -36,6 +36,9 @@ def configure_engine(settings: Settings, args) -> None:
         "default-near 0.05",
         "default-far 2000",
         "texture-anisotropic-degree 1",
+        # Panda's transform/render state cache is swept every frame; with ~500
+        # animated nodes a full sweep costs several ms, so sweep a fifth per frame
+        "garbage-collect-states-rate 0.2",
     ]
     if sys.platform == "darwin":
         # macOS only exposes modern OpenGL through a core profile
@@ -86,6 +89,8 @@ def main(argv=None) -> int:
     parser.add_argument("--spectate", action="store_true", help="watch a 5v5 bot match")
     parser.add_argument("--seed", type=int, help="random seed for spawns, bot decisions and stand-in positions")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
+    parser.add_argument("--benchmark", nargs="?", type=float, const=60.0, default=None, metavar="SECONDS",
+                        help="watch a bot match for SECONDS (default 60) at full speed and print FPS statistics")
     args = parser.parse_args(argv)
     if args.demo in ("routes",) and args.mode == "auto":
         args.mode = "sandbox"            # walking tests: no freeze time or round resets
@@ -93,7 +98,9 @@ def main(argv=None) -> int:
         args.bots = "off"                # the Milestone 4/6 demos work against stand-ins
     if args.demo == "m6" and args.team is None:
         args.team = "attack"
-    if args.demo == "bots":
+    if args.benchmark:
+        args.demo = "benchmark"
+    if args.demo in ("bots", "benchmark"):
         args.spectate = True
     if args.map is None:
         # the weapon demos are scripted against the shooting range

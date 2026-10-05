@@ -3,7 +3,9 @@
 ESC opens the pause menu (the game pauses and the mouse is released).
 Settings are edited on a copy; *Apply* applies them live (renderer
 rebuilds only what changed) and saves user/settings.json. Options marked
-with * take effect after a restart.
+with * take effect after a restart. The CONTROLS tab rebinds keys: click a
+key, then press the new key or mouse button (Esc cancels); a key already
+used by another action is swapped with it.
 """
 from __future__ import annotations
 
@@ -16,6 +18,7 @@ from direct.gui import DirectGuiGlobals as DGG
 from direct.gui.DirectGui import DirectFrame
 from panda3d.core import TextNode
 
+from engine.settings import BIND_LABELS, DEFAULTS, RESERVED_KEYS
 from ui import widgets as W
 
 # ---------------------------------------------------------------- formatting
@@ -118,7 +121,8 @@ TABS = {
             desc="How large the weapon appears; does not change what you can see."),
         Opt("brightness", "Brightness", "video", lo=-1.0, hi=1.0, step=0.1, fmt=lambda v: f"{v:+.1f} EV",
             desc="Exposure offset on top of the map's lighting."),
-        Opt("show_fps", "Debug overlay", "video", ON_OFF, desc="FPS and position readout (F1)."),
+        Opt("show_fps", "Performance overlay", "video", [(False, "Off"), (True, "FPS"), ("full", "Full")],
+            desc="FPS, frame time and game logic time; Full adds position and render details (F1 cycles)."),
     ],
     "GAMEPLAY": [
         Opt("sensitivity", "Mouse sensitivity", "input", lo=0.1, hi=8.0, step=0.05, fmt=lambda v: f"{v:.2f}",
@@ -133,10 +137,23 @@ TABS = {
         Opt("dot", "Centre dot", "crosshair", ON_OFF),
         Opt("dynamic", "Dynamic crosshair", "crosshair", ON_OFF,
             desc="The gap follows the real bullet spread (movement, jumping, spraying)."),
+        Opt("minimap", "Minimap", "hud", ON_OFF, desc="Radar in the top-left corner."),
+        Opt("minimap_rotate", "Minimap orientation", "hud", [(True, "Rotate with view"), (False, "North up")]),
+        Opt("minimap_zoom", "Minimap zoom", "hud", lo=0.5, hi=2.0, step=0.1, fmt=lambda v: f"{v:.1f}x"),
+        Opt("compass", "Compass", "hud", ON_OFF, desc="Heading strip at the top with sites and pings."),
+        Opt("first_person_spectate", "Spectator camera", "hud", [(False, "Over the shoulder"),
+                                                                 (True, "First person")],
+            desc="How you follow teammates after dying (Space still switches to the free camera)."),
     ],
+    "CONTROLS": [Opt(action, label, "bind") for action, label in BIND_LABELS],
     "AUDIO": [
         Opt("master", "Master volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct),
-        Opt("effects", "Effects volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct),
+        Opt("effects", "Effects volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct,
+            desc="Gunshots, footsteps, impacts, explosions, gadgets."),
+        Opt("ambient", "Ambience volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct,
+            desc="Wind, distant activity and the hum of rooms."),
+        Opt("music", "Music volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct,
+            desc="Short stings at the start and end of rounds."),
         Opt("ui", "Interface volume", "audio", lo=0.0, hi=1.0, step=0.05, fmt=_pct),
     ],
 }
@@ -195,6 +212,10 @@ class SettingsModel:
             return p["audio"].get(o.key, 1.0)
         if o.section == "crosshair":
             return p["gameplay"]["crosshair"].get(o.key)
+        if o.section == "hud":
+            return p["gameplay"].setdefault("hud", {}).get(o.key, DEFAULTS["gameplay"]["hud"].get(o.key))
+        if o.section == "bind":
+            return p["input"]["binds"].get(o.key, "")
         if o.key == "preset":
             return p["video"].get("preset", "high")
         if o.key == "shadow_quality":
@@ -214,6 +235,9 @@ class SettingsModel:
             return name + (" (custom)" if self.pending.get("graphics") else "")
         if o.key == "resolution":
             return f"{v[0]} x {v[1]}"
+        if o.section == "bind":
+            from ui.main_menu import key_label
+            return key_label(v) if v else "-"
         if o.key == "fov":
             w, h = self.pending["video"]["resolution"]
             return f"{v:.0f}° ({horizontal_fov(v, w / h):.0f}° h)"
@@ -242,6 +266,10 @@ class SettingsModel:
             p["audio"][o.key] = value
         elif o.section == "crosshair":
             p["gameplay"]["crosshair"][o.key] = value
+        elif o.section == "hud":
+            p["gameplay"].setdefault("hud", {})[o.key] = value
+        elif o.section == "bind":
+            self.bind(o.key, value)
         elif o.key == "preset":
             p["video"]["preset"] = value
             p["graphics"] = {}
@@ -250,6 +278,38 @@ class SettingsModel:
                 self._set_graphics(k, v)
         elif o.key == "resolution":
             p["video"]["resolution"] = [int(value[0]), int(value[1])]
+
+    def bind(self, action: str, key: str) -> str | None:
+        """Bind key to action; an action that already used the key gets the
+        old key of this one (swap). Returns the swapped action, if any."""
+        binds = self.pending["input"]["binds"]
+        old = binds.get(action)
+        other = next((a for a, k in binds.items() if k == key and a != action), None)
+        binds[action] = key
+        if other is not None:
+            binds[other] = old
+        return other
+
+    def reset_tab(self, tab: str) -> None:
+        """Back to the defaults for everything on one tab."""
+        p = self.pending
+        d = copy.deepcopy(DEFAULTS)
+        if tab == "GRAPHICS":
+            p["video"]["preset"] = d["video"]["preset"]
+            p["graphics"] = {}
+        elif tab == "CONTROLS":
+            p["input"]["binds"] = d["input"]["binds"]
+        elif tab == "AUDIO":
+            p["audio"] = d["audio"]
+        elif tab == "GAMEPLAY":
+            for k in ("sensitivity", "zoom_sensitivity", "invert_y"):
+                p["input"][k] = d["input"].get(k, 1.0 if k == "zoom_sensitivity" else p["input"].get(k))
+            p["gameplay"]["crosshair"] = d["gameplay"]["crosshair"]
+            p["gameplay"]["hud"] = d["gameplay"]["hud"]
+        elif tab == "DISPLAY":
+            for k, v in d["video"].items():
+                if k not in ("resolution", "fullscreen", "preset"):
+                    p["video"][k] = v
 
     def _set_graphics(self, key: str, value) -> None:
         over = self.pending.setdefault("graphics", {})
@@ -287,8 +347,17 @@ class SettingsMenu:
         W.label(self.root, "SETTINGS", (0.1, 0.84), scale=0.06, fg=W.ACCENT)
         self.tab_buttons = {}
         for i, name in enumerate(TABS):
-            self.tab_buttons[name] = W.button(self.root, name, (0.28 + i * 0.37, 0.74), self.select_tab,
-                                              width=0.35, height=0.07, scale=0.036, extra=(name,))
+            self.tab_buttons[name] = W.button(self.root, name, (0.235 + i * 0.3, 0.74), self.select_tab,
+                                              width=0.29, height=0.07, scale=0.032, extra=(name,))
+        self.capturing: Opt | None = None
+        self._esc_frame = -1
+        self.reset_btn = W.button(self.root, "DEFAULTS", (0.6, -0.86), self.reset_tab, width=0.3, height=0.07,
+                                  scale=0.032)
+        self.preview_bg = DirectFrame(parent=game.aspect2d, frameColor=(0.03, 0.035, 0.035, 0.94),
+                                      frameSize=(-0.15, 0.15, -0.15, 0.15), sortOrder=55)
+        W.label(self.preview_bg, "preview", (0, -0.13), scale=0.026, fg=W.DIM, align=TextNode.ACenter)
+        self.preview_bg.hide()
+        self.preview = None
         self.content = DirectFrame(parent=self.root, frameColor=(0, 0, 0, 0))
         self.desc = W.label(self.root, "", (0.1, -0.76), scale=0.031, fg=W.DIM, text_wordwrap=46)
         self.status = W.label(self.root, "", (0.1, -0.86), scale=0.032, fg=W.WARN)
@@ -311,9 +380,75 @@ class SettingsMenu:
         self.root.show()
 
     def close(self) -> None:
+        self._end_capture()
         self.root.hide()
+        self._show_preview(False)
         self.model = None
         self.on_close()
+
+    # ----------------------------------------------------------- key capture
+    def ate_escape(self) -> bool:
+        """True while Esc belongs to the key capture (this frame included)."""
+        from panda3d.core import ClockObject
+        return self.capturing is not None or self._esc_frame == ClockObject.getGlobalClock().getFrameCount()
+
+    def _capture(self, o: Opt) -> None:
+        self._end_capture()
+        self.capturing = o
+        bt = self.game.buttonThrowers[0].node()
+        self._old_down = bt.getButtonDownEvent()
+        bt.setButtonDownEvent("settings-key")
+        self.game.accept("settings-key", self._captured)
+        self.status["text"] = f"Press a key or mouse button for '{o.label}'  (Esc cancels)"
+        self.refresh()
+
+    def _end_capture(self) -> None:
+        if self.capturing is None:
+            return
+        self.capturing = None
+        self.game.buttonThrowers[0].node().setButtonDownEvent(getattr(self, "_old_down", ""))
+        self.game.ignore("settings-key")
+
+    def _captured(self, name) -> None:
+        from panda3d.core import ClockObject
+        name = str(name)
+        o = self.capturing
+        self._end_capture()
+        if o is None or self.model is None:
+            return
+        if name == "escape":
+            self._esc_frame = ClockObject.getGlobalClock().getFrameCount()
+            self.status["text"] = "Cancelled."
+        elif name in RESERVED_KEYS:
+            self.status["text"] = f"'{name}' is reserved (menus, console, debug)."
+        else:
+            other = self.model.bind(o.key, name)
+            msg = f"{o.label}: {self.model.text(o)}"
+            if other is not None:
+                label = next((lb for a, lb in BIND_LABELS if a == other), other)
+                msg += f"   ({label} now uses {self.model.text(Opt(other, label, 'bind'))})"
+            self.status["text"] = msg
+        self.refresh()
+
+    def reset_tab(self) -> None:
+        if self.model is None:
+            return
+        self.model.reset_tab(self.tab)
+        self.status["text"] = f"{self.tab.title()} back to defaults (press Apply to keep)."
+        self.refresh()
+
+    def _show_preview(self, show: bool) -> None:
+        if show:
+            if self.preview is None:
+                from ui.crosshair import Crosshair
+                self.preview = Crosshair(self.game, dict(self.model.pending["gameplay"]["crosshair"]),
+                                         bin_name="gui-popup", bin_sort=80)
+            self.preview_bg.show()
+            self.preview.set_visible(True)
+        else:
+            self.preview_bg.hide()
+            if self.preview is not None:
+                self.preview.set_visible(False)
 
     def select_tab(self, name: str) -> None:
         self.tab = name
@@ -323,6 +458,16 @@ class SettingsMenu:
             w.destroy()
         self.rows = []
         y = 0.6
+        if name == "CONTROLS":
+            for i, o in enumerate(TABS[name]):
+                col, row = divmod(i, 15)
+                w = W.BindRow(self.content, 0.6 - row * 0.062, o.label, lambda o=o: self._capture(o),
+                              x0=0.06 + col * 0.78)
+                self.rows.append((o, w))
+            self._show_preview(False)
+            self.refresh()
+            return
+        self._show_preview(name == "GAMEPLAY")
         for o in TABS[name]:
             hover = (lambda o=o: self._hover(o))
             if o.is_slider:
@@ -358,11 +503,17 @@ class SettingsMenu:
             text = m.text(o)
             changed = m.get(o) != saved.get(o)
             fg = W.ACCENT if changed else W.TEXT
+            if o.section == "bind":
+                w.set_text("press a key..." if o is self.capturing else text, label_fg=fg)
+                continue
             if o.is_slider:
                 w.set(float(m.get(o)), text, label_fg=fg)
             else:
                 w.set_text(text, label_fg=fg)
         W.set_active(self.apply_btn, m.dirty())
+        if self.preview is not None and self.tab == "GAMEPLAY":
+            self.preview.cfg = dict(m.pending["gameplay"]["crosshair"])
+            self.preview.rebuild()
 
     def apply(self) -> None:
         if self.model is None or not self.model.dirty():
@@ -392,7 +543,11 @@ class PauseMenu:
         W.label(self.root, "PAUSED", (0.44, 0.3), scale=0.034, fg=W.DIM, align=TextNode.ACenter)
         W.button(self.root, "RESUME", (0.44, 0.16), self.resume, width=0.62)
         W.button(self.root, "SETTINGS", (0.44, 0.06), self.open_settings, width=0.62)
-        W.button(self.root, "QUIT TO DESKTOP", (0.44, -0.04), game.userExit, width=0.62)
+        y = -0.04
+        if game.director is not None:
+            W.button(self.root, "QUIT TO MAIN MENU", (0.44, y), self.to_main_menu, width=0.62)
+            y -= 0.1
+        W.button(self.root, "QUIT TO DESKTOP", (0.44, y), game.userExit, width=0.62)
         W.label(self.root, "ESC  resume / back", (0.44, -0.3), scale=0.03, fg=W.DIM, align=TextNode.ACenter)
         self.settings = SettingsMenu(game, self._settings_closed)
         self.backdrop.hide()
@@ -413,6 +568,10 @@ class PauseMenu:
         self.backdrop.hide()
         self.game.set_paused(False)
 
+    def to_main_menu(self) -> None:
+        self.resume()
+        self.game.open_main_menu()
+
     def open_settings(self) -> None:
         self.root.hide()
         self.settings.open()
@@ -421,6 +580,8 @@ class PauseMenu:
         self.root.show()
 
     def on_escape(self) -> None:
+        if self.settings.visible and self.settings.ate_escape():
+            return
         if self.settings.visible:
             self.settings.close()
         elif self.is_open:

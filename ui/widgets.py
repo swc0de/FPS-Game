@@ -3,6 +3,7 @@ sliders) shared by the pause and settings menus."""
 from __future__ import annotations
 
 from direct.gui import DirectGuiGlobals as DGG
+from direct.gui.OnscreenText import OnscreenText
 from direct.gui.DirectGui import DirectButton, DirectFrame, DirectLabel, DirectSlider
 from panda3d.core import TextNode
 
@@ -14,6 +15,27 @@ DIM = (0.6, 0.63, 0.6, 1.0)
 WARN = (1.0, 0.55, 0.4, 1.0)
 BTN_STATES = ((0.13, 0.14, 0.14, 0.95), (0.34, 0.28, 0.14, 1.0), (0.24, 0.21, 0.15, 1.0), (0.1, 0.1, 0.1, 0.6))
 BTN_ACTIVE = ((0.32, 0.26, 0.12, 1.0), (0.42, 0.34, 0.16, 1.0), (0.38, 0.31, 0.15, 1.0), (0.1, 0.1, 0.1, 0.6))
+
+
+class Text(OnscreenText):
+    """OnscreenText that ignores updates which change nothing.
+
+    The HUDs set their texts and colours every frame; a TextNode rebuilds its
+    glyph geometry on every change, so skipping identical updates saves a
+    lot of per-frame work."""
+
+    def setText(self, text):
+        if text == getattr(self, "_cached_text", None):
+            return
+        self._cached_text = text
+        super().setText(text)
+
+    def setFg(self, fg):
+        fg = tuple(fg)
+        if fg == getattr(self, "_cached_fg", None):
+            return
+        self._cached_fg = fg
+        super().setFg(fg)
 
 
 def panel(parent, frame, color=PANEL, **kw) -> DirectFrame:
@@ -104,6 +126,24 @@ class SliderRow:
             self._last = float(value)
             self.slider["value"] = value
         self.value["text"] = text
+        self.label["text_fg"] = label_fg
+
+    def destroy(self) -> None:
+        self.frame.destroy()
+
+
+class BindRow:
+    """'Action        [ key ]' for the CONTROLS tab; clicking the key starts a rebind."""
+
+    def __init__(self, parent, y: float, text: str, on_click, x0: float = 0.06, width: float = 0.74):
+        self.frame = DirectFrame(parent=parent, frameColor=(1, 1, 1, 0.025),
+                                 frameSize=(x0, x0 + width, -0.026, 0.03), pos=(0, 0, y), state=DGG.NORMAL)
+        self.label = label(self.frame, text, (x0 + 0.03, 0), scale=0.03)
+        self.key = button(self.frame, "", (x0 + width - 0.15, 0.01), lambda: on_click(), width=0.26, height=0.048,
+                          scale=0.028)
+
+    def set_text(self, value: str, label_fg=TEXT) -> None:
+        self.key["text"] = value
         self.label["text_fg"] = label_fg
 
     def destroy(self) -> None:

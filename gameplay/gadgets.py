@@ -89,6 +89,9 @@ class Deployable:
         self.root.setHpr(*self.hpr)
         model = build_weapon_model(self.game.materials, self.model, self.root, self.kind)
         self.led = model.groups.get("led")
+        body = model.groups.get("body")
+        if body is not None:
+            body.flattenStrong()             # one draw per material (the LED stays separate)
         self.damageable: Damageable | None = None
         self.bodies = []
 

@@ -175,6 +175,43 @@ class MatchDirector:
         self.radio_log = []
         self.match.start()
 
+    def configure(self, side: str, opponents: int, teammates: int, difficulty: str | None = None) -> None:
+        """Main menu PLAY: your side, team sizes and bot difficulty, then a new match."""
+        if difficulty:
+            self.set_difficulty(difficulty)
+        if self.spectate_only:
+            self.spectate_only = False
+            self.player_agent.team = self.match.teams[0]
+            self.n_opponents = -1                     # force a roster rebuild with you in it
+        if side != self.match.teams[0].side:
+            for t in self.match.teams:
+                t.side = other_side(t.side)
+        if (opponents, teammates) != (self.n_opponents, self.n_teammates) or not self.use_bots:
+            self.set_opponents(opponents, teammates if self.use_bots else 0)
+        else:
+            self.start()
+
+    def stop(self) -> None:
+        """Back to the main menu: the match stops and the world is cleaned up."""
+        g = self.game
+        m = self.match
+        m.phase = "waiting"
+        m.phase_time = 0.0
+        g.clear_world()
+        self.tactical.clear()
+        self.bomb.reset()
+        self.spectator.stop()
+        for b in self.bots:
+            b.remove()
+        for a in self.standins:
+            a.root.hide()
+        self.feed, self.radio_log = [], []
+        self.progress, self.hint = None, ""
+        self._plant_t = self._defuse_t = self._dead_t = 0.0
+        g.player.noclip = False
+        g.player.move_lock = True
+        self.player_body.hide()
+
     def restart(self, side: str | None = None) -> None:
         if side is not None and side != self.player_agent.side and not self.spectate_only:
             for t in self.match.teams:

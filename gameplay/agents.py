@@ -83,6 +83,7 @@ class StandInAgent(Participant):
         self.weapon_key = key
         model = self.game.weapon_db.weapons[key].model
         self.gun = build_weapon_model(self.game.materials, model, self.body).root
+        self.gun.flattenStrong()
         self._place_gun()
 
     def _place_gun(self) -> None:

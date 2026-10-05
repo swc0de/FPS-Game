@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import CardMaker, SamplerState, TextNode, Texture, TransparencyAttrib
 
+from ui import widgets as W
 from ui.crosshair import Crosshair
 
 AMBER = (1.0, 0.86, 0.55, 1.0)
@@ -40,23 +40,23 @@ class HUD:
         a2 = game
         font_scale = 0.05
         # health / armour (bottom left)
-        self.health = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.1), scale=0.085,
+        self.health = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.1), scale=0.085,
                                    fg=WHITE, shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
-        self.armor = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.42, 0.1), scale=0.06,
+        self.armor = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.42, 0.1), scale=0.06,
                                   fg=DIM, shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
         # ammo / weapon (bottom right)
-        self.ammo = OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.24, 0.1), scale=0.1, fg=WHITE,
+        self.ammo = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.24, 0.1), scale=0.1, fg=WHITE,
                                  shadow=(0, 0, 0, 0.8), align=TextNode.ARight, mayChange=True)
-        self.reserve = OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.22, 0.1), scale=0.055, fg=DIM,
+        self.reserve = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.22, 0.1), scale=0.055, fg=DIM,
                                     shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
-        self.weapon = OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.2), scale=font_scale,
+        self.weapon = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.2), scale=font_scale,
                                    fg=AMBER, shadow=(0, 0, 0, 0.8), align=TextNode.ARight, mayChange=True)
-        self.status = OnscreenText(text="", parent=a2.aspect2d, pos=(0, -0.22), scale=0.045, fg=AMBER,
+        self.status = W.Text(text="", parent=a2.aspect2d, pos=(0, -0.22), scale=0.045, fg=AMBER,
                                    shadow=(0, 0, 0, 0.8), mayChange=True)
-        self.message = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.3), scale=0.05, fg=WHITE,
+        self.message = W.Text(text="", parent=a2.aspect2d, pos=(0, 0.3), scale=0.05, fg=WHITE,
                                     shadow=(0, 0, 0, 0.9), mayChange=True)
         # map location (callout areas) and bomb-site indicator, bottom left
-        self.location = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.2), scale=0.042, fg=AMBER,
+        self.location = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.2), scale=0.042, fg=AMBER,
                                      shadow=(0, 0, 0, 0.8), align=TextNode.ALeft, mayChange=True)
         self._msg_t = 0.0
         self.crosshair = Crosshair(game, game.settings.data["gameplay"]["crosshair"])

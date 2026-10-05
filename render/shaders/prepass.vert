@@ -17,7 +17,10 @@ in vec3 p3d_Normal;
 
 out vec3 v_normal;
 
+#include "skinning.glsl"
+
 void main() {
-    gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
-    v_normal = mat3(p3d_ModelMatrix) * p3d_Normal;
+    mat4 b = skin_matrix();
+    gl_Position = p3d_ModelViewProjectionMatrix * (b * p3d_Vertex);
+    v_normal = mat3(p3d_ModelMatrix) * (mat3(b) * p3d_Normal);
 }
