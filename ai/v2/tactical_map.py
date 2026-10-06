@@ -30,8 +30,13 @@ keyed by the collider set):
    (running) bound where enemies can be early in a round.
 6. **Spots**, scored from the above for each bomb site:
    * *entries*: doorways and lane points just outside the site;
-   * *holds*: points that see an entry from 5-30 m, have cover, and are seen
-     from few points on the attackers' side beyond that entry;
+   * *holds*: points in the site, or near it in the defenders' territory (they
+     get there at least 8 s before attackers can), that are behind every entry
+     they can see (attackers must pass the entry to reach them), watch an
+     entry from 5-30 m, have cover, and are seen from few points on the
+     attackers' side beyond the entries;
+   * *forward spots*: covered points on the attackers' way in that defenders
+     reach 2-8 s first, for early information plays;
    * *off-angles*: holds whose line to the entry is far (> 50 deg) from the
      direction attackers walk in, or deep in the site;
    * *crossfire pairs*: two holds that see the same entry with at least 60
@@ -246,7 +251,7 @@ class TacticalMap:
     @classmethod
     def cached(cls, level, nav: NavMesh, cache_dir, name: str, log=None) -> "TacticalMap":
         cfg = TacticalConfig()
-        key = cls.cache_key(level, nav.build_info.split(" (cached)")[0], cfg)
+        key = cls.cache_key(level, f"{nav.node_count}:{len(nav.rects)}:{len(nav.portals)}", cfg)
         cache_dir.mkdir(parents=True, exist_ok=True)
         path = cache_dir / f"{name}_{key}_tactical.npz"
         if path.exists():
@@ -679,11 +684,16 @@ def _spots(tm: TacticalMap, level) -> dict:
         entries = _thin(pts, cand + doors.tolist(), 4.0)
         # the direction attackers walk through each entry: from the entry towards the site
         holds = []
-        region = np.flatnonzero((inside | (dzone < 14.0)) & ~np.isin(np.arange(n), entries) &
-                                (eta_d < eta_a + 4.0))
+        margin = eta_a - eta_d                  # how much earlier defenders get there
+        region = np.flatnonzero((inside & (margin > 0.0)) | ((dzone < 14.0) & (margin >= 8.0)))
+        region = region[~np.isin(region, entries)]
         beyond = np.flatnonzero(~inside & (dzone > 6.0) & (eta_a < eta_d))   # attackers' side
         for h in region.tolist():
+            # an entry this spot can hold: in sight, and behind it from the attackers' side
+            # (they must pass the entry before they could reach the spot)
             seen = [e for e in entries if vis[h, e]]
+            if any(eta_a[h] < eta_a[e] + 0.5 for e in seen):
+                continue                # in front of an entry it can see: the attackers' side
             if not seen:
                 continue
             score = 0.0
@@ -726,7 +736,17 @@ def _spots(tm: TacticalMap, level) -> dict:
                     if _angle(va, vb) >= 60.0:
                         cross.append([a["i"], b["i"], int(e)])
                         break
-        out[name] = {"entries": [int(e) for e in entries], "holds": picked, "crossfires": cross}
+        # forward spots: early-round information plays on the attackers' way in (defenders get
+        # there 2-8 s first), with cover, seeing a lane point
+        forward = []
+        lane_pts = np.flatnonzero((tm.kind & 4) != 0)
+        for f in np.flatnonzero((margin > 2.0) & (margin < 8.0) & (dzone < 30.0) & ~inside).tolist():
+            sees = [int(l) for l in lane_pts if vis[f, l] and 6.0 < np.linalg.norm(pts[f] - pts[l]) < 35.0]
+            if sees and tm.cover[f]:
+                forward.append({"i": int(f), "sees": sees, "margin": round(float(margin[f]), 1)})
+        forward.sort(key=lambda d: (-len(d["sees"]), -d["margin"]))
+        out[name] = {"entries": [int(e) for e in entries], "holds": picked, "crossfires": cross,
+                     "forward": _thin_dicts(pts, forward, 4.0)[:8]}
     return out
 
 
@@ -743,6 +763,14 @@ def _lanes(level, site: str, zone: dict) -> list[list]:
         end = pts[-1]
         if zone["min"][0] - 0.5 <= end[0] <= zone["max"][0] + 0.5 and zone["min"][1] - 0.5 <= end[1] <= zone["max"][1] + 0.5:
             out.append(pts)
+    return out
+
+
+def _thin_dicts(pts: np.ndarray, items: list[dict], min_d: float) -> list[dict]:
+    out: list[dict] = []
+    for d in items:
+        if all(np.linalg.norm(pts[d["i"]] - pts[o["i"]]) >= min_d for o in out):
+            out.append(d)
     return out
 
 

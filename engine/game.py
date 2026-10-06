@@ -222,6 +222,16 @@ class Game(ShowBase):
             self.nav_links = NavLinks(self._nav, self.destruction)
         return self._nav
 
+    def tactical_map(self):
+        """The v2 bots' analysis of the level (ai/v2/tactical_map.py), cached next to the navmesh."""
+        if getattr(self, "_tmap", None) is None:
+            from ai.v2.tactical_map import TacticalMap
+            nav = self.navmesh()
+            self._tmap = TacticalMap.cached(self.level, nav, paths.CACHE_DIR / "nav", self.level.path.stem,
+                                            log=self.log)
+            self.destruction.listeners.append(self._tmap.on_panel)
+        return self._tmap
+
     # ---------------------------------------------------- match services
     @property
     def tactical(self):
