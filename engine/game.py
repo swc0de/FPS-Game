@@ -100,7 +100,12 @@ class Game(ShowBase):
                                               difficulty=getattr(args, "difficulty", None) or
                                               settings.data.get("gameplay", {}).get("bot_difficulty"),
                                               standins=getattr(args, "bots", "on") == "off",
-                                              spectate=bool(getattr(args, "spectate", False)))
+                                              spectate=bool(getattr(args, "spectate", False)),
+                                              ai=getattr(args, "ai", None))
+                import os
+                if getattr(args, "audit", False) or os.environ.get("BOT_AUDIT", "") == "1":
+                    from ai.audit import FairnessAudit
+                    self.director.audit = FairnessAudit(self.director)
         self.paused = False
         self.menu = PauseMenu(self)
         self.console = Console(self)

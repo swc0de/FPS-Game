@@ -27,33 +27,11 @@ Timing (``TickProfiler``)
     Expensive calls (path queries, cover search, vision...) are timed one by
     one, and every tick with more than 4 ms of AI is kept with its breakdown.
 
-Behaviour (``MetricsCollector``), definitions
-    deaths while reloading  the victim's gun was mid-reload when it died
-    unseen deaths           the victim had not seen its killer in the 5 s
-                            before dying (bullet and knife kills)
-    traded deaths           the killer was killed by one of the victim's
-                            teammates within 3 s; "tradeable" deaths had a
-                            living teammate within 15 m
-    exposure before death   how long the killer had had the victim in
-                            continuous sight when the fatal shot landed
-    exposed share           share of a bot's live time in which at least one
-                            enemy bot sees it (sampled at 16 Hz)
-    stacking incidents      two teammates within 0.8 m (bodies almost touching)
-                            for 1 s or more, once per episode
-    clumps                  three or more teammates within 2.5 m for 2 s
-    stuck                   the demo's own check (a move order without 0.6 m
-                            of progress in 5 s); micro-stucks are the path
-                            follower's 0.8 s no-progress events
-    utility                 grenades thrown per type; a flash is effective
-                            when it blinds an enemy for 1 s or more, a frag
-                            when it damages an enemy, a smoke when it blocks
-                            at least one enemy sighting while it lasts
-    plans                   the attack plan and site picked every round
-    info leaks              decisions fed by information a player would not
-                            have: an exact attacker position on being shot by
-                            an enemy the bot had not seen, and an exact killer
-                            position broadcast to the team when a teammate dies
-                            without having seen its killer
+Behaviour: the demo's own collector (ai/metrics.py, where the metric
+    definitions are). With ``--ai team0=v2,team1=legacy`` the match is a
+    head-to-head and every metric is also reported per AI, with the round-win
+    rate and its Wilson 95 % confidence interval. ``--audit`` adds the
+    fairness audit (ai/audit.py).
 """
 from __future__ import annotations
 
@@ -142,6 +120,8 @@ class TickProfiler:
             for spec in self.SUBSYSTEMS + self.QUERIES:
                 m, meth, key = spec
                 self._wrap_class(m.rsplit(".", 1)[0], m.rsplit(".", 1)[1], meth, key)
+        # the demo's own per-tick work (metrics sampling) is not game logic: timed and left out
+        self._wrap_class("engine.demo", "BotDemo", "tick", "demo_tick")
         orig = game._fixed_update
 
         def timed(dt):
@@ -149,7 +129,7 @@ class TickProfiler:
             self._who = {}
             t0 = PERF()
             orig(dt)
-            total = (PERF() - t0) * 1000.0
+            total = (PERF() - t0) * 1000.0 - self.current.get("demo_tick", 0.0)
             sub = self.current
             self.current = None
             d = game.director
@@ -232,366 +212,6 @@ def _stats(a) -> dict:
     import numpy as np
     return {"mean": float(a.mean()), "p50": float(np.percentile(a, 50)), "p95": float(np.percentile(a, 95)),
             "p99": float(np.percentile(a, 99)), "max": float(a.max())}
-
-
-# ------------------------------------------------------------------ behaviour
-class MetricsCollector:
-    def __init__(self, game, demo, profiler: TickProfiler):
-        self.game = game
-        self.demo = demo
-        d = game.director
-        self.d = d
-        d.listeners.append(self._event)
-        profiler.after_tick.append(self._tick)
-        self.tick_n = 0
-        self.rounds: list[dict] = []
-        self.plans: list[dict] = []
-        self.deaths: list[dict] = []
-        self.last_seen: dict[tuple[int, int], float] = {}
-        self.round_first_seen: dict[tuple[int, int], float] = {}
-        self.exposed_t = defaultdict(float)
-        self.alive_t = defaultdict(float)
-        self.pairs: dict[tuple, list] = {}
-        self.stacking: list[dict] = []
-        self.clumps: list[dict] = []
-        self._clump_since: dict[str, float] = {}
-        self.thrown = defaultdict(int)
-        self.grenades: list[dict] = []
-        self.leaks = defaultdict(int)
-        self.team_reports = 0
-        self.hold_spots: list[tuple] = []
-        self._holds_sampled = False
-        self._ctx_grenade = None
-        self._in_scan = None
-        self._install()
-
-    # -------------------------------------------------------------- hooks
-    def _install(self) -> None:
-        import ai.bot as bot_mod
-        import ai.perception as per_mod
-        import ai.tactics as tac_mod
-        import weapons.grenades as gren_mod
-        col = self
-
-        orig_scan = per_mod.Perception._scan
-
-        def scan(self_, now, enemies):
-            col._in_scan = self_.bot
-            try:
-                orig_scan(self_, now, enemies)
-            finally:
-                col._in_scan = None
-            for c in self_.contacts.values():
-                if c.seen:
-                    key = (id(self_.bot), id(c.agent))
-                    col.last_seen[key] = now
-                    col.round_first_seen.setdefault(key, now)
-        per_mod.Perception._scan = scan
-
-        orig_damaged = per_mod.Perception.on_damaged
-
-        def on_damaged(self_, attacker, now):
-            if attacker is not None and getattr(attacker, "side", None) != self_.bot.side:
-                if now - col.last_seen.get((id(self_.bot), id(attacker)), -99.0) > 1.0:
-                    col.leaks["exact_attacker_position_when_shot_by_unseen_enemy"] += 1
-            return orig_damaged(self_, attacker, now)
-        per_mod.Perception.on_damaged = on_damaged
-
-        orig_killed = tac_mod.TeamBrain.on_teammate_killed
-
-        def on_killed(self_, victim, killer, now):
-            if killer is not None and killer.side != self_.side and self_.alive_bots():
-                if now - col.last_seen.get((id(victim), id(killer)), -99.0) > 1.0:
-                    col.leaks["exact_killer_position_broadcast_after_unseen_kill"] += 1
-            return orig_killed(self_, victim, killer, now)
-        tac_mod.TeamBrain.on_teammate_killed = on_killed
-
-        orig_report = tac_mod.TeamBrain.report
-
-        def report(self_, *a, **kw):
-            col.team_reports += 1
-            return orig_report(self_, *a, **kw)
-        tac_mod.TeamBrain.report = report
-
-        orig_start = tac_mod.TeamBrain.round_start
-
-        def round_start(self_, now):
-            orig_start(self_, now)
-            if self_.side == "attack":
-                col.plans.append({"round": col.d.match.round, "plan": self_.plan, "site": self_.site})
-        tac_mod.TeamBrain.round_start = round_start
-
-        orig_throw = bot_mod.BotWeapons.throw
-
-        def throw(self_, key, velocity):
-            ok = orig_throw(self_, key, velocity)
-            if ok:
-                col.thrown[f"{self_.bot.side}:{key}"] += 1
-            return ok
-        bot_mod.BotWeapons.throw = throw
-
-        orig_det = gren_mod.Grenade.detonate
-
-        def detonate(self_):
-            rec = {"key": self_.d.key, "side": getattr(self_.thrower, "side", ""), "t": col.game.loop.time,
-                   "pos": tuple(self_.pos()) if callable(getattr(self_, "pos", None)) else None,
-                   "enemy_flashed": 0, "team_flashed": 0, "enemy_damaged": 0, "sightings_blocked": 0}
-            col.grenades.append(rec)
-            col._ctx_grenade = rec
-            try:
-                return orig_det(self_)
-            finally:
-                col._ctx_grenade = None
-        gren_mod.Grenade.detonate = detonate
-
-        orig_flashed = bot_mod.BotAgent.flashed
-
-        def flashed(self_, duration, strength):
-            rec = col._ctx_grenade
-            if rec is not None and duration >= 1.0:
-                rec["enemy_flashed" if self_.side != rec["side"] else "team_flashed"] += 1
-            return orig_flashed(self_, duration, strength)
-        bot_mod.BotAgent.flashed = flashed
-
-        fx = self.game.effects
-        orig_smoke = fx.smoke_between
-
-        def smoke_between(a, b):
-            v = orig_smoke(a, b)
-            bot = col._in_scan
-            if bot is not None and v >= 0.55:
-                col._smoke_block(bot, a, b)
-            return v
-        fx.smoke_between = smoke_between
-
-        for b in self.d.bots:
-            b.damageable.on_damage.append(lambda res, b=b: self._damage(b, res))
-
-    def _smoke_block(self, bot, a, b) -> None:
-        now = self.game.loop.time
-        for rec in self.grenades:
-            if rec["key"] != "smoke" or rec["side"] == bot.side or now - rec["t"] > 20.0 or rec["pos"] is None:
-                continue
-            if _seg_point_dist(a, b, rec["pos"]) < 4.5:
-                rec["sightings_blocked"] += 1
-
-    def _damage(self, victim, res) -> None:
-        rec = self._ctx_grenade
-        info = res.info
-        if rec is not None and info.weapon == "frag":
-            attacker = self.d.agent_of(info.attacker)
-            if attacker is not None and attacker.side != victim.side:
-                rec["enemy_damaged"] += 1
-
-    # -------------------------------------------------------------- events
-    def _event(self, kind: str, data: dict) -> None:
-        now = self.game.loop.time
-        m = self.d.match
-        if kind == "round_start":
-            self.round_first_seen = {}
-            self._holds_sampled = False
-            self.pairs = {}
-        elif kind == "kill":
-            self._kill(data, now)
-        elif kind == "round_end":
-            r = data["result"]
-            self.rounds.append({"round": m.round, "winner": r.winner_side, "reason": r.reason,
-                                "length": now - self.demo.round_t0})
-
-    def _kill(self, data: dict, now: float) -> None:
-        k, v = data.get("killer"), data["victim"]
-        weapon = data.get("weapon", "")
-        kind = "bullet" if weapon not in ("frag", "bomb", "world", "") else weapon or "world"
-        rec = {"t": now, "round": self.d.match.round, "victim": v.name, "victim_side": v.side,
-               "killer": k.name if k is not None else None, "killer_side": k.side if k is not None else None,
-               "weapon": weapon, "kind": kind, "headshot": bool(data.get("headshot")),
-               "traded": False, "tradeable": False}
-        ws = v.weapons.inv.current() if hasattr(v, "weapons") else None
-        rec["reloading"] = bool(ws is not None and ws.reloading)
-        rec["empty_mag"] = bool(ws is not None and ws.d.magazine > 0 and ws.ammo == 0)
-        if k is not None and k.side != v.side:
-            seen_t = self.last_seen.get((id(v), id(k)), -99.0)
-            rec["victim_saw_killer_5s"] = now - seen_t <= 5.0
-            rec["victim_ever_saw_killer_this_round"] = (id(v), id(k)) in self.round_first_seen
-            c = k.perception.contacts.get(id(v)) if hasattr(k, "perception") else None
-            rec["exposure_before_death"] = (now - c.since) if (c is not None and c.seen) else None
-            rec["distance"] = (k.position() - v.position()).length()
-            rec["victim_mode"] = v.brain.mode if hasattr(v, "brain") else ""
-            rec["killer_mode"] = k.brain.mode if hasattr(k, "brain") else ""
-            mates = [b for b in self.d.bots if b.side == v.side and b is not v and b.active and b.alive]
-            rec["tradeable"] = any((b.position() - v.position()).length() < 15.0 for b in mates)
-        # trades: this victim killed someone of the killer's team in the last 3 s
-        if k is not None:
-            for d in self.deaths:
-                if d["killer"] == v.name and d["victim_side"] == k.side and now - d["t"] <= 3.0 and not d["traded"]:
-                    d["traded"] = True
-        self.deaths.append(rec)
-
-    # ---------------------------------------------------------------- tick
-    def _tick(self, dt: float) -> None:
-        self.tick_n += 1
-        if self.tick_n % SAMPLE_EVERY:
-            return
-        d = self.d
-        if d.match.phase not in ("live", "planted"):
-            return
-        now = self.game.loop.time
-        sdt = dt * SAMPLE_EVERY
-        bots = [b for b in d.bots if b.active and b.alive]
-        # exposure: is this bot seen by any enemy bot?
-        for b in bots:
-            self.alive_t[b.name] += sdt
-            if any(e.side != b.side and (c := e.perception.contacts.get(id(b))) is not None and c.seen
-                   for e in bots):
-                self.exposed_t[b.name] += sdt
-        # stacking and clumping
-        for side in ("attack", "defend"):
-            team = [b for b in bots if b.side == side]
-            for i, a in enumerate(team):
-                pa = a.position()
-                for b in team[i + 1:]:
-                    pb = b.position()
-                    key = (a.name, b.name)
-                    dist = math.hypot(pa.x - pb.x, pa.y - pb.y)
-                    rec = self.pairs.get(key)
-                    if dist < 0.8 and abs(pa.z - pb.z) < 1.0:
-                        if rec is None:
-                            self.pairs[key] = [now, False]
-                        elif not rec[1] and now - rec[0] >= 1.0:
-                            rec[1] = True
-                            where = self.game.level.callout_at(pa.x, pa.y)
-                            self.stacking.append({"t": now, "round": d.match.round, "pair": key, "where": where,
-                                                  "modes": (a.brain.mode, b.brain.mode)})
-                    elif rec is not None and dist > 1.2:
-                        del self.pairs[key]
-            clump = False
-            for a in team:
-                pa = a.position()
-                if sum(1 for b in team if (b.position() - pa).length() < 2.5) >= 3:
-                    clump = True
-                    break
-            if clump:
-                since = self._clump_since.get(side)
-                if since is None:
-                    self._clump_since[side] = now
-                elif since >= 0 and now - since >= 2.0:
-                    self._clump_since[side] = -1.0
-                    a = team[0].position()
-                    self.clumps.append({"t": now, "round": d.match.round, "side": side})
-            else:
-                self._clump_since.pop(side, None)
-        # where the defenders hold, 10 s into the round
-        if not self._holds_sampled and now - self.demo.round_t0 > 10.0:
-            self._holds_sampled = True
-            for b in bots:
-                t = b.brain.task
-                if b.side == "defend" and t.kind == "hold" and t.pos is not None:
-                    self.hold_spots.append((round(t.pos.x, 1), round(t.pos.y, 1)))
-
-    # ------------------------------------------------------------- summary
-    def summary(self) -> dict:
-        demo = self.demo
-        rounds = self.rounds
-        wins = defaultdict(int)
-        reasons = defaultdict(int)
-        for r in rounds:
-            wins[r["winner"]] += 1
-            reasons[f"{r['winner']}/{r['reason']}"] += 1
-        pvp = [x for x in self.deaths if x.get("killer_side") and x["killer_side"] != x["victim_side"]]
-        gun = [x for x in pvp if x["kind"] == "bullet"]
-        tradeable = [x for x in pvp if x["tradeable"]]
-        exp = [x["exposure_before_death"] for x in gun if x.get("exposure_before_death") is not None]
-        plans = defaultdict(int)
-        for p in self.plans:
-            plans[p["plan"]] += 1
-        plan_sites = defaultdict(int)
-        for p in self.plans:
-            plan_sites[f"{p['plan']} {p['site']}"] += 1
-        holds = defaultdict(int)
-        for h in self.hold_spots:
-            holds[h] += 1
-        util = {}
-        for key in ("flash", "smoke", "frag"):
-            recs = [g for g in self.grenades if g["key"] == key]
-            if key == "flash":
-                eff = [g for g in recs if g["enemy_flashed"] > 0]
-                extra = {"team_flashes": sum(1 for g in recs if g["team_flashed"] > 0)}
-            elif key == "frag":
-                eff = [g for g in recs if g["enemy_damaged"] > 0]
-                extra = {}
-            else:
-                eff = [g for g in recs if g["sightings_blocked"] > 0]
-                extra = {"enemy_sightings_blocked": sum(g["sightings_blocked"] for g in recs)}
-            util[key] = {"detonated": len(recs), "effective": len(eff),
-                         "effective_pct": 100.0 * len(eff) / max(len(recs), 1), **extra}
-        alive = sum(self.alive_t.values())
-        exposed = sum(self.exposed_t.values())
-        micro = sum(b.brain.follower.stuck_events for b in self.d.bots)
-        n_deaths = len(self.deaths)
-        fired = sum(b.shots_fired for b in self.d.bots)
-        out = {
-            "rounds": len(rounds),
-            "wins_by_side": dict(wins),
-            "attack_win_pct": 100.0 * wins.get("attack", 0) / max(len(rounds), 1),
-            "results": dict(reasons),
-            "avg_round_s": sum(r["length"] for r in rounds) / max(len(rounds), 1),
-            "kills": len(pvp),
-            "deaths_total": n_deaths,
-            "headshot_pct": 100.0 * sum(1 for x in pvp if x["headshot"]) / max(len(pvp), 1),
-            "plants": demo.plants, "defuses": demo.defuses,
-            "shots": fired, "bullet_hits": demo.hits, "accuracy_pct": 100.0 * demo.hits / max(fired, 1),
-            "deaths_while_reloading": sum(1 for x in pvp if x["reloading"]),
-            "deaths_while_reloading_pct": 100.0 * sum(1 for x in pvp if x["reloading"]) / max(len(pvp), 1),
-            "deaths_with_empty_mag": sum(1 for x in pvp if x["empty_mag"]),
-            "unseen_deaths": sum(1 for x in gun if not x.get("victim_saw_killer_5s")),
-            "unseen_deaths_pct": 100.0 * sum(1 for x in gun if not x.get("victim_saw_killer_5s")) / max(len(gun), 1),
-            "never_saw_killer_this_round_pct":
-                100.0 * sum(1 for x in gun if not x.get("victim_ever_saw_killer_this_round")) / max(len(gun), 1),
-            "traded_pct": 100.0 * sum(1 for x in pvp if x["traded"]) / max(len(pvp), 1),
-            "traded_of_tradeable_pct": 100.0 * sum(1 for x in tradeable if x["traded"]) / max(len(tradeable), 1),
-            "tradeable_deaths": len(tradeable),
-            "exposure_before_death_s": {"mean": sum(exp) / max(len(exp), 1), "n": len(exp)},
-            "exposed_share_pct": 100.0 * exposed / max(alive, 1e-6),
-            "exposed_s_per_death": exposed / max(n_deaths, 1),
-            "stacking_incidents": len(self.stacking),
-            "stacking_per_round": len(self.stacking) / max(len(rounds), 1),
-            "stacking_where": _count(s["where"] for s in self.stacking),
-            "clumps": len(self.clumps),
-            "stuck_bots": len(demo.stuck_reports),
-            "stuck_reports": list(demo.stuck_reports),
-            "micro_stuck_events": micro,
-            "grenades_thrown": dict(self.thrown),
-            "utility": util,
-            "attack_plans": dict(plans),
-            "attack_plans_pct": {k: 100.0 * v / max(len(self.plans), 1) for k, v in plans.items()},
-            "attack_plan_sites": dict(plan_sites),
-            "defender_hold_spots": {"distinct": len(holds), "samples": len(self.hold_spots),
-                                    "top": [[list(k), v] for k, v in sorted(holds.items(), key=lambda kv: -kv[1])[:8]]},
-            "team_reports": self.team_reports,
-            "info_leaks": dict(self.leaks),
-            "info_leaks_per_round": {k: v / max(len(rounds), 1) for k, v in self.leaks.items()},
-            "deaths": self.deaths,
-            "stacking": self.stacking,
-            "rounds_detail": rounds,
-            "plans_detail": self.plans,
-        }
-        return out
-
-
-def _count(items) -> dict:
-    out = defaultdict(int)
-    for i in items:
-        out[i or "?"] += 1
-    return dict(sorted(out.items(), key=lambda kv: -kv[1]))
-
-
-def _seg_point_dist(a, b, p) -> float:
-    ax, ay, az = a[0], a[1], a[2]
-    dx, dy, dz = b[0] - ax, b[1] - ay, b[2] - az
-    L2 = dx * dx + dy * dy + dz * dz
-    t = 0.0 if L2 < 1e-9 else max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy + (p[2] - az) * dz) / L2))
-    qx, qy, qz = ax + dx * t, ay + dy * t, az + dz * t
-    return math.sqrt((p[0] - qx) ** 2 + (p[1] - qy) ** 2 + (p[2] - qz) ** 2)
 
 
 # ------------------------------------------------------------------- report
@@ -689,14 +309,15 @@ def main(argv=None) -> int:
             rr["max_rounds"] = max(int(rr["max_rounds"]), opts.rounds)
         prof = TickProfiler(game, detail=not opts.no_detail)
         state["prof"] = prof
-        state["col"] = MetricsCollector(game, self, prof)
         state["t0"] = time.time()
 
     def summary(self):
         orig_summary(self)
+        d = self.game.director
         res = {"seed": opts.seed, "difficulty": opts.difficulty, "rounds_requested": opts.rounds,
+               "ai": d.describe_ai(), "team_ai": d.team_ai,
                "wall_seconds": time.time() - state["t0"], "python": sys.version.split()[0],
-               "timing": state["prof"].summary(), "behaviour": state["col"].summary()}
+               "timing": state["prof"].summary(), "behaviour": self.metrics.summary()}
         out = Path(opts.out)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(res, indent=1, default=str))

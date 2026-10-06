@@ -83,6 +83,43 @@ def build_weapon_model(materials, key: str, parent: NodePath | None = None, name
     return WeaponModel(key, root, groups, anchors, d)
 
 
+_PROTOTYPES: dict[tuple, WeaponModel] = {}
+
+
+def shared_weapon_model(materials, key: str, parent: NodePath, name: str | None = None,
+                        flatten: str = "all") -> WeaponModel:
+    """A copy of a model that is built only once per key.
+
+    Building a model bevels dozens of boxes in numpy: 50-300 ms for a rifle or
+    a gadget. Bots switch weapons, drop their gun when they die and deploy
+    gadgets in the middle of a round, and each of those used to rebuild the
+    model inside the 64 Hz tick (docs/baseline). The prototype is built and
+    flattened the first time; ``copyTo`` then shares its Geoms copy-on-write,
+    so a copy costs microseconds and renders exactly the same.
+
+    ``flatten``: "all" merges everything per material (third-person guns,
+    pickups); "body" merges only the static body group and keeps the other
+    groups (an LED) as separate nodes; "none" keeps the hierarchy."""
+    pkey = (id(materials), key, flatten)
+    proto = _PROTOTYPES.get(pkey)
+    if proto is None:
+        proto = build_weapon_model(materials, key, None, f"proto:{key}")
+        if flatten == "all":
+            proto.root.flattenStrong()
+            proto.groups = {"body": proto.root}
+        elif flatten == "body" and proto.groups.get("body") is not None:
+            proto.groups["body"].flattenStrong()
+        _PROTOTYPES[pkey] = proto
+    root = proto.root.copyTo(parent)
+    root.setName(name or f"weapon:{key}")
+    if flatten == "all":
+        groups = {"body": root}
+    else:
+        groups = {g: root.find(g) for g in proto.groups}
+        groups = {g: np_ for g, np_ in groups.items() if not np_.isEmpty()}
+    return WeaponModel(key, root, groups, dict(proto.anchors), proto.meta)
+
+
 def segment_hpr(a: Point3, b: Point3) -> tuple[float, float]:
     """Heading/pitch that aim local +Y from a to b."""
     dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z

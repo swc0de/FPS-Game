@@ -7,8 +7,11 @@
   "  headshot      chance to aim at the head rather than the chest",
   "  spray_control fraction of the recoil pattern the bot compensates",
   "  fov           vision cone; hearing scales the distance at which footsteps/shots are heard",
-  "  strafe        strafes between bursts; grenades = chance to use utility when the plan calls for it"
+  "  strafe        strafes between bursts; grenades = chance to use utility when the plan calls for it",
+  "default_ai: 'legacy' (Milestone 5 brain, ai/brain.py) or 'v2' (Milestone 8, ai/v2/); --ai and the console",
+  "  'ai' command choose per team, e.g. team0=v2,team1=legacy"
  ],
+ "default_ai": "legacy",
  "default_difficulty": "normal",
  "difficulty": {
   "easy": {"reaction": [0.55, 0.85], "turn_speed": 240, "snap": 7.0, "aim_error": 4.5, "error_decay": 0.9,

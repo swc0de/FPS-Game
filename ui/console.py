@@ -8,6 +8,7 @@
     team <attack|defend>      switch side and restart
     bots <opponents> [mates]  roster size (bots or stand-ins), restarts the match
     difficulty <level>        bot difficulty: easy normal hard expert
+    ai <spec>                 bot AI: legacy | v2 | team0=v2,team1=legacy (restarts the match)
     botinfo                   what every bot is doing
     spectate                  leave the match and watch ten bots play
     give <weapon>             e.g. give sr90 (r7 c9 mx5 s12 p9 frag smoke flash)
@@ -145,6 +146,13 @@ class Console:
         if cmd == "difficulty" and args:
             d.set_difficulty(args[0])
             return f"bot difficulty: {d.difficulty}"
+        if cmd == "ai":
+            if not args:
+                return d.describe_ai()
+            try:
+                return "bot AI: " + d.set_ai(args[0])
+            except ValueError as e:
+                return str(e)
         if cmd == "spectate":
             d.set_spectate()
             return "watching a bot match (start the game again to play)"

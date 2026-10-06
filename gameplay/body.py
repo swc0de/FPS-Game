@@ -37,7 +37,7 @@ from panda3d.core import (BoundingSphere, LMatrix4f, LVecBase4f, NodePath, Point
 from engine.geometry import MeshBuilder, build_skinned
 from gameplay.lean import Lean
 from gameplay.hitboxes import PARTS, HitboxRig
-from weapons.models import build_weapon_model, segment_hpr
+from weapons.models import segment_hpr, shared_weapon_model
 
 UPPER_ARM = 0.30
 FOREARM = 0.32
@@ -251,9 +251,8 @@ class CharacterBody:
             self.muzzle = None
             return
         if self.visible:
-            self.weapon_model = build_weapon_model(self.game.materials, model_key, gun)
-            # third-person guns never animate their parts: merge them per material
-            self.weapon_model.root.flattenStrong()
+            # third-person guns never animate their parts: one merged copy of a shared prototype
+            self.weapon_model = shared_weapon_model(self.game.materials, model_key, gun)
             anchors = self.weapon_model.anchors
         else:
             from weapons.models import model_defs

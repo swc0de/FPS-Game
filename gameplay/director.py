@@ -10,6 +10,15 @@ Rosters: by default the human plays with bot teammates against a full
 bot team (5v5, data/match.json "bots"). ``standins=True`` brings back the
 Milestone 4 practice mode (stand-ins holding positions, no shooting back);
 ``spectate=True`` leaves the human out and lets ten bots play.
+
+Bot AI (Milestone 8): each team runs either the Milestone 5 brain
+("legacy": ai/brain.py + ai/tactics.py) or the overhauled one ("v2":
+ai/v2/). ``ai`` is "legacy", "v2" or a per-team spec such as
+"team0=v2,team1=legacy" (team 0 is the human's team, or the team that
+starts on attack when spectating) or "attack=v2,defend=legacy" (the sides
+at the start of the match). A team keeps its AI when the sides swap at
+halftime: team brains exist per (AI, side) and are reassigned to the sides
+at every round reset.
 """
 from __future__ import annotations
 
@@ -31,6 +40,36 @@ SPECTATE_DELAY = 2.5
 TEAM_THINK = 0.25
 
 
+AI_KINDS = ("legacy", "v2")
+
+
+def parse_ai_spec(spec: str | None, start_side: str, default: str = "legacy") -> dict[int, str]:
+    """"v2" | "legacy" | "team0=v2,team1=legacy" | "attack=v2,defend=legacy" -> {team index: kind}.
+    ``start_side`` is team 0's side at the start of the match."""
+    out = {0: default, 1: default}
+    spec = (spec or "").strip().lower()
+    if not spec:
+        return out
+    if "=" not in spec:
+        if spec not in AI_KINDS:
+            raise ValueError(f"unknown AI {spec!r} (use {' / '.join(AI_KINDS)})")
+        return {0: spec, 1: spec}
+    for part in spec.split(","):
+        key, _, kind = part.partition("=")
+        key, kind = key.strip(), kind.strip()
+        if kind not in AI_KINDS:
+            raise ValueError(f"unknown AI {kind!r} (use {' / '.join(AI_KINDS)})")
+        if key in ("team0", "0"):
+            out[0] = kind
+        elif key in ("team1", "1"):
+            out[1] = kind
+        elif key in SIDES:
+            out[0 if key == start_side else 1] = kind
+        else:
+            raise ValueError(f"unknown team {key!r} (use team0/team1 or attack/defend)")
+    return out
+
+
 def map_supports_match(level) -> bool:
     sites = [z for z in level.zones if z["kind"] == "bombsite"]
     teams = {s["team"] for s in level.spawns}
@@ -40,7 +79,7 @@ def map_supports_match(level) -> bool:
 class MatchDirector:
     def __init__(self, game, side: str = "attack", opponents: int | None = None, teammates: int | None = None,
                  seed: int | None = None, difficulty: str | None = None, standins: bool = False,
-                 spectate: bool = False):
+                 spectate: bool = False, ai: str | None = None):
         from ai.bot import load_bot_config
         self.game = game
         self.rules = load_rules()
@@ -68,10 +107,11 @@ class MatchDirector:
         self.shop = Shop(self)
         from gameplay.tactical import Tactical
         self.tactical = Tactical(game, self)
-        self.team_brains: dict = {}
-        if self.use_bots:
-            from ai.tactics import TeamBrain
-            self.team_brains = {s: TeamBrain(self, s) for s in SIDES}
+        self.team_ai = parse_ai_spec(ai, side, self.bot_config.get("default_ai", "legacy"))
+        self._brains: dict[tuple[str, str], object] = {}      # (ai kind, side) -> team brain
+        self.team_brains: dict = {}                            # side -> team brain of the team on it now
+        self.audit = None
+        self._assign_team_brains()
         self._build_roster()
         self.player_agent.damageable.damage_filter = self._filter
         self.player_agent.damageable.on_damage.append(lambda res: self._damaged(self.player_agent, res))
@@ -107,13 +147,53 @@ class MatchDirector:
         for i in range(self.n_opponents):
             self._add_agent(names[enemy][i % len(names[enemy])], enemy, 1)
 
+    def _assign_team_brains(self) -> None:
+        """side -> the team brain of the AI that the team now on that side runs."""
+        if not self.use_bots:
+            self.team_brains = {}
+            return
+        out = {}
+        for team in self.match.teams:
+            kind = self.team_ai.get(team.index, "legacy")
+            key = (kind, team.side)
+            if key not in self._brains:
+                if kind == "v2":
+                    from ai.v2.strategy import TeamStrategy
+                    self._brains[key] = TeamStrategy(self, team.side)
+                else:
+                    from ai.tactics import TeamBrain
+                    self._brains[key] = TeamBrain(self, team.side)
+            out[team.side] = self._brains[key]
+        self.team_brains = out
+
+    def ai_of(self, agent) -> str:
+        team = getattr(agent, "team", None)
+        return self.team_ai.get(team.index, "legacy") if team is not None else ""
+
+    def set_ai(self, spec: str) -> str:
+        """Console / menu: choose the bots' AI ("v2", "legacy" or per team) and restart the match."""
+        self.team_ai = parse_ai_spec(spec, self.match.teams[0].side, self.bot_config.get("default_ai", "legacy"))
+        self._brains = {}
+        self._assign_team_brains()
+        if self.use_bots:
+            self.set_opponents(self.n_opponents, self.n_teammates)
+        return self.describe_ai()
+
+    def describe_ai(self) -> str:
+        t0, t1 = self.match.teams
+        return f"team 0 ({t0.side}): {self.team_ai[0]}, team 1 ({t1.side}): {self.team_ai[1]}"
+
     def _add_agent(self, name: str, side: str, team_index: int) -> None:
         if self.use_bots:
             from ai.bot import BotAgent
-            from ai.brain import Brain
             a = BotAgent(self.game, name, side, self.difficulty, self.nav, seed=self.rng.randrange(1 << 30))
             self.match.add(a, team_index)
-            a.brain = Brain(a, _TeamProxy(self, a))
+            if self.team_ai.get(team_index, "legacy") == "v2":
+                from ai.v2.brain import BrainV2
+                a.brain = BrainV2(a, _TeamProxy(self, a))
+            else:
+                from ai.brain import Brain
+                a.brain = Brain(a, _TeamProxy(self, a))
             self.bots.append(a)
         else:
             cfg = self.rules["teams"][side]
@@ -271,6 +351,8 @@ class MatchDirector:
             self._out_of_world(human)
         self._separate_characters()
         tac.fixed_update(dt)
+        if self.audit is not None:
+            self.audit.tick(now)
         if now >= self._team_t:
             self._team_t = now + TEAM_THINK
             for tb in self.team_brains.values():
@@ -310,6 +392,9 @@ class MatchDirector:
     # --------------------------------------------------- round reset
     def _round_reset(self, match: Match, swapped: bool) -> None:
         g = self.game
+        self._assign_team_brains()            # the sides may have swapped
+        if self.audit is not None:
+            self.audit.round_reset()
         g.clear_world()
         self.shop.new_round()
         self.bomb.reset()
