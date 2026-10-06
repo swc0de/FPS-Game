@@ -111,6 +111,7 @@ class MatchDirector:
         self._brains: dict[tuple[str, str], object] = {}      # (ai kind, side) -> team brain
         self.team_brains: dict = {}                            # side -> team brain of the team on it now
         self.audit = None
+        self.listeners: list = []             # UI and v2 team strategies: callback(kind, data)
         self._assign_team_brains()
         self._build_roster()
         self.player_agent.damageable.damage_filter = self._filter
@@ -122,7 +123,6 @@ class MatchDirector:
         # until the first round starts the player only has the starting gear
         game.weapons.inv.clear()
         game.weapons.give_loadout(["knife", self.rules["teams"][side]["default_pistol"]], {})
-        self.listeners: list = []             # UI: callback(kind, data)
         self.progress: tuple[str, float] | None = None   # ("plant"|"defuse", 0..1) for the HUD
         self.hint = ""
         self._plant_t = 0.0
@@ -173,6 +173,9 @@ class MatchDirector:
     def set_ai(self, spec: str) -> str:
         """Console / menu: choose the bots' AI ("v2", "legacy" or per team) and restart the match."""
         self.team_ai = parse_ai_spec(spec, self.match.teams[0].side, self.bot_config.get("default_ai", "legacy"))
+        for tb in self._brains.values():
+            if hasattr(tb, "detach"):
+                tb.detach()
         self._brains = {}
         self._assign_team_brains()
         if self.use_bots:

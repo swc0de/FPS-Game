@@ -31,8 +31,9 @@ possible, weighted by priors (defenders like holding spots in sites). The
 brains use it to pre-aim, clear corners in order, decide where it is safe
 to walk, and rotate.
 
-Updates are time-sliced: ``step`` advances one field per call (the team
-strategy calls it every tick), so no single tick does all the work.
+Updates are time-sliced: ``step`` advances one field by one hop per call
+(the team strategy calls it every third tick), so no single tick does all
+the work.
 """
 from __future__ import annotations
 
@@ -154,7 +155,7 @@ class PossibilityField:
         self.now = now
         fields = [self.general] + [t.field for t in self.tracks.values()]
         self._turn = (self._turn + 1) % len(fields)
-        fields[self._turn].relax(self._graph, iters=2)
+        fields[self._turn].relax(self._graph, iters=1)
         if self._turn == 0:
             for key in [k for k, t in self.tracks.items() if now - t.fact.time > self.track_time]:
                 self._dissolve(key)

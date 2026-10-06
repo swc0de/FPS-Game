@@ -561,7 +561,11 @@ class BotDemo:
     defuses, the behaviour metrics of ai/metrics.py (per AI in a
     head-to-head, with the round-win rate and its confidence interval), any
     bot that got stuck, and the fairness audit (``--audit``).
-    ``BOT_DEMO_JSON=path`` also writes every number to a JSON file."""
+    ``BOT_DEMO_JSON=path`` also writes every number to a JSON file;
+    ``BOT_DEMO_TICKS=n`` renders a frame every n ticks instead of 8 (faster
+    tuning runs); ``BOT_DEMO_NORENDER=1`` draws nothing at all (statistics
+    runs); ``BOT_DEMO_CONSOLE="overlay;belief attack"`` runs console commands
+    at the start."""
 
     def __init__(self, game):
         import os
@@ -571,6 +575,12 @@ class BotDemo:
         self.rounds = int(os.environ.get("BOT_DEMO_ROUNDS", "8"))
         self.trace = os.environ.get("BOT_DEMO_TRACE", "") == "1"
         self.frame_dt = float(os.environ.get("BOT_DEMO_DT", "0.5"))
+        ticks = int(os.environ.get("BOT_DEMO_TICKS", "0"))
+        if ticks > 0:
+            # fewer rendered frames per simulated second: faster for tuning runs (the hit boxes
+            # are interpolated per frame, so results differ slightly from the default of 8)
+            game.loop.max_ticks_per_frame = ticks
+            self.frame_dt = ticks * game.loop.dt
         self.json_path = os.environ.get("BOT_DEMO_JSON", "")
         self.done = False
         self.ticks = 0
@@ -586,6 +596,9 @@ class BotDemo:
         game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds, "
                  f"AI {d.describe_ai()}")
         d.tactical.verbose = self.trace or os.environ.get("BOT_DEMO_GADGETS", "") == "1"
+        self.render = os.environ.get("BOT_DEMO_NORENDER", "") != "1"
+        for cmd in filter(None, (c.strip() for c in os.environ.get("BOT_DEMO_CONSOLE", "").split(";"))):
+            game.log(f"[demo] console: {cmd} -> {game.console.run(cmd)}")
 
     @property
     def stuck_reports(self) -> list[str]:
@@ -671,6 +684,12 @@ class BotDemo:
     def frame(self) -> bool:
         g = self.game
         d = g.director
+        if not self.render:
+            # statistics runs: simulate only (no frames drawn, no screenshots)
+            self.shot_queue.clear()
+            ge = g.graphicsEngine
+            for i in range(ge.getNumWindows()):
+                ge.getWindow(i).setActive(False)
         if self.shot_queue:
             n, name = self.shot_queue[0]
             if n <= 0:

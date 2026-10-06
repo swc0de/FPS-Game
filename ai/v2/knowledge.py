@@ -58,6 +58,7 @@ class BotKnowledge:
         self.damage_dealt: dict[int, float] = {}   # what this bot's hits did (hit markers)
         self.radar_next = 0.0
         self._heard_t: dict[int, float] = {}
+        self.heard: list[Fact] = []
         self.alive_enemies = 5
 
     def reset(self) -> None:
@@ -65,6 +66,7 @@ class BotKnowledge:
         self.anonymous.clear()
         self.damage_dealt.clear()
         self._heard_t.clear()
+        self.heard = []
         self.radar_next = 0.0
 
     # --------------------------------------------------------------- input
@@ -98,8 +100,15 @@ class BotKnowledge:
                 self._heard_t[key] = c.time
                 me = self.bot.position()
                 d = math.hypot(c.pos.x - me.x, c.pos.y - me.y)
-                self.add(Fact(key, (c.pos.x, c.pos.y, c.pos.z), min(d * 0.08, 4.0) + 1.0, c.time, "sound"))
+                f = Fact(key, (c.pos.x, c.pos.y, c.pos.z), min(d * 0.08, 4.0) + 1.0, c.time, "sound")
+                self.add(f)
+                self.heard.append(f)
         return seen
+
+    def pop_heard(self) -> list[Fact]:
+        """Sounds heard since the last call (the brain calls them out)."""
+        out, self.heard = self.heard, []
+        return out
 
     def on_shot(self, direction, now: float, guess: float = 15.0) -> Fact:
         """Hit by an enemy the bot cannot see: only the direction is known (``direction``

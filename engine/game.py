@@ -109,6 +109,7 @@ class Game(ShowBase):
         self.paused = False
         self.menu = PauseMenu(self)
         self.console = Console(self)
+        self.bot_overlay = None                 # console "overlay" (ui/bot_overlay.py)
         self.match_hud = None
         self.buy_menu = None
         self.main_menu = None
@@ -586,6 +587,8 @@ class Game(ShowBase):
         if self.buy_menu is not None:
             self.buy_menu.update()
         self.debug_hud.update(dt)
+        if self.bot_overlay is not None:
+            self.bot_overlay.update(dt)
         self.audio.frame_update(dt)
         self._frame += 1
         if self.args.trace:

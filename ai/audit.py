@@ -54,7 +54,6 @@ class FairnessAudit:
         self.checked_reads = 0
         self._patched: list[tuple] = []
         self.seen_gadgets: dict[str, set[int]] = {"attack": set(), "defend": set()}
-        self._next_tick = 0.0
         if install:
             self.install()
 
@@ -243,9 +242,8 @@ class FairnessAudit:
     # ---------------------------------------------------------------- tick
     def tick(self, now: float) -> None:
         """Remember which enemy gadgets each side has had in sight."""
-        if now < self._next_tick or self.director is None:
+        if self.director is None:
             return
-        self._next_tick = now + 0.25
         d = self.director
         tac = d.tactical
         from engine.physics import MASK_SIGHT

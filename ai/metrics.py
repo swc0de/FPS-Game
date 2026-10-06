@@ -51,15 +51,16 @@ def _install_hooks() -> None:
     import ai.tactics as tac_mod
     import weapons.grenades as gren_mod
 
-    orig_scan = per_mod.Perception._scan
+    # update, not _scan: the v2 perception overrides _scan (ai/v2/perception.py)
+    orig_update = per_mod.Perception.update
 
-    def _scan(self, now, enemies):
+    def update(self, now, enemies):
         col = _ACTIVE
         if col is None:
-            return orig_scan(self, now, enemies)
+            return orig_update(self, now, enemies)
         col._in_scan = self.bot
         try:
-            orig_scan(self, now, enemies)
+            orig_update(self, now, enemies)
         finally:
             col._in_scan = None
         for c in self.contacts.values():
@@ -67,7 +68,7 @@ def _install_hooks() -> None:
                 key = (id(self.bot), id(c.agent))
                 col.last_seen[key] = now
                 col.round_seen.add(key)
-    per_mod.Perception._scan = _scan
+    per_mod.Perception.update = update
 
     orig_damaged = per_mod.Perception.on_damaged
 

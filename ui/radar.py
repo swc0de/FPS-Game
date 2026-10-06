@@ -246,6 +246,9 @@ class Radar:
         self.sites = [(z["name"], ((z["min"][0] + z["max"][0]) * 0.5, (z["min"][1] + z["max"][1]) * 0.5))
                       for z in level.zones if z.get("kind") == "bombsite"]
         self.visible = True
+        self.belief: str | None = None        # console "belief": draw this side's possibility field
+        self.belief_card = None
+        self._belief_t = 0.0
 
     @property
     def hud_cfg(self) -> dict:
@@ -257,6 +260,70 @@ class Radar:
     def set_visible(self, v: bool) -> None:
         self.visible = v
         self.root.show() if v and self.hud_cfg.get("minimap", True) else self.root.hide()
+
+    # -------------------------------------------------------------- belief
+    def set_belief(self, side: str | None) -> None:
+        """Overlay a v2 team's picture of the enemy (ai/v2/belief.py) on the radar: grey dots are
+        the tactical points, yellow where an enemy could be, red where one probably is (expected
+        enemies per point), magenta the tracked enemies' last known spots."""
+        self.belief = side
+        if side is None:
+            if self.belief_card is not None:
+                self.belief_card.hide()
+            return
+        if self.belief_card is None:
+            w, h = (max(int(math.ceil(v)), 1) for v in self.dims)
+            self._belief_img = np.zeros((h, w, 4), np.uint8)
+            self.belief_tex = Texture("belief")
+            self.belief_tex.setup2dTexture(w, h, Texture.T_unsigned_byte, Texture.F_rgba8)
+            self.belief_tex.setWrapU(SamplerState.WM_border_color)
+            self.belief_tex.setWrapV(SamplerState.WM_border_color)
+            self.belief_tex.setBorderColor((0, 0, 0, 0))
+            self.belief_tex.setMagfilter(SamplerState.FT_nearest)
+            cm = CardMaker("radar_belief")
+            cm.setFrame(-self.R, self.R, -self.R, self.R)
+            self.belief_card = self.root.attachNewNode(cm.generate())
+            self.belief_card.setTexture(self.belief_tex)
+            self.belief_card.setTransparency(TransparencyAttrib.MAlpha)
+            self.marks.reparentTo(self.root)             # markers stay on top
+        self.belief_card.show()
+        self._belief_t = 0.0
+
+    def _draw_belief(self, dt: float) -> None:
+        self._belief_t -= dt
+        if self._belief_t > 0.0:
+            return
+        self._belief_t = 0.25
+        tb = self.director.brain_of(self.belief)
+        img = self._belief_img
+        img[:] = 0
+        if tb is None or not hasattr(tb, "field"):
+            self.belief_tex.setRamImageAs(img.tobytes(), "RGBA")
+            return
+        tm = tb.tm
+        h, w = img.shape[:2]
+        x = np.clip(((tm._xy[:, 0] - self.origin[0]) / self.dims[0] * w).astype(int), 0, w - 1)
+        y = np.clip(((tm._xy[:, 1] - self.origin[1]) / self.dims[1] * h).astype(int), 0, h - 1)
+        img[y, x] = (150, 150, 150, 110)
+        possible = tb.field.possible()
+        danger = tb.danger()
+        top = max(float(danger.max()), 1e-6)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                xx, yy = np.clip(x + dx, 0, w - 1), np.clip(y + dy, 0, h - 1)
+                img[yy[possible], xx[possible]] = (230, 200, 40, 90)
+        hot = np.flatnonzero(danger > top * 0.08)
+        a = (90 + 165 * np.clip(danger[hot] / top, 0, 1)).astype(np.uint8)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                xx, yy = np.clip(x[hot] + dx, 0, w - 1), np.clip(y[hot] + dy, 0, h - 1)
+                img[yy, xx, 0], img[yy, xx, 1], img[yy, xx, 2], img[yy, xx, 3] = 255, 40, 30, a
+        for tr in tb.field.tracks.values():
+            p = tr.fact.pos
+            i = int(np.clip((p[0] - self.origin[0]) / self.dims[0] * w, 0, w - 1))
+            j = int(np.clip((p[1] - self.origin[1]) / self.dims[1] * h, 0, h - 1))
+            img[max(j - 1, 0):j + 2, max(i - 1, 0):i + 2] = (255, 60, 255, 255)
+        self.belief_tex.setRamImageAs(img.tobytes(), "RGBA")
 
     # ---------------------------------------------------------------- view
     def viewer(self):
@@ -318,6 +385,9 @@ class Radar:
                       0, 0, 1, 0,
                       b0, b1, 0, 1)
         self.card.setTexTransform(self.ts, TransformState.makeMat(m))
+        if self.belief is not None and self.belief_card is not None:
+            self.belief_card.setTexTransform(self.ts, TransformState.makeMat(m))
+            self._draw_belief(dt)
         nu, nv = world_to_radar(0.0, 1.0, ryaw, 1.0)
         n = max(abs(nu), abs(nv))
         self.north.setPos(nu / n * self.R * 0.9, nv / n * self.R * 0.9 - 0.01)

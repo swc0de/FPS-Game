@@ -198,6 +198,10 @@ class AimPolicy:
         return self.point if self.point is not None else Point3(pos.x, pos.y + 4, pos.z + EYE)
 
 
+# beyond these distances a weapon class is not worth firing (unless shot at)
+RANGE_LIMIT = {"shotgun": 18.0, "smg": 40.0, "pistol": 40.0}
+
+
 class Shooter:
     """Trigger discipline and aim at a visible target (one per bot)."""
 
@@ -290,7 +294,7 @@ class Shooter:
                 can = False
                 if not ws.reloading:
                     ws.start_reload(now)
-            limit = {"shotgun": 18.0, "smg": 40.0, "pistol": 40.0}.get(ws.d.cls)
+            limit = RANGE_LIMIT.get(ws.d.cls)
             shot_at = now - self.b.last_hit_t < 2.0
             if limit is not None and dist > limit and not (shot_at and ws.d.cls != "shotgun"):
                 can = False

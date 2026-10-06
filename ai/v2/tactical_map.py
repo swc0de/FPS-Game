@@ -301,7 +301,9 @@ class TacticalMap:
         self.n = len(self.pos)
         self._base_vis = self.vis.copy()
         self._grid = {}
-        for i, p in enumerate(self.pos.tolist()):
+        self._pl = self.pos.tolist()
+        self._near_cache: dict = {}
+        for i, p in enumerate(self._pl):
             self._grid.setdefault((int(p[0] // 4.0), int(p[1] // 4.0)), []).append(i)
         self.edge_src = self.edges[:, 0].astype(np.int64) if len(self.edges) else np.zeros(0, np.int64)
         self.edge_dst = self.edges[:, 1].astype(np.int64) if len(self.edges) else np.zeros(0, np.int64)
@@ -346,24 +348,34 @@ class TacticalMap:
 
     # ------------------------------------------------------------- queries
     def nearest(self, p, max_dz: float = 1.6) -> int:
-        """Index of the tactical point nearest to a feet position p (same floor), or -1."""
-        gx, gy = int(p[0] // 4.0), int(p[1] // 4.0)
+        """Index of the tactical point nearest to a feet position p (same floor), or -1.
+        Answers are cached per 0.25 m cell (the queries come from moving bots, many per tick)."""
+        px, py, pz = float(p[0]), float(p[1]), float(p[2])
+        key = (int(px * 4.0), int(py * 4.0), int(pz * 2.0), max_dz)
+        hit = self._near_cache.get(key)
+        if hit is not None:
+            return hit
+        gx, gy = int(px // 4.0), int(py // 4.0)
         best, best_d = -1, 1e9
+        grid, pl = self._grid, self._pl
         for r in range(0, 4):
             for x in range(gx - r, gx + r + 1):
                 for y in range(gy - r, gy + r + 1):
                     if r and abs(x - gx) != r and abs(y - gy) != r:
                         continue
-                    for i in self._grid.get((x, y), ()):
-                        q = self.pos[i]
-                        dz = abs(float(q[2]) - p[2])
+                    for i in grid.get((x, y), ()):
+                        q = pl[i]
+                        dz = abs(q[2] - pz)
                         if dz > max_dz:
                             continue
-                        d = (float(q[0]) - p[0]) ** 2 + (float(q[1]) - p[1]) ** 2 + dz * dz * 9.0
+                        d = (q[0] - px) ** 2 + (q[1] - py) ** 2 + dz * dz * 9.0
                         if d < best_d:
                             best, best_d = i, d
             if best >= 0 and r >= 1:
-                return best
+                break
+        if len(self._near_cache) > 60000:
+            self._near_cache.clear()
+        self._near_cache[key] = best
         return best
 
     def sees(self, i: int, j: int, low: bool = False) -> bool:

@@ -54,7 +54,7 @@ from panda3d.core import Point3, Vec3
 
 from ai.aim import angles_to, wrap180
 from ai.brain import Task, ThrowOrder, solve_throw, BREACH_TAGS
-from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, teammate_in_line, EYE
+from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, teammate_in_line, EYE, RANGE_LIMIT
 from ai.v2.humanize import Humanizer
 from ai.v2.knowledge import BotKnowledge, Fact, fact_point
 from ai.v2.pathing import FollowerV2, PENDING
@@ -68,7 +68,7 @@ class Ctx:
     """What the bot knows at a think."""
     __slots__ = ("now", "hp", "ws", "mag", "empty", "can_fight", "visible", "target", "threat", "threat_dist",
                  "point", "exposure", "mates_near", "allies", "enemies", "trade", "fact", "lost", "cover",
-                 "incoming", "danger_here", "time_left", "bomb", "holding")
+                 "incoming", "danger_here", "time_left", "bomb", "holding", "outranged")
 
 
 class Action:
@@ -108,7 +108,8 @@ class Fight(Action):
 
     def score(self, ctx):
         if ctx.target is not None:
-            return 1.0
+            # out of the weapon's range and not shot at: not a fight worth standing in the open for
+            return 0.0 if ctx.outranged else 1.0
         # keep fighting through our own short un-peek
         if self.target is not None and self.target.agent.alive and ctx.now < self.hide_until + 0.4:
             return 0.95
@@ -240,6 +241,10 @@ class FallBack(Action):
         b = self.b
         bot = b.bot
         look = self.threat + Vec3(0, 0, 1.45)
+        if self.spot is None:
+            b.look(look, dt, 0.8)
+            b.reload_if(0.99)
+            return
         d = flat(self.spot - bot.position())
         if d.length() > 0.5:
             b.mover.to(self.spot, dt, ("fallback", round(self.spot.x, 1), round(self.spot.y, 1)), walk=False,
@@ -285,6 +290,7 @@ class Trade(Action):
     def __init__(self, brain):
         super().__init__(brain)
         self.fact = None
+        self.spot = None
         self.until = 0.0
 
     def score(self, ctx):
@@ -300,7 +306,7 @@ class Trade(Action):
 
     def start(self, ctx, now):
         super().start(ctx, now)
-        self.fact = ctx.trade
+        self.fact, self.spot = ctx.trade
         late = self.b.human.mistake("late_trade")
         self.until = now + 2.6 + (0.9 if late else 0.0)
         self.wait = now + (0.9 if late else 0.0)
@@ -310,6 +316,8 @@ class Trade(Action):
     def run(self, dt, now):
         b = self.b
         bot = b.bot
+        if b.ctx.trade is not None:
+            self.fact, self.spot = b.ctx.trade         # what the bot knows may have sharpened
         if self.fact is None:
             return
         pt = fact_point(self.fact)
@@ -321,13 +329,21 @@ class Trade(Action):
             if b.precise(self.fact, now) and b.can_prefire():
                 b.shooter.prefire(pt, self.fact, dt, now)
             return
-        goal = Point3(*self.fact.pos)
+        # swing from where the teammate died: the killer was in sight from there
+        goal = self.spot
+        if (goal - bot.position()).length() < 1.0:
+            goal = Point3(*self.fact.pos)
         b.mover.to(goal, dt, ("trade", round(goal.x), round(goal.y)), walk=False, look=pt, run=True)
 
 
 class Investigate(Action):
     name = "alert"
     min_time = 0.5
+
+    def __init__(self, brain):
+        super().__init__(brain)
+        self.key = None
+        self.hold_until = 0.0
 
     def score(self, ctx):
         if ctx.target is not None:
@@ -353,15 +369,21 @@ class Investigate(Action):
             bot.intent.crouch = t.crouch
             b.look(look, dt, 0.8)
             return
+        key = (round(f.pos[0] / 6.0), round(f.pos[1] / 6.0))
+        if key != self.key:
+            # new information: stop and hold the angle for a moment (the patient ones longer)
+            self.key = key
+            self.hold_until = now + bot.rng.uniform(0.6, 1.2) + 1.0 * b.traits["patience"]
         pushing = b.traits["aggression"] > 0.6 and f.source in ("sound", "radio") and b.ctx.allies >= b.ctx.enemies
         if pushing and (Point3(*f.pos) - bot.position()).length() > 6.0:
             goal = Point3(*f.pos)
             b.mover.to(goal, dt, ("push", round(goal.x), round(goal.y)), walk=True, look=look)
             return
-        if t.kind in ("move", "hunt", "pickup") and not b.arrived and now - f.time > 2.0:
-            b.actions["task"].run(dt, now, look_override=look)
+        if t.kind != "idle" and not b.arrived and now >= self.hold_until:
+            b.actions["task"].run(dt, now, look_override=look)     # carry on, crosshair on the threat
+            bot.intent.walk = True
             return
-        b.look(look, dt, 0.8)                     # stop and hold the angle for a moment
+        b.look(look, dt, 0.8)
         bot.intent.walk = True
 
 
@@ -458,7 +480,11 @@ class DoTask(Action):
         return 0.5
 
     def run(self, dt, now, look_override: Point3 | None = None):
-        self.b.run_task(dt, now, look_override)
+        b = self.b
+        c = b.ctx.target
+        if look_override is None and c is not None and c.seen and (b.arrived or b.task.pos is None):
+            look_override = Point3(c.pos.x, c.pos.y, c.pos.z + 1.45)     # keep an eye on it
+        b.run_task(dt, now, look_override)
 
 
 ACTIONS = (Fight, FallBack, Reload, Trade, Investigate, Reposition, Avoid, Throw, DoTask)
@@ -574,6 +600,36 @@ class BrainV2:
         role = self.team.role_of(self.bot)
         return f"{self.mode}/{t.kind}{':' + t.tag if t.tag else ''} [{role}] {top} {self.debug}"
 
+    def info(self) -> list[str]:
+        """Console ``botinfo <name>``: everything behind the current decision."""
+        bot = self.bot
+        now = bot.now
+        team = self.team
+        t = self.task
+        out = [f"{bot.name} [{bot.side}, v2, {bot.difficulty}] role {team.role_of(bot) or '-'}  "
+               f"plan {getattr(team, 'plan', '') or getattr(team, 'setup', '') or '-'} {getattr(team, 'site', '')}",
+               "traits " + "  ".join(f"{k} {v:.2f}" for k, v in self.traits.items()),
+               f"stress {self.human.stress:.2f}  action {self.mode} ("
+               + ", ".join(f"{n} {s:.2f}" for n, s in self.scores[:3]) + ")",
+               f"task {t.kind}{':' + t.tag if t.tag else ''} at "
+               + (f"({t.pos.x:.1f}, {t.pos.y:.1f})" if t.pos is not None else "-")
+               + (" arrived" if self.arrived else "") + (f", throw {self.throw.key}" if self.throw else "")]
+        a = self.action
+        spot = getattr(a, "spot", None)
+        if spot is not None:
+            out.append(f"{a.name} spot ({spot.x:.1f}, {spot.y:.1f})")
+        c = self.ctx
+        if c.target is not None:
+            out.append(f"target {c.target.agent.name} at {c.threat_dist:.0f} m"
+                       + (" (out of range)" if c.outranged else ""))
+        for label, f in (("fact", c.fact), ("lost", c.lost), ("trade", c.trade[0] if c.trade else None)):
+            if f is not None:
+                out.append(f"{label}: {f.source} {now - f.time:.1f}s ago r{f.radius:.1f} "
+                           f"at ({f.pos[0]:.1f}, {f.pos[1]:.1f}) {f.area}")
+        out.append(f"exposure {c.exposure or 0.0:.2f}  danger within 15 m {c.danger_here or 0.0:.2f}  "
+                   f"knows {len(self.knowledge.facts)} enemies, {len(self.knowledge.anonymous)} unknown")
+        return out
+
     # -------------------------------------------------------------- events
     def on_damaged(self, res) -> None:
         bot = self.bot
@@ -606,6 +662,14 @@ class BrainV2:
     def on_fired(self) -> None:
         self.shooter.on_fired()
 
+    def on_hits(self, results) -> None:
+        """Hit markers: this bot's shot hurt someone - the enemy it was shooting at."""
+        key = self.shooter.target_id
+        if key is None:
+            return
+        for r in results:
+            self.knowledge.on_hit_enemy(key, r.info.amount)
+
     def on_kill(self, victim) -> None:
         """This bot killed an enemy (the director's kill event)."""
         self.kill_t = self.bot.now
@@ -620,6 +684,7 @@ class BrainV2:
         it.wish = Vec3(0, 0, 0)
         it.walk = it.crouch = it.jump = False
         it.trigger = False
+        self.team.tick(now)
         self.perception.update(now, self.team.enemies())
         self.human.update(dt)
         if locked:
@@ -632,6 +697,8 @@ class BrainV2:
             self._flashed(dt, now)
             return
         self.action.run(dt, now)
+        if it.wish.lengthSquared() < 0.01:
+            self._personal_space()
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -659,7 +726,7 @@ class BrainV2:
             best.start(ctx, now)
         self.mode = best.name
         self.target = ctx.target
-        if ctx.target is None and self.shooter.target_id is not None and best.name != "engage":
+        if self.shooter.target_id is not None and best.name != "engage":
             self.shooter.release()
         self._comms(ctx, now)
 
@@ -679,6 +746,8 @@ class BrainV2:
         seen = self.knowledge.from_perception(now)
         for f in seen:
             self.team.radar_report(f)
+        for f in self.knowledge.pop_heard():
+            self.team.on_heard(bot, f, now)
         vis = [c for c in per.contacts.values() if c.seen and c.agent.alive and now >= c.react_at]
         ctx.visible = vis
         ctx.target = self._pick_target(vis, now)
@@ -697,6 +766,11 @@ class BrainV2:
         else:
             ctx.threat = None
         ctx.threat_dist = (ctx.threat - pos).length() if ctx.threat is not None else 99.0
+        ctx.outranged = False
+        if ctx.target is not None and ws is not None:
+            limit = RANGE_LIMIT.get(ws.d.cls)
+            if limit is not None and ctx.threat_dist > limit and now - self.last_hit_t > 2.0:
+                ctx.outranged = True
         ctx.point = self.tm.nearest(pos)
         team = self.team
         ctx.allies = len(team.alive_bots()) + team.humans_alive()
@@ -1146,6 +1220,22 @@ class BrainV2:
                 it.wish = d.normalized()
         else:
             it.wish = -bot.forward() * 0.8
+
+    def _personal_space(self) -> None:
+        """Standing still on top of a teammate: step apart (one grenade or spray gets both)."""
+        bot = self.bot
+        p = bot.position()
+        for m in self.team.mates_of(bot):
+            q = m.position()
+            dx, dy = p.x - q.x, p.y - q.y
+            d = math.hypot(dx, dy)
+            if d < 1.1 and abs(p.z - q.z) < 1.2:
+                if d < 1e-3:
+                    dx, dy, d = (1.0, 0.0, 1.0) if id(bot) > id(m) else (-1.0, 0.0, 1.0)
+                if bot.nav.walkable_line(p, (p.x + dx / d * 0.8, p.y + dy / d * 0.8, p.z)):
+                    bot.intent.wish = Vec3(dx / d, dy / d, 0) * 0.6
+                    bot.intent.walk = True
+                return
 
     def _shoot_gadget(self, dt: float, now: float) -> None:
         g = self.gadget_target

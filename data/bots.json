@@ -9,7 +9,15 @@
   "  fov           vision cone; hearing scales the distance at which footsteps/shots are heard",
   "  strafe        strafes between bursts; grenades = chance to use utility when the plan calls for it",
   "default_ai: 'legacy' (Milestone 5 brain, ai/brain.py) or 'v2' (Milestone 8, ai/v2/); --ai and the console",
-  "  'ai' command choose per team, e.g. team0=v2,team1=legacy"
+  "  'ai' command choose per team, e.g. team0=v2,team1=legacy",
+  "v2 (ai/v2/): the same difficulty profiles (aim, reaction mean, fov, hearing) plus",
+  "  path_budget   A* polygon expansions per team per tick (ai/v2/pathing.py)",
+  "  radio         callouts: delay (s, lognormal median) clipped to delay_range, fuzz (m) of the",
+  "                called position, batch (s) to merge calls into one line, miss = chance a call is lost",
+  "  humanize      per difficulty, overrides of ai/v2/humanize.py DEFAULTS: reaction_sigma (lognormal",
+  "                spread), tunnel (late reaction while busy), flick [mean, sd] (fraction of the turn),",
+  "                stress_gain, decision_noise, mistake chances (over_peek, skip_corner, reload_open,",
+  "                late_trade, ignore_call, panic) and radar_glance [min, max] seconds between glances"
  ],
  "default_ai": "legacy",
  "default_difficulty": "normal",
@@ -26,6 +34,16 @@
   "expert": {"reaction": [0.14, 0.22], "turn_speed": 820, "snap": 20.0, "aim_error": 0.9, "error_decay": 3.0,
              "min_error": 0.12, "headshot": 0.65, "spray_control": 0.9, "fov": 125, "hearing": 1.1,
              "strafe": 0.9, "grenades": 1.0, "fire_tolerance": 1.0, "max_burst": 20}
+ },
+ "v2": {
+  "path_budget": 260,
+  "radio": {"delay": 0.55, "delay_range": [0.3, 1.2], "fuzz": 2.5, "batch": 0.6, "miss": 0.0},
+  "humanize": {
+   "easy": {"reaction_sigma": 0.3},
+   "normal": {"reaction_sigma": 0.25},
+   "hard": {"reaction_sigma": 0.22},
+   "expert": {"reaction_sigma": 0.2}
+  }
  },
  "vision": {"range": 90.0, "peripheral": 160.0, "peripheral_range": 14.0, "smoke_block": 0.55, "scan_interval": 0.09},
  "economy": {"full_buy": 3800, "force_min": 1900, "save_below": 2400, "awp_min": 5900, "reserve": 0},

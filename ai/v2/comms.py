@@ -13,6 +13,8 @@ and knows the area, not the exact spot. The radio models that:
   speaker itself dealt (its hit markers), never from the enemy's real health.
 * Listeners can miss a call (``miss`` by difficulty); a dead bot can still
   get one last call out ("He's in B Long!") if it saw its killer.
+* Footsteps and shots a bot hears are called the same way, twice as vague
+  ("Footsteps A Ramp").
 * Plain calls ("Falling back", "I'll trade you", "Rotating B", "Lurking mid",
   "Flash going A") go out as text, rate-limited per speaker and kind.
 
@@ -53,7 +55,7 @@ class Radio:
         self.queue: list[Message] = []
         self._seq = 0
         self._last_call: dict[tuple, float] = {}
-        self._pending_lines: dict[str, dict] = {}      # area -> {"t", "enemies", "hurt", "speaker"}
+        self._pending_lines: dict[tuple, dict] = {}    # (area, heard) -> {"t", "enemies", "hurt", "speaker"}
         self._said: dict[str, float] = {}
 
     def reset(self) -> None:
@@ -70,8 +72,8 @@ class Radio:
         return max(lo, min(hi * (1.4 if stressed else 1.0), d))
 
     def sighting(self, speaker, enemy_key: int, pos, now: float, hurt: bool = False,
-                 stressed: bool = False, every: float = 1.5) -> bool:
-        """``speaker`` saw an enemy at ``pos``: a callout later reaches the team."""
+                 stressed: bool = False, every: float = 1.5, heard: bool = False) -> bool:
+        """``speaker`` saw (or ``heard``) an enemy at ``pos``: a callout later reaches the team."""
         k = (speaker.name, enemy_key)
         if now - self._last_call.get(k, -99.0) < every:
             return False
@@ -82,9 +84,11 @@ class Radio:
         a = self.rng.uniform(0, 2 * math.pi)
         r = self.fuzz * math.sqrt(self.rng.random())
         snapped = (float(base[0]) + math.cos(a) * r, float(base[1]) + math.sin(a) * r, float(base[2]))
-        f = Fact(enemy_key, snapped, self.fuzz + 1.0, now, "radio", by=speaker.name, hurt=hurt, area=area)
+        fuzz = self.fuzz * (2.0 if heard else 1.0)
+        f = Fact(enemy_key, snapped, fuzz + 1.0, now, "radio", by=speaker.name, hurt=hurt, area=area)
         self._push(f, now + self.draw_delay(stressed), speaker.name)
-        line = self._pending_lines.setdefault(area, {"t": now, "enemies": set(), "hurt": 0, "speaker": speaker})
+        line = self._pending_lines.setdefault((area, heard), {"t": now, "enemies": set(), "hurt": 0,
+                                                              "speaker": speaker})
         line["enemies"].add(enemy_key)
         line["hurt"] += int(hurt)
         return True
@@ -117,9 +121,13 @@ class Radio:
             out.append(m.fact)
             self.team.on_radio_fact(m.fact, m.speaker)
         # spoken summary lines, once the batch window has passed
-        for area in [a for a, ln in self._pending_lines.items() if now - ln["t"] >= self.batch]:
-            ln = self._pending_lines.pop(area)
+        for key in [a for a, ln in self._pending_lines.items() if now - ln["t"] >= self.batch]:
+            ln = self._pending_lines.pop(key)
+            area, heard = key
             n = len(ln["enemies"])
+            if heard:
+                self.team.radio(ln["speaker"], f"Footsteps {area or 'close'}", key=f"steps:{area}", every=8.0)
+                continue
             text = f"{NUMBERS.get(n, str(n))} {area or 'here'}"
             if ln["hurt"]:
                 text += ", one tagged" if ln["hurt"] == 1 else f", {ln['hurt']} tagged"
