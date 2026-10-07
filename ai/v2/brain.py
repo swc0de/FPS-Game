@@ -191,16 +191,16 @@ class Fight(Action):
             return
         self.hide_dir = b.peek.hide_dir(c.agent.head_pos())
         self.hide_until = now + rng.uniform(0.35, 0.6)
-        # how long to hold the corner before peeking again: short for the bold, longer for the
-        # patient, never the same twice
-        hold = rng.uniform(0.2, 1.0) + 1.6 * b.traits["patience"] * (1.0 - 0.6 * b.traits["risk"])
+        # how long to hold the corner before peeking again: a short jiggle between bursts (the
+        # patient a little longer, never the same twice); a reload waits behind cover
+        hold = rng.uniform(0.05, 0.35) + 0.4 * b.traits["patience"] * (1.0 - 0.6 * b.traits["risk"])
         self.hold_until = self.hide_until + max(hold, reload)
 
     def _between_bursts(self, c, dist: float, now: float) -> Vec3:
         b = self.b
         bot = b.bot
         # long-range duel: step behind cover between bursts, then re-peek
-        if dist > 16 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75:
+        if dist > 20 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75:
             if self.hide_dir is None or now > self.hold_until + 1.0:
                 self._hide(c, now)
             if self.hide_dir is not None and now < self.hide_until:
