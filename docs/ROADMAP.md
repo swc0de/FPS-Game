@@ -9,6 +9,48 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done** (awaiting your review) |
+| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | next |
+
+## Milestone 8 - delivered
+
+Bots that play by decisions, not better aim (`ai/v2/`, selectable per team with `--ai`; the Milestone 5
+brain is unchanged and still the default until you confirm). Plan, measurements and running log:
+[OVERHAUL_PLAN.md](OVERHAUL_PLAN.md).
+
+* **What a bot knows** (`ai/v2/knowledge.py`, `comms.py`, `belief.py`): facts with a source and a
+  precision - sight (exact), sound (fuzzier with distance), damage from an unseen shooter (a direction
+  only), radio callouts (0.3-1.2 s late, snapped to the area and fuzzed, batched into lines such as
+  "Two B Long, one tagged"; "tagged" only from the speaker's own hit markers), the radar (a glance every
+  few seconds, never mid-fight), pings, the kill feed, the defuse sound. A dying bot gets its last call
+  out. Each team keeps a **possibility field** over the tactical points: earliest arrival times from the
+  enemy spawn, cleared by what the team sees (one bot's view per tick), refilled from the sides at running
+  speed, tracks for enemies seen or heard recently, and a danger weight per point with priors learned from
+  earlier rounds.
+* **Fairness audit** (`ai/audit.py`, `--audit`): every read of an enemy's position, head, velocity, the
+  hidden charge carrier or an unseen gadget by AI code is checked against what the reader's team can see.
+  v2: 0 violations in every run; the legacy brain's leaks are listed by call site.
+* **Tactical map** (`ai/v2/tactical_map.py`): about 1,800 points on the compound with standing and crouched
+  visibility (bitsets), cover in 16 directions, a walking graph, spawn arrival times, and per site the
+  entries, hold spots (scored by how much of the entries they see and how exposed they are, off-angles,
+  crouch spots), crossfire pairs and forward information spots. Built once (~15 s), cached; breakable walls
+  update it.
+* **The brain** (`ai/v2/brain.py`): utility-scored actions (fight, fall back, reload, trade, investigate,
+  reposition, avoid, throw, the team's task) with commitment and hysteresis; controllers for movement
+  (spacing, doorways, walking near likely enemies), aim (likely-point pre-aim from the field), shooting
+  (bursts, counter-strafe, jiggle between bursts at range, break off stale duels) and peeking; own utility
+  (pop-flash a corner and swing, frag a held spot); budgeted A* (`ai/v2/pathing.py`, both portal scorings,
+  cached chains).
+* **Team strategy** (`ai/v2/strategy.py`): attack plans default / execute / split / fake / contact / rush with
+  an anti-repetition decay and weights that follow results; roles entry, trade, support, lurker, AWPer;
+  defence setups 2-1-2 / stack / aggro / retake, crossfire holds, rotations on credible information, anchors
+  that fall back, spots that died twice used less; post-plant hiding and a synchronised swing on the defuse;
+  retakes with utility.
+* **Humanisation and difficulty** (`ai/v2/humanize.py`, `personality.py`): lognormal reactions around the
+  profile's mean, late reactions to a second enemy, flick side, stress, per-difficulty mistakes, stable
+  per-bot traits.
+* **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
+  head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.
 
 ## Milestone 7 - delivered
 
