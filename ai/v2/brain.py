@@ -50,6 +50,8 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
+
 from panda3d.core import Point3, Vec3
 
 from ai.aim import angles_to, wrap180
@@ -1026,36 +1028,49 @@ class BrainV2:
         return self.danger_near(pos, 15.0) > 0.08 + 0.15 * self.traits["aggression"]
 
     def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False):
-        """Head-height point of the likeliest place an enemy can appear in view."""
-        i = self.tm.nearest(pos)
+        """Head-height point where an enemy would most likely come into view: the visible
+        corners and doorways (tactical points next to hidden ones), weighted by how many
+        enemies the team's picture puts in the hidden places behind them - crosshair placement.
+        Recent callouts and sounds count extra."""
+        tm = self.tm
+        i = tm.nearest(pos)
         if i < 0:
             return None
         danger = self.team.danger()
-        vis = self.tm.visible_mask(i)
-        xy = self.tm._xy
+        now = self.bot.now
+        extra = None
+        for f in self.knowledge.recent(5.0, now):
+            if f.source in ("sound", "radio", "radar", "intel"):
+                j = tm.nearest(f.pos)
+                if j >= 0:
+                    if extra is None:
+                        extra = danger.copy()
+                    extra[j] += 2.0
+        if extra is not None:
+            danger = extra
+        vis = tm.visible_mask(i)
+        src, dst = tm.edge_src, tm.edge_dst
+        edge = vis[src] & ~vis[dst]                  # from a visible point into a hidden one
+        w = np.zeros(tm.n)
+        np.add.at(w, src[edge], danger[dst[edge]])
+        w += danger * vis                            # (enemies possibly in view already)
+        xy = tm._xy
         dx = xy[:, 0] - pos.x
         dy = xy[:, 1] - pos.y
         dist = (dx * dx + dy * dy) ** 0.5
-        w = danger * vis * (dist <= max_range) * (dist > 1.5) / (1.0 + dist / 12.0)
+        w *= (dist <= max_range) * (dist > 1.5) / (1.0 + dist / 20.0)
         if fwd is not None and cone < 360.0:
             cosang = (dx * fwd.x + dy * fwd.y) / (dist + 1e-6)
             w = w * (cosang >= math.cos(math.radians(cone * 0.5)))
-        # where enemies were heard or called recently counts double
-        now = self.bot.now
-        for f in self.knowledge.recent(5.0, now):
-            if f.source in ("sound", "radio", "radar", "intel"):
-                j = self.tm.nearest(f.pos)
-                if j >= 0 and vis[j]:
-                    w[j] += 2.0
         if not w.any():
             return None
         order = w.argsort()[::-1]
-        p1 = self.tm.pos[order[0]]
+        p1 = tm.pos[order[0]]
         a = Point3(float(p1[0]), float(p1[1]), float(p1[2]) + 1.55)
         if not second:
             return a
         if len(order) > 1 and w[order[1]] > w[order[0]] * 0.35:
-            p2 = self.tm.pos[order[1]]
+            p2 = tm.pos[order[1]]
             return a, Point3(float(p2[0]), float(p2[1]), float(p2[2]) + 1.55)
         return a, None
 
