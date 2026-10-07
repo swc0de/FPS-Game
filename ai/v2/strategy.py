@@ -817,7 +817,9 @@ class TeamStrategy(TeamBrain):
         self.peeks = {}
         for b, (hide, peek) in zip(bots, spots):
             self.peeks[id(b)] = peek
-            look = peek + Vec3(0, 0, 1.5) if (peek - hide).length() > 0.5 else bomb.pos + Vec3(0, 0, 0.6)
+            # hiding: the crosshair on the corners the retakers would come round (the team's
+            # picture decides), not on the charge it cannot see from here
+            look = None if (peek - hide).length() > 0.5 else bomb.pos + Vec3(0, 0, 0.6)
             b.brain.set_task(Task("guard", hide, look=look, wait=True, tag="post"))
         self.phase = "post"
         self.defuse_heard = None
