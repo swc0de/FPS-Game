@@ -253,8 +253,8 @@ class FallBack(Action):
             need = 0.97                          # hurt at range, cover a step away
         elif ctx.hp < 30 and ctx.enemies > ctx.allies and (close or ctx.target is None):
             need = 0.97
-        elif ctx.stale and ctx.holding:
-            need = 0.9                           # out of its sight, then peek again later
+        elif (ctx.stale or ctx.outranged) and ctx.holding:
+            need = 0.9                           # out of its sight (it outguns us here), peek later
         elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6:
             need = 0.96
         if self.spot is not None and ctx.now < self.until:
@@ -442,7 +442,8 @@ class Reposition(Action):
 
     def score(self, ctx):
         b = self.b
-        if (ctx.target is not None and not ctx.stale) or b.reposition_t < 0 or ctx.now - b.reposition_t > 6.0:
+        if (ctx.target is not None and not (ctx.stale or ctx.outranged)) or b.reposition_t < 0 or \
+                ctx.now - b.reposition_t > 6.0:
             return 0.0
         if self.spot is not None:
             return 0.8
@@ -881,6 +882,8 @@ class BrainV2:
             if limit is not None and ctx.threat_dist > limit and now - self.last_hit_t > 2.0:
                 ctx.outranged = True
         ctx.stale = self._stale(ctx, now)
+        if ctx.outranged and self.ctx.holding and self.reposition_t < 0:
+            self.reposition_t = now              # seen from beyond our gun's reach: move off this spot
         ctx.point = self.tm.nearest(pos)
         team = self.team
         ctx.allies = len(team.alive_bots()) + team.humans_alive()
