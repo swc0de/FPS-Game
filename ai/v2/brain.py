@@ -1359,12 +1359,26 @@ class BrainV2:
         if o is None or now > o.deadline or bot.weapons.inv.grenades.get(o.key, 0) <= 0:
             return False
         if o.velocity is None:
+            # the target is usually round a corner or across the map: try points along the
+            # walking route towards it, farthest first, until one has a clear arc (two a tick)
+            if getattr(o, "cands", None) is None:
+                o.cands = self._throw_candidates(o)
+                if o.cands is None:
+                    return True                      # route still being searched: keep the order
             g = bot.game.weapon_db.grenades[o.key]
             start = bot.eye()
-            o.velocity = solve_throw(start, o.target, g.throw_speed, bot.game.physics) or \
-                solve_throw(start, o.target, g.throw_speed, bot.game.physics, prefer_high=True)
+            phys = bot.game.physics
+            for _ in range(2):
+                if not o.cands:
+                    return False
+                c = o.cands.pop(0)
+                o.velocity = solve_throw(start, c, g.throw_speed, phys) or \
+                    solve_throw(start, c, g.throw_speed, phys, prefer_high=True)
+                if o.velocity is not None:
+                    o.target = c
+                    break
             if o.velocity is None:
-                return False
+                return True
             bot.weapons.inv.grenade = o.key
             bot.weapons.select("grenade", force=True)
         v = o.velocity
@@ -1379,6 +1393,35 @@ class BrainV2:
             self.say(names.get(o.key, "Grenade!"), key="nade", every=2.0)
             self.throw = None
         return True
+
+    def _throw_candidates(self, o) -> list | None:
+        """Throw targets for an order, best first: the target itself, then points every 2.5 m
+        back along the walking route to it (a flash goes off 2 m up, so it is seen round the
+        corner; smokes and frags land). None while the route is still being searched."""
+        bot = self.bot
+        up = 2.0 if o.key == "flash" else 0.3
+        tgt = Point3(o.target)
+        floor = Point3(tgt.x, tgt.y, tgt.z - (2.2 if o.key == "flash" else 0.3))
+        out = [tgt]
+        path = self.paths.request(bot.position(), (floor.x, floor.y, floor.z), 0)
+        if path == PENDING:
+            return None
+        if path:
+            pts = []
+            acc = 0.0
+            rev = list(reversed(path))
+            for a, b in zip(rev, rev[1:]):
+                seg = math.dist(a[:2], b[:2])
+                t = 2.5 - acc if acc > 0 else 2.5
+                while t < seg:
+                    k = t / seg
+                    pts.append(Point3(a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k,
+                                      a[2] + (b[2] - a[2]) * k + up))
+                    t += 2.5
+                acc = (acc + seg) % 2.5
+            me = bot.position()
+            out += [q for q in pts if (q - me).length() > 4.0][:10]
+        return out
 
     # ------------------------------------------------------------ misc
     def _flashed(self, dt: float, now: float) -> None:
