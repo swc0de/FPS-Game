@@ -187,7 +187,7 @@ class AimPolicy:
         now = b.bot.now
         if now >= self._next or self.point is None:
             self._next = now + b.rng.uniform(0.5, 0.9)
-            p = b.likely_point(pos, None, max_range=45.0, cone=200.0, second=True)
+            p = b.likely_point(pos, None, max_range=45.0, cone=200.0, second=True, focus=watch)
             if p is not None:
                 self.point, self._alt = p[0], p[1]
                 self._on_alt = False

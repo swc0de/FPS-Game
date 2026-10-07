@@ -1028,7 +1028,7 @@ class BrainV2:
         return self.danger_near(pos, 15.0) > 0.08 + 0.15 * self.traits["aggression"]
 
     def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False,
-                     min_weight: float = 0.0):
+                     min_weight: float = 0.0, focus: Point3 | None = None):
         """Head-height point where an enemy would most likely come into view: the visible
         corners and doorways (tactical points next to hidden ones), weighted by how many
         enemies the team's picture puts in the hidden places behind them - crosshair placement.
@@ -1060,6 +1060,11 @@ class BrainV2:
         dy = xy[:, 1] - pos.y
         dist = (dx * dx + dy * dy) ** 0.5
         w *= (dist <= max_range) * (dist > 1.5) / (1.0 + dist / 20.0)
+        if focus is not None:
+            # the entry this spot was picked to watch: corners near it count several times over
+            fd = np.hypot(xy[:, 0] - focus.x, xy[:, 1] - focus.y)
+            w *= 1.0 + 3.0 * np.exp(-fd / 4.0)
+            w += 0.02 * vis * np.exp(-fd / 2.0)          # and with no danger anywhere, it is the angle
         if fwd is not None and cone < 360.0:
             cosang = (dx * fwd.x + dy * fwd.y) / (dist + 1e-6)
             w = w * (cosang >= math.cos(math.radians(cone * 0.5)))
