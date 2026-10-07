@@ -839,7 +839,14 @@ class TeamStrategy(TeamBrain):
         dist = np.hypot(dx, dy)
         near_z = np.abs(tm._z - target.z) < 3.0
         cand = np.flatnonzero(~sees_bomb & ~seen_in & (dist > 6.0) & (dist < 20.0) & near_z)
-        order = sorted(cand.tolist(), key=lambda i: abs(dist[i] - 11.0) + self.rng.random() * 4.0)[:60]
+        # on the attackers' side of the charge: the retake gathers on the defenders' side
+        eta_a, eta_d = tm.eta.get("attack"), tm.eta.get("defend")
+        if eta_a is not None and eta_d is not None:
+            their_side = (eta_d < eta_a).astype(float) * 8.0
+        else:
+            their_side = np.zeros(tm.n)
+        order = sorted(cand.tolist(), key=lambda i: abs(dist[i] - 11.0) + their_side[i] +
+                       self.rng.random() * 4.0)[:60]
         out, angs, used = [], [], []
         for i in order:
             peeks = [int(j) for j in tm.points_near(tm._pl[i], 3.5, max_dz=1.0) if sees_bomb[j] and dist[j] > 4.0]
