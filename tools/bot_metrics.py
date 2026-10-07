@@ -54,9 +54,12 @@ SAMPLE_EVERY = 4                       # ticks between position samples (16 Hz)
 class TickProfiler:
     SUBSYSTEMS = (
         ("ai.brain.Brain", "update", "brains"),
+        ("ai.v2.brain.BrainV2", "update", "brains"),
         ("ai.perception.Perception", "update", "perception"),
         ("ai.tactics.TeamBrain", "update", "team"),
+        ("ai.v2.strategy.TeamStrategy", "update", "team"),
         ("ai.gadget_ai.GadgetAI", "update", "gadget_ai"),
+        ("ai.v2.strategy.GadgetAIV2", "update", "gadget_ai"),
         ("gameplay.character.KinematicCharacter", "step", "movement"),
         ("gameplay.body.CharacterBody", "animate", "animation"),
         ("engine.physics.PhysicsWorld", "step", "bullet"),
@@ -79,6 +82,17 @@ class TickProfiler:
         ("ai.tactics.TeamBrain", "_flee", "q:flee"),
         ("ai.gadget_ai.GadgetAI", "_breach_update", "q:breach"),
         ("ai.gadget_ai.GadgetAI", "_defend_setup", "q:defend_setup"),
+        # the v2 brain's expensive parts
+        ("ai.v2.brain.BrainV2", "think", "q:v2_think"),
+        ("ai.v2.brain.BrainV2", "find_cover", "q:v2_find_cover"),
+        ("ai.v2.brain.BrainV2", "preaim", "q:v2_preaim"),
+        ("ai.v2.brain.BrainV2", "_choose_lean", "q:v2_lean"),
+        ("ai.v2.brain.BrainV2", "do_throw", "q:v2_throw"),
+        ("ai.v2.strategy.TeamStrategy", "tick", "q:v2_team_tick"),
+        ("ai.v2.strategy.TeamStrategy", "_post_plant", "q:v2_post_plant"),
+        ("ai.v2.pathing.PathService", "update", "q:v2_paths"),
+        ("ai.v2.belief.PossibilityField", "step", "q:v2_field_step"),
+        ("ai.v2.belief.PossibilityField", "observe", "q:v2_field_observe"),
         # not decisions, but they run inside the AI's call path
         ("gameplay.body.CharacterBody", "set_weapon", "q:set_weapon_model"),
         ("gameplay.tactical.Tactical", "deploy", "q:deploy_gadget"),
@@ -101,6 +115,7 @@ class TickProfiler:
         self.spikes: list[dict] = []            # ticks where the AI took > 4 ms
         self._who: dict = {}
         self.ai_depth = 0
+        self.key_depth: dict[str, int] = {}
         self.gc_pauses: list[float] = []
         self._gc_t0 = 0.0
         import gc
@@ -162,19 +177,23 @@ class TickProfiler:
             t0 = PERF()
             if is_ai:
                 prof.ai_depth += 1
+            depth = prof.key_depth.get(key, 0)
+            prof.key_depth[key] = depth + 1
             try:
                 return orig(self_, *a, **kw)
             finally:
                 if is_ai:
                     prof.ai_depth -= 1
+                prof.key_depth[key] = depth
                 ms = (PERF() - t0) * 1000.0
-                if prof.current is not None:
+                # a call nested in one with the same key (a subclass's super()) is already counted
+                if not depth and prof.current is not None:
                     prof.current[key] += ms
                     if key.startswith("q:"):
                         prof.calls[key].append(ms)
                     elif key == "brains" and ms > prof._who.get("ms", 0.0):
                         prof._who = {"ms": ms, "bot": self_.bot.describe()[:120]}
-                if key == "brains" and ms > prof.brain_max:
+                if not depth and key == "brains" and ms > prof.brain_max:
                     prof.brain_max = ms
         setattr(cls, meth, wrapped)
 

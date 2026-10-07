@@ -44,10 +44,13 @@ class HumanizerTests(unittest.TestCase):
             rates = [DEFAULTS[d][kind] for d in ("easy", "normal", "hard", "expert")]
             self.assertEqual(rates, sorted(rates, reverse=True), kind)
 
-    def test_stress_widens_aim_error_and_decays(self):
+    def test_stress_makes_mistakes_likelier_and_decays(self):
         h = self.make()
+        calm = sum(h.mistake("over_peek") for _ in range(4000))
         h.add_stress(1.0)
-        self.assertGreater(h.aim_error_mult(), 1.2)
+        stressed = sum(h.mistake("over_peek") for _ in range(4000))
+        h.stress = 1.0
+        self.assertGreater(stressed, calm * 1.2)
         for _ in range(64 * 6):
             h.update(1 / 64)
         self.assertEqual(h.stress, 0.0)

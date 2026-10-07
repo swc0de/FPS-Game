@@ -184,6 +184,11 @@ class Fight(Action):
     def _hide(self, c, now: float, reload: float = 0.0) -> None:
         b = self.b
         rng = b.bot.rng
+        if not reload and b.human.mistake("over_peek"):
+            # stays out in the open between bursts (a mistake the easier bots make more often)
+            self.hide_dir = None
+            self.hold_until = now + 1.0
+            return
         self.hide_dir = b.peek.hide_dir(c.agent.head_pos())
         self.hide_until = now + rng.uniform(0.35, 0.6)
         # how long to hold the corner before peeking again: short for the bold, longer for the
@@ -240,7 +245,7 @@ class FallBack(Action):
         close = (ctx.cover[0] - b.bot.position()).length() < 3.2
         if ws is not None and ws.d.magazine > 0 and ws.ammo == 0:
             pistol = sec is not None and sec is not ws and sec.ammo > 0
-            if ctx.threat_dist > 7 or not pistol:
+            if ctx.threat_dist > 25 or not pistol:
                 need = 1.15
         elif ctx.hp < 35 and ctx.target is not None and ctx.threat_dist > 15.0 and close:
             need = 0.97                          # hurt at range, cover a step away
@@ -594,6 +599,7 @@ class BrainV2:
         self.ignore: dict[int, float] = {}
         self.nade_t = 0.0
         self.swing = None
+        self.frozen_until = 0.0
         self.debug = ""
         self.knowledge.reset()
         self.human.reset()
@@ -688,6 +694,8 @@ class BrainV2:
         if c is None or not c.seen:
             if res.info.kind != "explosion":
                 self.knowledge.on_shot(res.info.direction, now)
+            if self.human.mistake("panic"):
+                self.frozen_until = now + self.rng.uniform(0.3, 0.7)     # flinches before it acts
             if self.ctx.holding:
                 self.reposition_t = now
         self.next_think = 0.0
@@ -742,6 +750,8 @@ class BrainV2:
         if now < self.flashed_until:
             self._flashed(dt, now)
             return
+        if now < self.frozen_until:
+            return                                   # panicked for a moment
         self.action.run(dt, now)
         if it.wish.lengthSquared() < 0.01:
             self._personal_space()
@@ -1168,8 +1178,8 @@ class BrainV2:
             elif inv.slot != "melee":
                 w.select("melee")
             return
-        if ws is prim and ws.ammo == 0 and usable(sec) and sec.ammo > 0 and dist < 14:
-            w.select("secondary")
+        if ws is prim and ws.ammo == 0 and usable(sec) and sec.ammo > 0 and dist < 25:
+            w.select("secondary")                # faster than a reload with an enemy in view
         elif ws.ammo == 0 and ws.reserve == 0:
             if ws is prim and usable(sec):
                 w.select("secondary")

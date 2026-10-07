@@ -235,10 +235,13 @@ class Shooter:
         dist = (c.pos - bot.position()).length()
         tvel = c.agent.velocity() if hasattr(c.agent, "velocity") else Vec3(0, 0, 0)
         bot.aim.acquire(id(c.agent), dist, math.hypot(tvel.x, tvel.y), bot.char.horizontal_speed)
+        # a big turn overshoots (or stops short) and the hand corrects: the flick decides which
+        # side of the target the usual first-shot error falls on, never how big it is (same aim
+        # profile as the Milestone 5 bots)
         over = self.b.human.flick(turn)
-        sign = 1.0 if wrap180(yaw - bot.aim.yaw) > 0 else -1.0
-        bot.aim.err_x = (bot.aim.err_x + over * sign) * self.b.human.aim_error_mult()
-        bot.aim.err_y *= self.b.human.aim_error_mult()
+        if over != 0.0:
+            sign = 1.0 if wrap180(yaw - bot.aim.yaw) > 0 else -1.0
+            bot.aim.err_x = abs(bot.aim.err_x) * sign * (1.0 if over > 0 else -1.0)
 
     def release(self) -> None:
         self.target_id = None

@@ -10,11 +10,12 @@ shapes the errors the way people make them:
 * **Attention**: a bot fighting one enemy notices a second one late, and
   later still when it is far from where it is aiming (``tunnel``).
 * **Flicks**: a big turn onto a new target overshoots or undershoots
-  (``flick``: mean and spread, as a fraction of the turn) and is corrected
-  by the aim controller's error decay, like a hand.
-* **Stress** (0..1): rises when hit, when outnumbered in a clutch, when
-  flanked; decays in a few seconds; widens the aim error and makes choices
-  noisier.
+  (``flick`` decides which, mostly over) and is corrected by the aim
+  controller's error decay, like a hand. Only the side of the error changes,
+  not its size: the aim profile stays the Milestone 5 one.
+* **Stress** (0..1): rises when hit or flashed, decays in a few seconds;
+  makes choices noisier and mistakes likelier (not the aim: that would
+  change the profile).
 * **Mistakes** by difficulty (probabilities per opportunity): over-peeking,
   skipping a corner while clearing, reloading in the open, trading late,
   ignoring a callout, freezing when flanked.
@@ -84,8 +85,6 @@ class Humanizer:
     def update(self, dt: float) -> None:
         self.stress = max(0.0, self.stress - dt / 4.0)
 
-    def aim_error_mult(self) -> float:
-        return 1.0 + 0.6 * self.stress
 
     def noise(self) -> float:
         return float(self.c["decision_noise"]) * (1.0 + self.stress)
