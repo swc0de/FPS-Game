@@ -72,9 +72,11 @@ from ai.v2.personality import assign_roles
 from engine.physics import MASK_SIGHT
 
 PLANS = ("default", "execute", "split", "fake", "contact", "rush")
-PLAN_WEIGHTS = {"default": 1.0, "execute": 1.0, "split": 0.7, "fake": 0.45, "contact": 0.5, "rush": 0.3}
+# starting weights from head-to-heads against the Milestone 5 bots (executes with utility won most,
+# fakes least); within a match they follow the results (``worked``)
+PLAN_WEIGHTS = {"default": 0.8, "execute": 1.7, "split": 0.8, "fake": 0.25, "contact": 0.6, "rush": 0.4}
 SETUPS = ("2-1-2", "stack", "aggro", "retake")
-SETUP_WEIGHTS = {"2-1-2": 1.0, "stack": 0.45, "aggro": 0.55, "retake": 0.3}
+SETUP_WEIGHTS = {"2-1-2": 1.0, "stack": 0.35, "aggro": 0.15, "retake": 0.8}
 GADGET_SIGHT = 30.0
 
 
@@ -89,6 +91,8 @@ def pick_varied(weights: dict[str, float], history: list[str], rng, decay: float
         w = weights[o] * decay ** recent.count(o)
         if history and history[-1] == o:
             w *= repeat
+        if len(history) >= 5 and history.count(o) / len(history) >= 0.36:
+            w *= 0.1                             # nothing becomes the plan they always play
         ws.append(w)
     return rng.choices(opts, ws)[0]
 
