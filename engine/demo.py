@@ -667,6 +667,10 @@ class BotDemo:
             return
         now = self.game.loop.time
         if self.trace and self.ticks % (64 * 5) == 0 and d.match.phase in ("live", "planted"):
+            for side, tb in d.team_brains.items():
+                self.game.log(f"[trace] {now - self.round_t0:5.1f}s team {side} [{getattr(tb, 'ai', 'legacy')}] "
+                              f"plan {tb.plan or getattr(tb, 'setup', '') or '-'} site {tb.site or '-'} "
+                              f"phase {tb.phase}")
             for b in d.bots:
                 if b.active and b.alive:
                     p = b.position()

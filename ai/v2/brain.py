@@ -68,7 +68,7 @@ class Ctx:
     """What the bot knows at a think."""
     __slots__ = ("now", "hp", "ws", "mag", "empty", "can_fight", "visible", "target", "threat", "threat_dist",
                  "point", "exposure", "mates_near", "allies", "enemies", "trade", "fact", "lost", "cover",
-                 "incoming", "danger_here", "time_left", "bomb", "holding", "outranged")
+                 "incoming", "danger_here", "time_left", "bomb", "holding", "outranged", "stale")
 
 
 class Action:
@@ -108,8 +108,15 @@ class Fight(Action):
 
     def score(self, ctx):
         if ctx.target is not None:
-            # out of the weapon's range and not shot at: not a fight worth standing in the open for
-            return 0.0 if ctx.outranged else 1.0
+            # out of the weapon's range, or a long-range duel going nowhere: not worth standing
+            # in the open for (the bot gets on with its order, or into cover)
+            if ctx.outranged or ctx.stale:
+                return 0.0
+            if ctx.threat_dist < 12.0:
+                return 1.1                       # up close there is no choice
+            if ctx.hp < 35 and ctx.cover is not None and ctx.threat_dist > 15.0:
+                return 0.9                       # hurt at range: cover first (fallback)
+            return 1.0
         # keep fighting through our own short un-peek
         if self.target is not None and self.target.agent.alive and ctx.now < self.hide_until + 0.4:
             return 0.95
@@ -224,6 +231,10 @@ class FallBack(Action):
                 need = 1.15
         elif ctx.hp < 30 and ctx.enemies > ctx.allies:
             need = 0.97
+        elif ctx.hp < 35 and ctx.threat_dist > 15.0 and ctx.target is not None:
+            need = 0.97
+        elif ctx.stale and ctx.holding:
+            need = 0.9                           # out of its sight, then peek again later
         elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6:
             need = 0.96
         if self.spot is not None and ctx.now < self.until:
@@ -398,7 +409,7 @@ class Reposition(Action):
 
     def score(self, ctx):
         b = self.b
-        if ctx.target is not None or b.reposition_t < 0 or ctx.now - b.reposition_t > 6.0:
+        if (ctx.target is not None and not ctx.stale) or b.reposition_t < 0 or ctx.now - b.reposition_t > 6.0:
             return 0.0
         if self.spot is not None:
             return 0.8
@@ -549,6 +560,8 @@ class BrainV2:
         self.radar_t = 0.0
         self.reposition_t = -1.0
         self.kill_t = -10.0
+        self.dealt_t = -10.0
+        self.ignore: dict[int, float] = {}
         self.debug = ""
         self.knowledge.reset()
         self.human.reset()
@@ -667,6 +680,7 @@ class BrainV2:
         key = self.shooter.target_id
         if key is None:
             return
+        self.dealt_t = self.bot.now
         for r in results:
             self.knowledge.on_hit_enemy(key, r.info.amount)
 
@@ -766,11 +780,13 @@ class BrainV2:
         else:
             ctx.threat = None
         ctx.threat_dist = (ctx.threat - pos).length() if ctx.threat is not None else 99.0
+        ctx.time_left = self.director.match.round_time_left()
         ctx.outranged = False
         if ctx.target is not None and ws is not None:
             limit = RANGE_LIMIT.get(ws.d.cls)
             if limit is not None and ctx.threat_dist > limit and now - self.last_hit_t > 2.0:
                 ctx.outranged = True
+        ctx.stale = self._stale(ctx, now)
         ctx.point = self.tm.nearest(pos)
         team = self.team
         ctx.allies = len(team.alive_bots()) + team.humans_alive()
@@ -785,12 +801,35 @@ class BrainV2:
         ctx.trade = team.trade_fact(bot, now)
         ctx.cover = self.find_cover(ctx.threat) if ctx.threat is not None else None
         ctx.incoming = self._incoming(now)
-        ctx.time_left = self.director.match.round_time_left()
         ctx.bomb = self.director.bomb.state
         t = self.task
         ctx.holding = t.kind in ("hold", "guard") and self.arrived
         ctx.mates_near = None
         return ctx
+
+    def _stale(self, ctx, now: float) -> bool:
+        """A visible enemy not worth fighting right now: a long-range duel in which neither
+        side lands anything (left alone for a few seconds), or one far off while the bot
+        has a charge to plant in little time."""
+        c = ctx.target
+        if c is None or ctx.outranged:
+            return False
+        key = id(c.agent)
+        d = ctx.threat_dist
+        shot = now - self.last_hit_t < 1.2
+        if shot and d < 30.0:
+            return False
+        if now < self.ignore.get(key, 0.0) and d > 18.0:
+            return True
+        engaged = now - self.shooter.engaged_since if self.shooter.target_id == key else 0.0
+        if d > 25.0 and engaged > 3.0 and now - self.dealt_t > 3.0:
+            self.ignore[key] = now + self.rng.uniform(4.0, 7.0)
+            if self.ctx.holding or self.task.wait:
+                self.reposition_t = now
+            return True
+        if self.task.kind == "plant" and d > 15.0 and ctx.time_left < 35.0 and not shot:
+            return True
+        return False
 
     def _pick_target(self, vis, now: float):
         if not vis:

@@ -117,6 +117,7 @@ class TeamStrategy(TeamBrain):
         for k in (1, 2, 3):
             self.paths.set_bias(k, self._bias(self.rng.randrange(1 << 30)))
         director.listeners.append(self._on_event)
+        game.audio.listeners.append(self._on_sound)
 
     @staticmethod
     def _bias(seed: int):
@@ -129,6 +130,8 @@ class TeamStrategy(TeamBrain):
         """The director drops this strategy (a new AI choice)."""
         if self._on_event in self.director.listeners:
             self.director.listeners.remove(self._on_event)
+        if self._on_sound in self.game.audio.listeners:
+            self.game.audio.listeners.remove(self._on_sound)
 
     @property
     def active(self) -> bool:
@@ -148,6 +151,8 @@ class TeamStrategy(TeamBrain):
         self._danger = None
         self._danger_t = -1.0
         self.go_t = None
+        self.defuse_heard = None
+        self.stage_t = 0.0
         self.fake = None
         self.fake_t = None
         self.lurk_go = False
@@ -482,6 +487,7 @@ class TeamStrategy(TeamBrain):
             for i, b in enumerate(main):
                 self._stage(b, lanes[0])
             self.phase = "stage"
+            self.stage_t = now
             self.say(bots[0], f"Fake {other}, we hit {self.site}.")
             return
         use = lanes[:2] if self.plan == "split" else lanes[:1]
@@ -497,6 +503,7 @@ class TeamStrategy(TeamBrain):
             lane = use[0] if self.roles.get(id(b)) in ("entry", "trade") else use[i % len(use)]
             self._stage(b, lane)
         self.phase = "stage"
+        self.stage_t = now
         self.say(bots[0], f"Let's take {self.site}" + (", split." if len(use) > 1 else "."))
 
     def _stage(self, bot, lane, walk: bool = False, site: str | None = None, tag: str = "stage") -> None:
@@ -600,14 +607,20 @@ class TeamStrategy(TeamBrain):
             if self.fake is not None and not self._fake_done(now):
                 if left >= 40.0:
                     return
-            main = [b for b in bots if self.fake is None or id(b) not in self.fake["bots"]]
-            staged = [b for b in main if id(b) in self.stage_arrived]
+            main = [b for b in bots if (self.fake is None or id(b) not in self.fake["bots"])
+                    and not self.groups.get(id(b), {}).get("lurk")]
+            # staged: arrived, or close to the staging point (perhaps busy fighting there)
+            staged = [b for b in main if id(b) in self.stage_arrived or
+                      (id(b) in self.groups and (b.position() - self.groups[id(b)]["stage"]).length() < 8.0)]
+            if staged and self.first_stage_t is None:
+                self.first_stage_t = now
             ready = len(staged) >= max(1, math.ceil(len(main) * 0.6))
             if self.plan == "split":
                 lanes = {self.groups[id(b)]["lane"]["name"] for b in staged if id(b) in self.groups}
                 ready = ready and len(lanes) >= min(2, len({g["lane"]["name"] for g in self.groups.values()}))
-            waited = self.first_stage_t is not None and now - self.first_stage_t > 12.0
-            breaching = self.gadgets.breach_busy() and left >= 35.0
+            waited = (self.first_stage_t is not None and now - self.first_stage_t > 12.0) or \
+                now - self.stage_t > 35.0
+            breaching = self.gadgets.breach_busy() and left >= 40.0 and now - self.stage_t < 30.0
             if (ready or waited or left < 35.0) and not breaching:
                 self._execute(bots, now)
         elif self.phase == "exec":
@@ -662,6 +675,7 @@ class TeamStrategy(TeamBrain):
             else:
                 self._stage(b, self.rng.choice(self.lanes[self.site]))
         self.phase = "stage"
+        self.stage_t = now
         self.first_stage_t = None
         self.stage_arrived = set()
         self.say(bots[0], f"Regroup for {self.site}.")
@@ -732,13 +746,57 @@ class TeamStrategy(TeamBrain):
         self.say(bot, "Coming from behind.", key="lurkgo", every=30.0)
 
     def _post_plant(self, bots, now: float) -> None:
+        """Hidden spots watching the charge; one watches the defenders' way in."""
         bomb = self.director.bomb
         spots = self._crossfire_on(bomb.pos, len(bots))
+        way_in = self._rotation_point(bomb.site) if bomb.site else None
+        phys = self.game.physics
+        watcher = None
         for b, (s, crouch) in zip(bots, spots):
-            b.brain.set_task(Task("guard", s, look=bomb.pos + Vec3(0, 0, 0.6), crouch=crouch, wait=True,
-                                  tag="post"))
+            look = bomb.pos + Vec3(0, 0, 0.6)
+            if watcher is None and way_in is not None and \
+                    phys.ray_cast(s + Vec3(0, 0, 1.5), way_in + Vec3(0, 0, 1.5), MASK_SIGHT) is None:
+                watcher = b
+                look = way_in + Vec3(0, 0, 1.5)
+            b.brain.set_task(Task("guard", s, look=look, crouch=crouch, wait=True, tag="post"))
         self.phase = "post"
+        self.defuse_heard = None
         self.say(bots[0], f"Charge planted at {bomb.site}. Crossfire on it!")
+
+    def _on_sound(self, name: str, pos) -> None:
+        """Positional sounds the team can hear: a defuse starting on the planted charge."""
+        if name != "defuse_start" or self.side != "attack" or not self.active:
+            return
+        if self.director.bomb.state != "planted":
+            return
+        p = Point3(*pos)
+        near = [b for b in self.alive_bots() if (b.position() - p).length() < 45.0]
+        if not near:
+            return
+        now = self.game.loop.time
+        self.defuse_heard = now
+        f = Fact(None, (p.x, p.y, p.z), 1.0, now, "sound")
+        self.field.add_fact(f)
+        for b in near:
+            b.brain.knowledge.add(f)
+            b.brain.next_think = now
+        self.say(near[0], "They're defusing!", key="defusing", every=5.0)
+        self._stop_defuse(now)
+
+    def _stop_defuse(self, now: float) -> None:
+        """Everyone onto the charge: those who see it turn to it, the others push in."""
+        bomb = self.director.bomb
+        phys = self.game.physics
+        target = bomb.pos + Vec3(0, 0, 0.5)
+        for b in self.alive_bots():
+            t = b.brain.task
+            if t.tag != "post" or t.pos is None:
+                continue
+            if phys.ray_cast(t.pos + Vec3(0, 0, 1.0), target, MASK_SIGHT) is None:
+                b.brain.set_task(Task("guard", Point3(t.pos), look=target, crouch=t.crouch, wait=True,
+                                      tag="post"))
+            else:
+                b.brain.set_task(Task("move", self._snap(bomb.pos), look=target, wait=True, tag="retake"))
 
     def _crossfire_on(self, target: Point3, n: int) -> list:
         """Spots with a view of the charge, hidden from the defenders' way in, at different angles."""

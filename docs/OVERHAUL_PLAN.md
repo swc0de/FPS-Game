@@ -855,16 +855,38 @@ be added later behind the same event interface if you want.
 **Done**
 * Phase 0: code audit; measuring tools (`tools/bot_metrics.py`, `tools/soldier_sheet.py`);
   baseline in `docs/baseline/`; before sheet `docs/images/soldiers_before.jpg`; asset licence
-  checks; this plan.
+  checks; this plan. Approved with the hybrid assets and the second branch for B; the section 9
+  decisions as proposed.
+* A1 infrastructure: `--ai legacy|v2|team0=..,team1=..` (console `ai`), the fairness audit
+  (`--audit`), the metrics in `--demo bots` (per AI, head-to-head with a Wilson interval), the
+  shared weapon model cache (the 258 ms spikes were model builds; max tick now 82-126 ms).
+* A2 tactical map: points, visibility (standing and crouched), cover, graph, spawn times,
+  entries / holds / crossfires / forward spots per site, cached per map; breakable walls update it.
+* A3 knowledge with its sources and precision, the possibility field, the delayed and fuzzy radio,
+  radar glances.
+* A4-A5 utility brain (fight, fallback, reload, trade, investigate, reposition, avoid, throw,
+  task) with commitment; controllers (mover with spacing, aim policy, shooter, peek); humaniser;
+  traits and roles; budgeted A* (both portal scorings, cached).
+* A6 team strategy v2: plans (default with a mid-round call, execute, split, fake, contact, rush),
+  defence setups (2-1-2, stack, aggro, retake), rotations on credible information, lurker,
+  post-plant crossfire, retake utility, kill feed, defuse heard by sound; gadget AI that only uses
+  gadgets the team has seen.
+* A8 tooling: `botinfo <name>`, `overlay`, `belief` (radar); bot demo `BOT_DEMO_TICKS`,
+  `BOT_DEMO_NORENDER`, `BOT_DEMO_CONSOLE`, team plan and phase in the trace.
 
 **In progress**
-* Nothing. Waiting for approval.
+* A9 tuning against legacy. First 28 rounds (v2 attacking only): v2 won 10 (36 %); kills even
+  (96 : 92); 9 losses on time, 6 plants defused. Traces showed long-range duels that never ended
+  (both sides standing in the open at 40-90 m) and executes held up by a breach. Fixed: stale
+  duels are broken off, plants come first late in the round, hurt bots take cover at range,
+  staging no longer waits on a breach or on bots fighting at the staging point, post-plant bots
+  hear the defuse start and one watches the way in. Re-measuring.
 
 **Next**
-* After approval: A step 1 (infrastructure).
+* Defence tuning, utility timing, the head-to-head over 60+ rounds with sides swapped, behaviour
+  metrics, performance budget, README / ROADMAP, PR A.
 
 **Open questions**
-* The decisions in section 9.
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings
   (Edit environment → Network access → Custom → allowed domains), so fabric textures can be fetched
   in-session. Otherwise you run `python tools/download_assets.py` locally.
