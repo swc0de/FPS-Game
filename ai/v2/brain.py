@@ -1027,7 +1027,8 @@ class BrainV2:
         # hottest tenth of the places attackers go)
         return self.danger_near(pos, 15.0) > 0.08 + 0.15 * self.traits["aggression"]
 
-    def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False):
+    def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False,
+                     min_weight: float = 0.0):
         """Head-height point where an enemy would most likely come into view: the visible
         corners and doorways (tactical points next to hidden ones), weighted by how many
         enemies the team's picture puts in the hidden places behind them - crosshair placement.
@@ -1062,14 +1063,14 @@ class BrainV2:
         if fwd is not None and cone < 360.0:
             cosang = (dx * fwd.x + dy * fwd.y) / (dist + 1e-6)
             w = w * (cosang >= math.cos(math.radians(cone * 0.5)))
-        if not w.any():
+        if not w.any() or w.max() < min_weight:
             return None
         order = w.argsort()[::-1]
         p1 = tm.pos[order[0]]
         a = Point3(float(p1[0]), float(p1[1]), float(p1[2]) + 1.55)
         if not second:
             return a
-        if len(order) > 1 and w[order[1]] > w[order[0]] * 0.35:
+        if len(order) > 1 and w[order[1]] > w[order[0]] * 0.6:
             p2 = tm.pos[order[1]]
             return a, Point3(float(p2[0]), float(p2[1]), float(p2[2]) + 1.55)
         return a, None
@@ -1274,7 +1275,7 @@ class BrainV2:
             self.look(look_override, dt, 0.8)
         else:
             look = self.aim_policy.hold_point(bot.position(), t.yaw, t.look)
-            self.look(look, dt, 0.45)
+            self.look(look, dt, 0.7)
         if kind in ("hunt", "pickup") and now - self.arrive_t > 1.0:
             self.team.task_done(bot, t)
 

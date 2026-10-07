@@ -155,6 +155,7 @@ class AimPolicy:
         self._next = 0.0
         self._alt = None
         self._alt_t = 0.0
+        self._on_alt = False
 
     def reset(self) -> None:
         self.point = None
@@ -171,7 +172,9 @@ class AimPolicy:
                 fwd = flat(ahead - pos)
                 if fwd.lengthSquared() > 1e-6:
                     fwd.normalize()
-            p = b.likely_point(pos, fwd, max_range=30.0, cone=110.0)
+            # along the route by default (enemies come from where it leads), a corner off it only
+            # when the team's picture clearly puts someone behind it
+            p = b.likely_point(pos, fwd, max_range=30.0, cone=80.0, min_weight=0.08) if fwd is not None else None
             if p is not None:
                 self.point = p
             elif ahead is not None:
@@ -186,14 +189,17 @@ class AimPolicy:
             self._next = now + b.rng.uniform(0.5, 0.9)
             p = b.likely_point(pos, None, max_range=45.0, cone=200.0, second=True)
             if p is not None:
-                self.point, self._alt = p
+                self.point, self._alt = p[0], p[1]
+                self._on_alt = False
             elif watch is not None:
                 self.point, self._alt = watch, None
             elif default_yaw is not None:
                 h = math.radians(default_yaw)
                 self.point, self._alt = Point3(pos.x - math.sin(h) * 8, pos.y + math.cos(h) * 8, pos.z + EYE), None
         if self._alt is not None and now >= self._alt_t:
-            self._alt_t = now + b.rng.uniform(1.2, 2.8)
+            # live on the likelier angle, check the other one briefly now and then
+            self._on_alt = not self._on_alt
+            self._alt_t = now + (b.rng.uniform(0.6, 1.0) if self._on_alt else b.rng.uniform(2.5, 4.5))
             self.point, self._alt = self._alt, self.point
         return self.point if self.point is not None else Point3(pos.x, pos.y + 4, pos.z + EYE)
 
