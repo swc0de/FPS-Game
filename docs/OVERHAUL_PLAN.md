@@ -875,12 +875,25 @@ be added later behind the same event interface if you want.
   `BOT_DEMO_NORENDER`, `BOT_DEMO_CONSOLE`, team plan and phase in the trace.
 
 **In progress**
-* A9 tuning against legacy. First 28 rounds (v2 attacking only): v2 won 10 (36 %); kills even
-  (96 : 92); 9 losses on time, 6 plants defused. Traces showed long-range duels that never ended
-  (both sides standing in the open at 40-90 m) and executes held up by a breach. Fixed: stale
-  duels are broken off, plants come first late in the round, hurt bots take cover at range,
-  staging no longer waits on a breach or on bots fighting at the staging point, post-plant bots
-  hear the defuse start and one watches the way in. Re-measuring.
+* A9 tuning against legacy, full matches with sides swapped (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`,
+  three in parallel). What the measurements found, in order:
+  1. Long-range duels that never ended and executes held up by a breach (first 28 rounds: v2 36 %,
+     9 losses on time). Fixed: stale duels are broken off, plants first late, staging has time limits.
+  2. Bots ran almost everywhere after a threshold change, loud and inaccurate on contact (K/D 37 : 84).
+     The walk threshold now comes from measured danger values.
+  3. **Halftime bug**: v2 brains kept the path service of the side they started on, so after the swap
+     every path stayed pending and the defenders never left spawn. Every v2 defence number before
+     the fix was invalid.
+  4. The humaniser added aim error that the legacy bots do not have (a flick overshoot on top of the
+     profile's first-shot error, stress widening it). Now error-neutral: same aim profile.
+  5. **Crosshair placement**: at first contact v2 had to turn a median 17.8 deg onto the enemy, legacy
+     7.2 deg. v2 now aims at the corners enemies would come round (visible points next to hidden
+     danger), along the route while moving, at the watched entry while holding.
+  6. **Grenades**: only 2 of 77 ordered throws left the hand (no clear arc to targets round corners).
+     Throw targets now walk back along the route until one has an arc: 37 of 71.
+  7. Experiment (not committed): the legacy bots with their information leaks closed beat legacy
+     65 % of rounds on attack (baseline 62 %), so the leaks are worth little; v2's deficit was its own.
+  Head-to-head so far: about 30 % before items 3-6, 42 % (67 rounds, CI 31-54) after 3-5.
 
 **Next**
 * Defence tuning, utility timing, the head-to-head over 60+ rounds with sides swapped, behaviour
