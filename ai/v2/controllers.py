@@ -55,6 +55,11 @@ class Mover:
         self.goal_key = None
         self.goal = None
         self.waiting = 0.0
+        self.prog_pos = None
+        self.prog_t = 0.0
+        self.escapes = 0
+        self.detour = None
+        self.detour_until = 0.0
         self.b.follower.stop()
 
     def to(self, goal: Point3, dt: float, key, walk: bool | None = None, via=(), look: Point3 | None = None,
@@ -82,6 +87,7 @@ class Mover:
         wish, crouch, jump = f.update(dt, pos, bot.char.horizontal_speed)
         it = bot.intent
         wish = self._spacing(wish, pos)
+        wish = self._unstick(wish, pos)
         it.wish = wish
         it.crouch = crouch
         it.jump = jump
@@ -92,6 +98,49 @@ class Mover:
             look = b.aim_policy.travel_point(pos, f)
         b.look(look, dt, 0.6)
         return False
+
+    def _unstick(self, wish: Vec3, pos: Point3) -> Vec3:
+        """No progress for 2.5 s while trying to move: first another route (a different cost
+        bias), then a step to a nearby open tactical point, away from whatever blocks."""
+        b = self.b
+        now = b.bot.now
+        if self.detour is not None:
+            d = flat(self.detour - pos)
+            if now > self.detour_until or d.length() < 0.5:
+                self.detour = None
+            else:
+                return d.normalized()
+        if wish.lengthSquared() < 0.04:
+            self.prog_pos = None                 # standing still on purpose (spacing, waiting)
+            return wish
+        if self.prog_pos is None or (pos - self.prog_pos).length() > 0.6:
+            self.prog_pos, self.prog_t = Point3(pos), now
+            return wish
+        if now - self.prog_t < 2.5:
+            return wish
+        self.prog_t = now
+        self.escapes += 1
+        if self.escapes % 2 == 1:
+            b.bias_key = 1 + b.bias_key % 3
+            b.follower.bias_key = b.bias_key
+            self.goal_key = None                 # plan again next tick, on the other route
+            return wish
+        tm = b.tm
+        best, bs = None, -1e9
+        for i in tm.points_near((pos.x, pos.y, pos.z), 5.0, max_dz=1.0).tolist():
+            q = tm._pl[i]
+            v = Vec3(q[0] - pos.x, q[1] - pos.y, 0)
+            dist = v.length()
+            if dist < 2.0 or not b.bot.nav.walkable_line(pos, q):
+                continue
+            score = -v.normalized().dot(wish) + b.rng.random() * 0.5
+            if score > bs:
+                best, bs = Point3(*q), score
+        if best is not None:
+            self.detour, self.detour_until = best, now + 2.0
+            self.goal_key = None
+            return flat(best - pos).normalized()
+        return wish
 
     def _plan(self, pos, goal, via):
         b = self.b

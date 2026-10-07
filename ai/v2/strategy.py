@@ -1173,6 +1173,14 @@ class GadgetAIV2(GadgetAI):
             if self._gadget_in_sight(g, eyes):
                 self.seen.add(id(g))
 
+    def _visible_gadget(self, bot):
+        """The Milestone 6 pick (closest enemy gadget in front, 22 m), limited to gadgets the
+        team has actually had in its view cone (``seen``); map cameras are public."""
+        g = super()._visible_gadget(bot)
+        if g is not None and id(g) not in self.seen and getattr(g, "kind", "") != "camera":
+            return None
+        return g
+
     def _gadget_in_sight(self, g, eyes) -> bool:
         """The fairness audit's test (ai/audit.py): in a bot's view cone, 30 m, a clear ray."""
         p = g.center()
