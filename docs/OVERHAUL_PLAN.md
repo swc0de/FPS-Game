@@ -893,7 +893,17 @@ be added later behind the same event interface if you want.
      Throw targets now walk back along the route until one has an arc: 37 of 71.
   7. Experiment (not committed): the legacy bots with their information leaks closed beat legacy
      65 % of rounds on attack (baseline 62 %), so the leaks are worth little; v2's deficit was its own.
-  Head-to-head so far: about 30 % before items 3-6, 42 % (67 rounds, CI 31-54) after 3-5.
+  8. Per plan: executes with working utility won 7 of 9, rushes 4 of 5, fakes 1 of 6; on defence the
+     aggressive forward setup won 3 of 16. Starting weights follow that (variety still enforced:
+     no plan above about 40 %), and within a match the weights follow the results.
+  9. Defence: rotators walked into a contested site one by one; they now gather on the defenders'
+     side and route round likely enemies; anchors stay; spots are matched to the guns (short angles
+     for SMGs); the map's hand-placed defender positions are candidates too.
+  10. Fairness: one run showed 2 v2 audit violations (shooting an enemy gadget the team had not
+     seen in a view cone); fixed. Movement recovers from being stuck (another route, then a step to
+     open ground).
+  Head-to-head so far: about 30 % before items 3-6, 42 % (67 rounds, CI 31-54) after 3-5; with 6
+  attack 57 % and defence still weak (17-40 % depending on seed).
 
 **Next**
 * Defence tuning, utility timing, the head-to-head over 60+ rounds with sides swapped, behaviour
