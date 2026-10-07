@@ -959,18 +959,41 @@ class TeamStrategy(TeamBrain):
 
     def _hold_task(self, h: dict, tag: str = "hold", walk_near: float = 0.0) -> Task:
         tm = self.tm
-        p = tm.pos[h["i"]]
+        p = h["pos"] if "pos" in h else tm.pos[h["i"]]
         look = None
         if h.get("sees"):
             e = tm.pos[self.rng.choice(h["sees"])]
             look = Point3(float(e[0]), float(e[1]), float(e[2]) + 1.5)
+        elif h.get("yaw") is not None:
+            r = math.radians(h["yaw"])
+            look = Point3(float(p[0]) - math.sin(r) * 10.0, float(p[1]) + math.cos(r) * 10.0, float(p[2]) + 1.5)
         return Task("hold", Point3(float(p[0]), float(p[1]), float(p[2])), look=look, crouch=bool(h.get("crouch")),
                     wait=True, tag=tag, walk_near=walk_near)
+
+    def _site_holds(self, site: str) -> list[dict]:
+        """The tactical map's hold spots plus the map's hand-placed defender positions (map data,
+        as a player learns a map), each with the entries it can see."""
+        cache = self.__dict__.setdefault("_site_holds_cache", {})
+        if site in cache:
+            return cache[site]
+        tm = self.tm
+        out = list(tm.holds(site))
+        top = max((h["score"] for h in out), default=1.0)
+        ents = tm.entries(site)
+        for a in self.holds.get(site, []):
+            i = tm.nearest(a["pos"])
+            if i < 0:
+                continue
+            sees = [e for e in ents if tm.sees(i, e) or tm.sees(i, e, low=True)]
+            out.append({"i": i, "pos": Point3(a["pos"]), "score": top * 1.1, "sees": sees, "crouch": a["crouch"],
+                        "yaw": a["yaw"], "authored": True})
+        cache[site] = out
+        return out
 
     def _pick_holds(self, site: str, k: int, used: set) -> list[dict]:
         """k hold spots: a crossfire for two, spots that died before used less."""
         tm = self.tm
-        holds = [h for h in tm.holds(site) if h["i"] not in used]
+        holds = [h for h in self._site_holds(site) if h["i"] not in used]
         if not holds:
             return []
 
