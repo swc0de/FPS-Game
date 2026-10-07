@@ -122,6 +122,16 @@ class TeamStrategy(TeamBrain):
         self.gadgets = GadgetAIV2(self)
         for k in (1, 2, 3):
             self.paths.set_bias(k, self._bias(self.rng.randrange(1 << 30)))
+        # bias 4 avoids where the team thinks enemies are (rotations, retakes): the field's danger
+        # summed per navmesh polygon, refreshed every 2 s
+        nav = director.nav
+        rects = []
+        for q in self.tm._pl:
+            n = nav.locate(tuple(q))
+            rects.append(int(nav.rect_of[n]) if n >= 0 else -1)
+        self._pt_rect = np.array(rects, np.int64)
+        self._n_rects = len(nav.rects)
+        self._danger_bias_t = -10.0
         # per-site points that need a full path search, once while loading (a search can
         # take 16 ms, too long for a tick): the defenders' way in, the attackers' way back,
         # and walking distances from each site over the tactical map
@@ -237,6 +247,14 @@ class TeamStrategy(TeamBrain):
             _, f = self._pending_radar.pop(0)
             self.field.add_fact(f)
         self._tick_n += 1
+        if now - self._danger_bias_t > 2.0 and self.director.match.phase in ("live", "planted"):
+            self._danger_bias_t = now
+            d = self.danger()
+            m = self._pt_rect >= 0
+            per = np.zeros(self._n_rects)
+            np.add.at(per, self._pt_rect[m], d[m])
+            table = (1.0 + 3.0 * np.minimum(per, 1.0)).tolist()
+            self.paths.set_bias(4, table.__getitem__)
         bots = self.alive_bots()
         if bots and self._tick_n % 2 == 0 and self.director.match.phase in ("prep", "live", "planted"):
             # one bot's view every other tick (each bot's every ~10 ticks with five)

@@ -155,7 +155,8 @@ class Mover:
                 a = (a[0], a[1], path[-1][2] if path else pos.z)
             if len(c) == 2:
                 c = (c[0], c[1], a[2])
-            leg = b.paths.request(a, c, b.bias_key)
+            key = 4 if b.task.tag in ("rotate", "regroup", "retake", "fallback") else b.bias_key
+            leg = b.paths.request(a, c, key)
             if leg == PENDING:
                 return PENDING
             if leg is None:
