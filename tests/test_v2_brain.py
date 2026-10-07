@@ -246,5 +246,33 @@ class TradeTests(unittest.TestCase):
         self.assertIsNone(team.trade_fact(a, 13.5))       # too late to trade
 
 
+class PostPlantTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from ai.v2.tactical_map import TacticalMap
+        from tests.test_tactical_map import make_level
+        level, nav = make_level()
+        cls.tm = TacticalMap.build(level, nav)
+
+    def test_hide_spots_are_out_of_sight_with_a_peek(self):
+        tm = self.tm
+        team = StubTeam([])
+        team.tm = tm
+        team.rng = random.Random(3)
+        team.director = SimpleNamespace(bomb=SimpleNamespace(site=""))
+        team._crossfire_on = lambda target, n: [(Point3(target), False)] * n
+        bomb = Point3(8.0, -3.0, 0.0)
+        bi = tm.nearest(bomb)
+        pairs = team._hide_spots(bomb, 2)
+        self.assertEqual(len(pairs), 2)
+        real = [(h, p) for h, p in pairs if (h - p).length() > 0.1]
+        self.assertTrue(real, "no hide spot found next to a peek")
+        for hide, peek in real:
+            hi, pi = tm.nearest(hide), tm.nearest(peek)
+            self.assertFalse(tm.sees(bi, hi) or tm.sees(bi, hi, low=True))     # the charge cannot see it
+            self.assertTrue(tm.sees(bi, pi) or tm.sees(bi, pi, low=True))      # one step sees the charge
+            self.assertLess((hide - peek).length(), 3.6)
+
+
 if __name__ == "__main__":
     unittest.main()
