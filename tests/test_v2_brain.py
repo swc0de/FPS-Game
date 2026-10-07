@@ -117,6 +117,9 @@ class StubBrain(BrainV2):
     def _comms(self, ctx, now):
         pass
 
+    def _consider_utility(self, ctx, now):
+        pass
+
 
 class UtilityTests(unittest.TestCase):
     def test_best_score_wins(self):

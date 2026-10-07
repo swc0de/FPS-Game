@@ -101,6 +101,7 @@ class Fight(Action):
         super().__init__(brain)
         self.target = None
         self.hide_until = 0.0
+        self.hold_until = 0.0
         self.hide_dir = None
         self.last_seen_t = -10.0
         self.strafe_dir = 1.0
@@ -117,8 +118,8 @@ class Fight(Action):
             if ctx.hp < 35 and ctx.cover is not None and ctx.threat_dist > 15.0:
                 return 0.9                       # hurt at range: cover first (fallback)
             return 1.0
-        # keep fighting through our own short un-peek
-        if self.target is not None and self.target.agent.alive and ctx.now < self.hide_until + 0.4:
+        # keep fighting through our own un-peek: behind cover, holding the corner, re-peek
+        if self.target is not None and self.target.agent.alive and ctx.now < self.hold_until + 0.4:
             return 0.95
         return 0.0
 
@@ -138,14 +139,17 @@ class Fight(Action):
             self.target = c
         b.perception.busy_with = id(c.agent)
         if not c.seen:
-            # hidden on purpose (re-peek cycle): hold the angle it was at
-            look = Point3(c.pos.x, c.pos.y, c.pos.z + 1.45)
-            bot.aim.look_at(bot.eye(), look, dt, 0.8)
+            # hidden on purpose: step behind cover, hold the corner it would come round
+            # (it knows where we were and may push), then re-peek - never at a rhythm
+            f = Fact(id(c.agent), (c.pos.x, c.pos.y, c.pos.z), 0.5, c.time, "sight")
+            bot.aim.look_at(bot.eye(), b.preaim(f, now), dt, 0.8)
             if self.hide_dir is not None and now < self.hide_until:
                 it.wish = self.hide_dir
+            elif self.hide_dir is not None and now < self.hold_until:
+                it.crouch = b.traits["patience"] > 0.5
             elif self.hide_dir is not None:
-                it.wish = -self.hide_dir                     # step back out: re-peek
-            b.reload_if(0.99 if now < self.hide_until else 0.0)
+                it.wish = -self.hide_dir                     # swing back out
+            b.reload_if(0.99 if now < self.hold_until else 0.0)
             return
         self.last_seen_t = now
         firing, off, tol, use_head = b.shooter.engage(c, dt, now)
@@ -170,23 +174,29 @@ class Fight(Action):
             it.wish = self._between_bursts(c, dist, now)
         if ws is not None and ws.d.magazine > 0 and ws.ammo == 0 and dist > 8 and self.hide_dir is None:
             # empty at range: duck out of sight to reload
-            d = b.peek.hide_dir(enemy.head_pos())
-            if d is not None:
-                self.hide_dir = d
-                self.hide_until = now + 0.5
+            self._hide(c, now, reload=ws.d.reload_empty_time)
         bot.scoped = ws is not None and bool(ws.d.scope) and speed < 1.5
         if now - b.call_t > 1.5:
             b.call_t = now
             b.team.on_sighting(bot, c, now)
+
+    def _hide(self, c, now: float, reload: float = 0.0) -> None:
+        b = self.b
+        rng = b.bot.rng
+        self.hide_dir = b.peek.hide_dir(c.agent.head_pos())
+        self.hide_until = now + rng.uniform(0.35, 0.6)
+        # how long to hold the corner before peeking again: short for the bold, longer for the
+        # patient, never the same twice
+        hold = rng.uniform(0.2, 1.0) + 1.6 * b.traits["patience"] * (1.0 - 0.6 * b.traits["risk"])
+        self.hold_until = self.hide_until + max(hold, reload)
 
     def _between_bursts(self, c, dist: float, now: float) -> Vec3:
         b = self.b
         bot = b.bot
         # long-range duel: step behind cover between bursts, then re-peek
         if dist > 16 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75:
-            if self.hide_dir is None or now > self.hide_until + 1.0:
-                self.hide_dir = b.peek.hide_dir(c.agent.head_pos())
-                self.hide_until = now + bot.rng.uniform(0.35, 0.6)
+            if self.hide_dir is None or now > self.hold_until + 1.0:
+                self._hide(c, now)
             if self.hide_dir is not None and now < self.hide_until:
                 return self.hide_dir
         if dist < 11 and bot.profile.get("strafe", 0) > 0:
@@ -309,6 +319,8 @@ class Trade(Action):
         if tr is None or ctx.target is not None:
             return 0.0
         b = self.b
+        if b.task.kind in ("plant", "defuse"):
+            return 0.0                           # the carrier / defuser keeps to the objective
         if ctx.mag < 0.2 or ctx.hp < 20:
             return 0.0
         if self.fact is not None and ctx.now < self.until:
@@ -362,6 +374,8 @@ class Investigate(Action):
         f = ctx.fact or ctx.lost
         if f is None:
             return 0.0
+        if self.b.swinging(ctx.now):
+            return 0.95                          # our flash is popping: go now
         age = ctx.now - f.time
         if age > 6.0:
             return 0.0
@@ -376,6 +390,11 @@ class Investigate(Action):
             return
         look = b.preaim(f, now)
         t = b.task
+        if b.swinging(now):
+            # swing wide onto the corner while they are blind
+            goal = Point3(*b.swing[0].pos)
+            b.mover.to(goal, dt, ("swing", round(goal.x), round(goal.y)), walk=False, look=look, run=True)
+            return
         if b.ctx.holding:
             bot.intent.crouch = t.crouch
             b.look(look, dt, 0.8)
@@ -489,6 +508,13 @@ class DoTask(Action):
         b = self.b
         if b.committed_objective(ctx.now):
             return 1.3
+        kind = b.task.kind
+        if kind in ("plant", "defuse") and ctx.target is None:
+            # the objective comes first when nobody is in sight: in the site (or at the
+            # charge) nothing but a fight or a grenade at the feet beats it
+            here = b.director.site_at(b.bot.position()) is not None if kind == "plant" else \
+                (b.director.bomb.pos - b.bot.position()).length() < 6.0
+            return 0.97 if here else 0.7
         return 0.5
 
     def run(self, dt, now, look_override: Point3 | None = None):
@@ -563,6 +589,8 @@ class BrainV2:
         self.kill_t = -10.0
         self.dealt_t = -10.0
         self.ignore: dict[int, float] = {}
+        self.nade_t = 0.0
+        self.swing = None
         self.debug = ""
         self.knowledge.reset()
         self.human.reset()
@@ -744,6 +772,46 @@ class BrainV2:
         if self.shooter.target_id is not None and best.name != "engage":
             self.shooter.release()
         self._comms(ctx, now)
+        self._consider_utility(ctx, now)
+
+    def _consider_utility(self, ctx, now: float) -> None:
+        """The bot's own grenades: a pop-flash over the corner a fresh fact puts an enemy behind
+        (then swing while it is blind), or a frag onto an enemy that is not moving off."""
+        if self.throw is not None or ctx.target is not None or now < self.nade_t:
+            return
+        f = ctx.fact
+        if f is None or f.source == "damage" or now - f.time > 2.5 or f.radius > 5.0:
+            return
+        bot = self.bot
+        pos = bot.position()
+        d = math.hypot(f.pos[0] - pos.x, f.pos[1] - pos.y)
+        if d < 6.0 or d > 30.0:
+            return
+        self.nade_t = now + 2.5
+        if bot.game.physics.ray_cast(bot.eye(), fact_point(f, 1.4), MASK_SIGHT) is None:
+            return                                   # in plain view: that is for the gun
+        if self.team.recent_nade(f.pos, now):
+            return                                   # a teammate just threw there
+        inv = bot.weapons.inv.grenades
+        u = self.traits["utility"]
+        if inv.get("flash", 0) > 0 and self.rng.random() < 0.3 + 0.5 * u and not self.human.mistake("skip_corner"):
+            if self.order_throw("flash", Point3(f.pos[0], f.pos[1], f.pos[2] + 2.2), 2.0):
+                self.swing = (f, None)
+                self.team.nade_at(f.pos, now)
+                self.say("Flashing!", key="popflash", every=4.0)
+        elif inv.get("frag", 0) > 0 and d > 9.0 and self.rng.random() < 0.25 + 0.5 * u:
+            if self.order_throw("frag", Point3(f.pos[0], f.pos[1], f.pos[2] + 0.3), 2.0):
+                self.team.nade_at(f.pos, now)
+
+    def swinging(self, now: float) -> bool:
+        """Our own flash just popped (or is about to) over the corner: time to peek."""
+        sw = self.swing
+        if sw is None or sw[1] is None:
+            return False
+        if now > sw[1] + 3.2:
+            self.swing = None
+            return False
+        return now >= sw[1] + 1.3
 
     def _context(self, now: float) -> Ctx:
         bot = self.bot
@@ -1260,6 +1328,8 @@ class BrainV2:
         o.aim_t += dt
         if left < 2.0 and o.aim_t > 0.45 and now >= bot.weapons.grenade_ready:
             bot.weapons.throw(o.key, v)
+            if o.key == "flash" and self.swing is not None and self.swing[1] is None:
+                self.swing = (self.swing[0], now)
             names = {"flash": "Flashbang out!", "smoke": "Smoke out!", "frag": "Frag out!"}
             self.say(names.get(o.key, "Grenade!"), key="nade", every=2.0)
             self.throw = None

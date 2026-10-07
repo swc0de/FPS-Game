@@ -154,6 +154,7 @@ class TeamStrategy(TeamBrain):
         super().reset_round()
         self.roles = {}
         self.deaths: list[dict] = []
+        self.nades: list[tuple] = []
         self.facts: list[Fact] = []            # what the team learned (radar, radio, pings)
         self._radar_t: dict[int, float] = {}
         self._pending_radar: list[tuple[float, Fact]] = []
@@ -406,6 +407,13 @@ class TeamStrategy(TeamBrain):
                 f = Fact(None, (vp.x, vp.y, vp.z), 3.0, d["t"], "damage")
             best, bd = (f, Point3(vp)), dist
         return best
+
+    def nade_at(self, pos, now: float) -> None:
+        self.nades.append((now, (pos[0], pos[1])))
+        self.nades = [n for n in self.nades if now - n[0] < 8.0]
+
+    def recent_nade(self, pos, now: float, radius: float = 7.0, within: float = 4.0) -> bool:
+        return any(now - t < within and math.hypot(p[0] - pos[0], p[1] - pos[1]) < radius for t, p in self.nades)
 
     def radio_say(self, bot, text: str, key: str | None = None, every: float = 4.0) -> None:
         self.comms.say(bot, text, key=key, every=every)
