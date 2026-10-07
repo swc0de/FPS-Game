@@ -30,22 +30,39 @@ PENDING = "pending"
 
 
 class AStarJob:
+    """The navmesh's A* (``NavMesh.find_path``) in resumable steps: both of its portal
+    scorings (closest point, midpoint) one after the other, keeping the shorter route."""
+
+    MODES = ("closest", "mid")
+
     def __init__(self, nav, sr: int, gr: int, sxy, gxy, cost_bias=None):
         self.nav = nav
         self.sr, self.gr = sr, gr
         self.sxy, self.gxy = sxy, gxy
         self.bias = cost_bias
-        self.best = {sr: 0.0}
-        self.at = {sr: sxy}
-        self.came: dict[int, tuple[int, int]] = {}
-        self.heap = [(math.dist(sxy, gxy), 0, sr)]
-        self.tie = 1
         self.done = False
         self.chain = None
         self.expanded = 0
+        self._mode = 0
+        self._found: list = []
+        self._start()
+
+    def _start(self) -> None:
+        sr, sxy = self.sr, self.sxy
+        self.best = {sr: 0.0}
+        self.at = {sr: sxy}
+        self.came: dict[int, tuple[int, int]] = {}
+        self.heap = [(math.dist(sxy, self.gxy), 0, sr)]
+        self.tie = 1
 
     def step(self, budget: int) -> int:
-        """Expand up to ``budget`` polygons; returns how many were used."""
+        """Expand up to ``budget`` polygons (over both scorings); returns how many were used."""
+        used = 0
+        while not self.done and used < budget:
+            used += self._expand(budget - used)
+        return used
+
+    def _expand(self, budget: int) -> int:
         nav = self.nav
         P = nav._portal_list
         crouch = nav._rect_crouch
@@ -53,6 +70,7 @@ class AStarJob:
         gxy = self.gxy
         used = 0
         heap, best, at, came = self.heap, self.best, self.at, self.came
+        mid = self.MODES[self._mode] == "mid"
         while heap and used < budget:
             f, _, r = heapq.heappop(heap)
             if r == self.gr:
@@ -69,8 +87,11 @@ class AStarJob:
                 s = int(p[1])
                 ax, ay, bx, by = p[2], p[3], p[4], p[5]
                 ex, ey = bx - ax, by - ay
-                L2 = ex * ex + ey * ey
-                t = 0.0 if L2 < 1e-9 else max(0.0, min(1.0, ((px - ax) * ex + (py - ay) * ey) / L2))
+                if mid:
+                    t = 0.5
+                else:
+                    L2 = ex * ex + ey * ey
+                    t = 0.0 if L2 < 1e-9 else max(0.0, min(1.0, ((px - ax) * ex + (py - ay) * ey) / L2))
                 qx, qy = ax + ex * t, ay + ey * t
                 cost = math.hypot(qx - px, qy - py) + 0.05
                 mult = 2.6 if crouch[s] else 1.0
@@ -88,8 +109,9 @@ class AStarJob:
         return used
 
     def _finish(self) -> None:
-        self.done = True
+        """One scoring done: start the next, or keep the shorter of the two routes."""
         if self.gr not in self.came:
+            self.done = True                     # unreachable either way
             self.chain = None
             return
         chain = []
@@ -99,7 +121,22 @@ class AStarJob:
             chain.append(k)
             r = pr
         chain.reverse()
-        self.chain = chain
+        self._found.append(chain)
+        self._mode += 1
+        if self._mode < len(self.MODES):
+            self._start()
+            return
+        self.done = True
+        nav = self.nav
+
+        def length(ch):
+            pts = string_pull(self.sxy, self.gxy, nav._oriented_portals(ch))
+            return sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
+        best = None
+        for ch in self._found:
+            if best is None or length(ch) < length(best) - 1e-6:
+                best = ch
+        self.chain = best
 
 
 def assemble(nav, start, goal, chain) -> list:

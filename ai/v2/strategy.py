@@ -78,6 +78,21 @@ SETUP_WEIGHTS = {"2-1-2": 1.0, "stack": 0.45, "aggro": 0.55, "retake": 0.3}
 GADGET_SIGHT = 30.0
 
 
+def pick_varied(weights: dict[str, float], history: list[str], rng, decay: float = 0.45, window: int = 5,
+                repeat: float = 0.4) -> str:
+    """Weighted choice that gets less likely the more often an option was picked lately
+    (``decay`` per use in the last ``window``, ``repeat`` again for the last one)."""
+    recent = history[-window:]
+    opts = list(weights)
+    ws = []
+    for o in opts:
+        w = weights[o] * decay ** recent.count(o)
+        if history and history[-1] == o:
+            w *= repeat
+        ws.append(w)
+    return rng.choices(opts, ws)[0]
+
+
 class TeamStrategy(TeamBrain):
     ai = "v2"
 
@@ -412,22 +427,15 @@ class TeamStrategy(TeamBrain):
             weights.append(max(w, 0.15))
         self.site = self.rng.choices(sites, weights)[0]
         mode = getattr(self, "buy_mode", "full")
-        recent = [h.split(":")[0] for h in self.plan_history[-5:]]
-        opts, ws = [], []
-        for p in PLANS:
-            w = PLAN_WEIGHTS[p]
-            if p == "split" and (len(self.lanes[self.site]) < 2 or len(bots) < 4):
-                continue
-            if p == "fake" and (len(bots) < 4 or len(sites) < 2):
-                continue
-            if mode == "eco" and p in ("rush", "contact"):
-                w *= 3.0
-            w *= 0.45 ** recent.count(p)
-            if self.plan_history and self.plan_history[-1].split(":")[0] == p:
-                w *= 0.4
-            opts.append(p)
-            ws.append(w)
-        self.plan = self.rng.choices(opts, ws)[0]
+        weights = dict(PLAN_WEIGHTS)
+        if len(self.lanes[self.site]) < 2 or len(bots) < 4:
+            del weights["split"]
+        if len(bots) < 4 or len(sites) < 2:
+            del weights["fake"]
+        if mode == "eco":
+            for p in ("rush", "contact"):
+                weights[p] *= 3.0
+        self.plan = pick_varied(weights, [h.split(":")[0] for h in self.plan_history], self.rng)
         self.plan_history.append(f"{self.plan}:{self.site}")
         self.commit_t = self.live_t + self.rng.uniform(22.0, 40.0)
         lurker = next((b for b in bots if self.roles.get(id(b)) == "lurker"), None)
@@ -774,18 +782,12 @@ class TeamStrategy(TeamBrain):
         n = len(bots)
         sites = sorted(self.sites)
         hit = {s: self.attacked.get(s, 0) for s in sites}
-        opts, ws = [], []
-        recent = self.setup_history[-4:]
-        for s in SETUPS:
-            w = SETUP_WEIGHTS[s]
-            if s == "stack" and (n < 4 or max(hit.values(), default=0) - min(hit.values(), default=0) < 2):
-                w *= 0.3
-            if s in ("aggro", "retake") and n < 3:
-                continue
-            w *= 0.6 ** recent.count(s)
-            opts.append(s)
-            ws.append(w)
-        self.setup = self.rng.choices(opts, ws)[0]
+        weights = dict(SETUP_WEIGHTS)
+        if n < 4 or max(hit.values(), default=0) - min(hit.values(), default=0) < 2:
+            weights["stack"] *= 0.3              # stack only where the attackers keep going
+        if n < 3:
+            del weights["aggro"], weights["retake"]
+        self.setup = pick_varied(weights, self.setup_history, self.rng, decay=0.6, window=4)
         self.setup_history.append(self.setup)
         rank = {"anchor": 0, "awper": 1, "support": 2, "rotator": 3}
         ordered = sorted(bots, key=lambda b: rank.get(self.roles.get(id(b), ""), 4))
