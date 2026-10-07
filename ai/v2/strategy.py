@@ -173,6 +173,7 @@ class TeamStrategy(TeamBrain):
         self.setup = ""
         self.retake_util = False
         self.fell_back: set[int] = set()
+        self.rotation_site, self.rotation_t = "", 0.0
         self.early: dict[str, set] = {}
         self.learned_now = np.zeros(self.tm.n)
         self._learned_round: set = set()
@@ -1022,7 +1023,14 @@ class TeamStrategy(TeamBrain):
             credible = n >= 2 or (n >= 1 and (util or died)) or (died and util)
             if not credible or now - self.rotated.get(name, -100.0) < 15.0:
                 continue
+            cur = getattr(self, "rotation_site", "")
+            if cur and cur != name and now - self.rotation_t < 30.0:
+                # already rotated the other way: only clearly stronger evidence turns them round
+                n_cur = self.site_evidence(cur, now, 12.0)[0]
+                if n < n_cur + 2:
+                    continue
             self.rotated[name] = now
+            self.rotation_site, self.rotation_t = name, now
             self.attacked[name] = self.attacked.get(name, 0) + 1
             here = [b for b in bots if self.area_of.get(id(b)) == name]
             movers = [b for b in bots if self.area_of.get(id(b)) != name]
