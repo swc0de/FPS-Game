@@ -984,6 +984,23 @@ class TeamStrategy(TeamBrain):
 
     def _hold_site(self, group: list, site: str, used: set, tag: str = "hold", walk_near: float = 0.0) -> None:
         picks = self._pick_holds(site, len(group), used)
+        # match spots to guns: the shortest angles to the SMGs and shotguns, the longest to the
+        # rifles and the sniper
+        tm = self.tm
+
+        def reach(h):
+            ents = h.get("sees") or []
+            if not ents:
+                return 15.0
+            p = tm._xy[h["i"]]
+            return float(np.mean([np.hypot(*(tm._xy[e] - p)) for e in ents]))
+
+        def wants(b):
+            w = b.weapons.primary
+            cls = w.d.cls if w is not None else "pistol"
+            return {"smg": 0.0, "shotgun": 0.0, "pistol": 0.3, "rifle": 0.7, "sniper": 1.0}.get(cls, 0.6)
+        picks = sorted(picks, key=reach)
+        group = sorted(group, key=wants)
         for b, h in zip(group, picks):
             used.add(h["i"])
             self.area_of[id(b)] = site
@@ -1033,14 +1050,20 @@ class TeamStrategy(TeamBrain):
             self.rotation_site, self.rotation_t = name, now
             self.attacked[name] = self.attacked.get(name, 0) + 1
             here = [b for b in bots if self.area_of.get(id(b)) == name]
-            movers = [b for b in bots if self.area_of.get(id(b)) != name]
-            movers.sort(key=lambda b: (self.roles.get(id(b)) == "anchor", (b.position() - self.site_centers[name]).length()))
+            movers = [b for b in bots if self.area_of.get(id(b)) != name and
+                      not (self.roles.get(id(b)) == "anchor" and self.area_of.get(id(b)) in self.sites)]
+            movers.sort(key=lambda b: (b.position() - self.site_centers[name]).length())
             if len(movers) > 2:
                 movers = movers[:-1]                   # someone stays to watch the other site
-            used: set[int] = set()
             if movers:
-                self._hold_site(movers, name, used, tag="rotate", walk_near=12.0)
-                self.say(movers[0], f"Rotating {name}.", key=f"rot:{name}", every=10.0)
+                # not one by one into a contested site: to the defenders' side of it, together,
+                # where they cut it off from behind and can retake
+                for b in movers:
+                    p = self._regroup_point(b, self.site_centers[name])
+                    self.area_of[id(b)] = name
+                    b.brain.set_task(Task("hold", p, look=self.site_centers[name] + Vec3(0, 0, 1.4), wait=True,
+                                          tag="rotate", walk_near=8.0))
+                self.say(movers[0], f"Rotating {name}, wait for each other.", key=f"rot:{name}", every=10.0)
             # a lone anchor against three or more falls back for the retake
             if n >= 3 and len(here) <= 1:
                 for b in here:
