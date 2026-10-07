@@ -115,8 +115,9 @@ class Fight(Action):
                 return 0.0
             if ctx.threat_dist < 12.0:
                 return 1.1                       # up close there is no choice
-            if ctx.hp < 35 and ctx.cover is not None and ctx.threat_dist > 15.0:
-                return 0.9                       # hurt at range: cover first (fallback)
+            if ctx.hp < 35 and ctx.cover is not None and ctx.threat_dist > 15.0 and \
+                    (ctx.cover[0] - self.b.bot.position()).length() < 3.2:
+                return 0.9                       # hurt at range, cover a step away: take it
             return 1.0
         # keep fighting through our own un-peek: behind cover, holding the corner, re-peek
         if self.target is not None and self.target.agent.alive and ctx.now < self.hold_until + 0.4:
@@ -235,13 +236,15 @@ class FallBack(Action):
         ws = ctx.ws
         need = 0.0
         sec = b.bot.weapons.secondary
+        # running for cover across open ground under fire is worse than fighting it out
+        close = (ctx.cover[0] - b.bot.position()).length() < 3.2
         if ws is not None and ws.d.magazine > 0 and ws.ammo == 0:
             pistol = sec is not None and sec is not ws and sec.ammo > 0
             if ctx.threat_dist > 7 or not pistol:
                 need = 1.15
-        elif ctx.hp < 30 and ctx.enemies > ctx.allies:
-            need = 0.97
-        elif ctx.hp < 35 and ctx.threat_dist > 15.0 and ctx.target is not None:
+        elif ctx.hp < 35 and ctx.target is not None and ctx.threat_dist > 15.0 and close:
+            need = 0.97                          # hurt at range, cover a step away
+        elif ctx.hp < 30 and ctx.enemies > ctx.allies and (close or ctx.target is None):
             need = 0.97
         elif ctx.stale and ctx.holding:
             need = 0.9                           # out of its sight, then peek again later
@@ -885,9 +888,8 @@ class BrainV2:
             return False
         key = id(c.agent)
         d = ctx.threat_dist
-        shot = now - self.last_hit_t < 1.2
-        if shot and d < 30.0:
-            return False
+        if now - self.last_hit_t < 2.0:
+            return False                         # being shot: fight back (or take close cover)
         if now < self.ignore.get(key, 0.0) and d > 18.0:
             return True
         engaged = now - self.shooter.engaged_since if self.shooter.target_id == key else 0.0
@@ -896,7 +898,7 @@ class BrainV2:
             if self.ctx.holding or self.task.wait:
                 self.reposition_t = now
             return True
-        if self.task.kind == "plant" and d > 15.0 and ctx.time_left < 35.0 and not shot:
+        if self.task.kind == "plant" and d > 15.0 and ctx.time_left < 35.0:
             return True
         return False
 
@@ -987,8 +989,8 @@ class BrainV2:
         return val
 
     def should_walk(self, pos: Point3) -> bool:
-        """Walk (quiet, accurate) only close to where enemies probably are: a fresh fact within
-        20 m, or most of an enemy expected within 15 m; run when time is short or rushing."""
+        """Walk (quiet, accurate) close to where enemies probably are: a fresh fact within 20 m,
+        or a real chance of an enemy within 15 m; run when time is short or rushing."""
         t = self.task
         if t.tag in ("rush", "flee", "retake") or self.team.plan == "rush":
             return False
@@ -999,7 +1001,9 @@ class BrainV2:
         for f in self.knowledge.recent(4.0, now):
             if f.source != "damage" and math.hypot(f.pos[0] - pos.x, f.pos[1] - pos.y) < 20.0:
                 return True
-        return self.danger_near(pos, 15.0) > 0.55 + 0.35 * self.traits["aggression"]
+        # (measured: the danger within 15 m is about 0.05 typically and over 0.3 in the
+        # hottest tenth of the places attackers go)
+        return self.danger_near(pos, 15.0) > 0.08 + 0.15 * self.traits["aggression"]
 
     def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False):
         """Head-height point of the likeliest place an enemy can appear in view."""

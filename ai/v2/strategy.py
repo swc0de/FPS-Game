@@ -112,6 +112,7 @@ class TeamStrategy(TeamBrain):
         self.spot_deaths: dict[int, int] = {}  # tactical point -> deaths holding it
         self.attacked: dict[str, int] = {}     # defenders: which site the attackers hit, per round
         self.learned = np.zeros(self.tm.n)     # tactical points where enemies were seen early
+        self.worked: dict[str, float] = {}      # plan / setup -> weight from round results
         super().__init__(director, side)
         self.comms = Radio(self, self.tm, self.rng, self.cfg.get("radio"))
         self.gadgets = GadgetAIV2(self)
@@ -430,6 +431,13 @@ class TeamStrategy(TeamBrain):
                     b.brain.knowledge.forget(id(victim))
                 if killer is not None and getattr(getattr(killer, "brain", None), "team", None) is self:
                     killer.brain.on_kill(victim)
+        elif kind == "round_end":
+            # what worked: plans / setups that won get picked a little more often
+            won = data["result"].winner_side == self.side
+            key = self.plan if self.side == "attack" else self.setup
+            if key:
+                m = self.worked.get(key, 1.0) * (1.25 if won else 0.85)
+                self.worked[key] = min(max(m, 0.5), 2.0)
         elif kind == "bomb_planted" and self.side == "defend":
             # the planter was at the charge (it shows on everyone's radar)
             b = self.director.bomb
@@ -464,7 +472,7 @@ class TeamStrategy(TeamBrain):
             weights.append(max(w, 0.15))
         self.site = self.rng.choices(sites, weights)[0]
         mode = getattr(self, "buy_mode", "full")
-        weights = dict(PLAN_WEIGHTS)
+        weights = {p: w * self.worked.get(p, 1.0) for p, w in PLAN_WEIGHTS.items()}
         if len(self.lanes[self.site]) < 2 or len(bots) < 4:
             del weights["split"]
         if len(bots) < 4 or len(sites) < 2:
@@ -872,7 +880,7 @@ class TeamStrategy(TeamBrain):
         n = len(bots)
         sites = sorted(self.sites)
         hit = {s: self.attacked.get(s, 0) for s in sites}
-        weights = dict(SETUP_WEIGHTS)
+        weights = {k: w * self.worked.get(k, 1.0) for k, w in SETUP_WEIGHTS.items()}
         if n < 4 or max(hit.values(), default=0) - min(hit.values(), default=0) < 2:
             weights["stack"] *= 0.3              # stack only where the attackers keep going
         if n < 3:
