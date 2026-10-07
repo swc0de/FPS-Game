@@ -147,6 +147,18 @@ class UtilityTests(unittest.TestCase):
         self.assertEqual(b.mode, "reload")
 
 
+class HalftimeTests(unittest.TestCase):
+    def test_path_service_follows_the_current_side(self):
+        """At halftime the team proxy points at the other side's strategy: a brain must use that
+        strategy's path service (a stale one is never updated and every request stays pending)."""
+        b = BrainV2.__new__(BrainV2)
+        first, second = object(), object()
+        b.team = SimpleNamespace(paths=first)
+        self.assertIs(b.paths, first)
+        b.team.paths = second
+        self.assertIs(b.paths, second)
+
+
 class PathServiceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -786,22 +786,56 @@ class TeamStrategy(TeamBrain):
         self.say(bot, "Coming from behind.", key="lurkgo", every=30.0)
 
     def _post_plant(self, bots, now: float) -> None:
-        """Hidden spots watching the charge; one watches the defenders' way in."""
+        """Play for time: hide a corner away from the charge, out of sight of the defenders' way
+        in, each next to a peek spot that sees the charge from a different side. The defuse
+        start is heard (``_on_sound``): then everyone swings at once."""
         bomb = self.director.bomb
-        spots = self._crossfire_on(bomb.pos, len(bots))
-        way_in = self._rotation_point(bomb.site) if bomb.site else None
-        phys = self.game.physics
-        watcher = None
-        for b, (s, crouch) in zip(bots, spots):
-            look = bomb.pos + Vec3(0, 0, 0.6)
-            if watcher is None and way_in is not None and \
-                    phys.ray_cast(s + Vec3(0, 0, 1.5), way_in + Vec3(0, 0, 1.5), MASK_SIGHT) is None:
-                watcher = b
-                look = way_in + Vec3(0, 0, 1.5)
-            b.brain.set_task(Task("guard", s, look=look, crouch=crouch, wait=True, tag="post"))
+        spots = self._hide_spots(bomb.pos, len(bots))
+        self.peeks = {}
+        for b, (hide, peek) in zip(bots, spots):
+            self.peeks[id(b)] = peek
+            look = peek + Vec3(0, 0, 1.5) if (peek - hide).length() > 0.5 else bomb.pos + Vec3(0, 0, 0.6)
+            b.brain.set_task(Task("guard", hide, look=look, wait=True, tag="post"))
         self.phase = "post"
         self.defuse_heard = None
-        self.say(bots[0], f"Charge planted at {bomb.site}. Crossfire on it!")
+        self.say(bots[0], f"Charge planted at {bomb.site}. Hide and listen for the defuse.")
+
+    def _hide_spots(self, target: Point3, n: int) -> list:
+        """(hide, peek) pairs: hide points 6-20 m from the charge that neither the charge nor the
+        defenders' way in can see, each with a peek point within 3.5 m that sees the charge."""
+        tm = self.tm
+        ti = tm.nearest(target)
+        if ti < 0:
+            return [(p, p) for p, _ in self._crossfire_on(target, n)]
+        rot = self._rotation_point(self.director.bomb.site) if self.director.bomb.site else None
+        ri = tm.nearest(rot) if rot is not None else -1
+        sees_bomb = tm.visible_mask(ti) | tm.visible_mask(ti, low=True)
+        seen_in = tm.visible_mask(ri) if ri >= 0 else np.zeros(tm.n, bool)
+        dx = tm._xy[:, 0] - target.x
+        dy = tm._xy[:, 1] - target.y
+        dist = np.hypot(dx, dy)
+        near_z = np.abs(tm._z - target.z) < 3.0
+        cand = np.flatnonzero(~sees_bomb & ~seen_in & (dist > 6.0) & (dist < 20.0) & near_z)
+        order = sorted(cand.tolist(), key=lambda i: abs(dist[i] - 11.0) + self.rng.random() * 4.0)[:60]
+        out, angs, used = [], [], []
+        for i in order:
+            peeks = [int(j) for j in tm.points_near(tm._pl[i], 3.5, max_dz=1.0) if sees_bomb[j] and dist[j] > 4.0]
+            if not peeks:
+                continue
+            j = min(peeks, key=lambda j: (tm._xy[j, 0] - tm._xy[i, 0]) ** 2 + (tm._xy[j, 1] - tm._xy[i, 1]) ** 2)
+            a = math.atan2(dy[j], dx[j])
+            if any(abs((a - b + math.pi) % (2 * math.pi) - math.pi) < math.radians(40) for b in angs):
+                continue
+            if any(math.hypot(tm._xy[i, 0] - u[0], tm._xy[i, 1] - u[1]) < 4.0 for u in used):
+                continue
+            out.append((Point3(*tm._pl[i]), Point3(*tm._pl[j])))
+            angs.append(a)
+            used.append(tm._pl[i])
+            if len(out) >= n:
+                break
+        if len(out) < n:
+            out += [(p, p) for p, _ in self._crossfire_on(target, n - len(out))]
+        return out
 
     def _on_sound(self, name: str, pos) -> None:
         """Positional sounds the team can hear: a defuse starting on the planted charge."""
@@ -824,19 +858,17 @@ class TeamStrategy(TeamBrain):
         self._stop_defuse(now)
 
     def _stop_defuse(self, now: float) -> None:
-        """Everyone onto the charge: those who see it turn to it, the others push in."""
+        """Everyone swings at once: to its peek spot, crosshair on the charge."""
         bomb = self.director.bomb
-        phys = self.game.physics
         target = bomb.pos + Vec3(0, 0, 0.5)
         for b in self.alive_bots():
             t = b.brain.task
             if t.tag != "post" or t.pos is None:
                 continue
-            if phys.ray_cast(t.pos + Vec3(0, 0, 1.0), target, MASK_SIGHT) is None:
-                b.brain.set_task(Task("guard", Point3(t.pos), look=target, crouch=t.crouch, wait=True,
-                                      tag="post"))
-            else:
-                b.brain.set_task(Task("move", self._snap(bomb.pos), look=target, wait=True, tag="retake"))
+            peek = getattr(self, "peeks", {}).get(id(b))
+            if peek is None or (peek - t.pos).length() < 0.5:
+                peek = self._snap(bomb.pos)
+            b.brain.set_task(Task("move", Point3(peek), look=target, wait=True, tag="retake"))
 
     def _crossfire_on(self, target: Point3, n: int) -> list:
         """Spots with a view of the charge, hidden from the defenders' way in, at different angles."""

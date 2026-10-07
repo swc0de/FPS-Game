@@ -553,7 +553,8 @@ class BrainV2:
         self.knowledge = BotKnowledge(bot)
         self.perception = PerceptionV2(bot, cfg.get("vision", {}), bot.profile, self.human, self.knowledge)
         bot.perception = self.perception
-        self.paths = team.paths
+        # ``team`` is the director's proxy for the bot's *current* side: its path service and
+        # field change at halftime, so they are looked up through it, never kept
         self.follower = FollowerV2(bot.nav, team.paths)
         self.bias_key = 1 + (bot.rng.randrange(3))
         self.follower.bias_key = self.bias_key
@@ -640,6 +641,10 @@ class BrainV2:
             return False
         self.throw = ThrowOrder(key, Point3(target), self.bot.now + within)
         return True
+
+    @property
+    def paths(self):
+        return self.team.paths
 
     @property
     def follower_active(self) -> bool:
@@ -739,6 +744,8 @@ class BrainV2:
         it.walk = it.crouch = it.jump = False
         it.trigger = False
         self.team.tick(now)
+        if self.follower.service is not self.team.paths:
+            self.follower.service = self.team.paths          # sides swapped at halftime
         self.perception.update(now, self.team.enemies())
         self.human.update(dt)
         if locked:
