@@ -86,7 +86,7 @@ class Mover:
         it.crouch = crouch
         it.jump = jump
         if walk is None:
-            walk = not run and b.danger_near(pos, 18.0) > 0.12
+            walk = not run and b.should_walk(pos)
         it.walk = bool(walk)
         if look is None:
             look = b.aim_policy.travel_point(pos, f)

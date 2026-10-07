@@ -111,11 +111,23 @@ class TeamStrategy(TeamBrain):
         self.site_seen = {}                    # site -> enemies seen near it early in past rounds
         self.spot_deaths: dict[int, int] = {}  # tactical point -> deaths holding it
         self.attacked: dict[str, int] = {}     # defenders: which site the attackers hit, per round
+        self.learned = np.zeros(self.tm.n)     # tactical points where enemies were seen early
         super().__init__(director, side)
         self.comms = Radio(self, self.tm, self.rng, self.cfg.get("radio"))
         self.gadgets = GadgetAIV2(self)
         for k in (1, 2, 3):
             self.paths.set_bias(k, self._bias(self.rng.randrange(1 << 30)))
+        # per-site points that need a full path search, once while loading (a search can
+        # take 16 ms, too long for a tick): the defenders' way in, the attackers' way back,
+        # and walking distances from each site over the tactical map
+        self._rot_pts, self._att_pts, self._site_dist = {}, {}, {}
+        for name, c in self.site_centers.items():
+            for spawn, out, d in (("defend", self._rot_pts, 9.0), ("attack", self._att_pts, 10.0)):
+                sp = self.spawn_center.get(spawn)
+                path = self.nav.find_path(c, sp) if sp is not None else None
+                out[name] = _along(path, d) if path else None
+            ci = self.tm.nearest(c)
+            self._site_dist[name] = self.tm._dijkstra([ci]) if ci >= 0 else None
         director.listeners.append(self._on_event)
         game.audio.listeners.append(self._on_sound)
 
@@ -160,6 +172,8 @@ class TeamStrategy(TeamBrain):
         self.retake_util = False
         self.fell_back: set[int] = set()
         self.early: dict[str, set] = {}
+        self.learned_now = np.zeros(self.tm.n)
+        self._learned_round: set = set()
         if hasattr(self, "comms"):
             self.comms.reset()
 
@@ -197,6 +211,9 @@ class TeamStrategy(TeamBrain):
                     p[f["i"]] += 1.0
         else:
             p += 1.5 * ((tm.kind & 4) != 0)
+        # where this team has seen enemies in earlier rounds (decayed per round)
+        if self.learned.any():
+            p += 4.0 * self.learned / max(float(self.learned.max()), 1.0)
         return p
 
     # ------------------------------------------------------------ per tick
@@ -206,6 +223,8 @@ class TeamStrategy(TeamBrain):
             return
         self._tick_t = now
         self.paths.update()
+        if self.tm._pending:
+            self.tm.update(self.game.physics, budget=24)     # sight lines through opened walls
         self.comms.update(now)
         while self._pending_radar and self._pending_radar[0][0] <= now:
             _, f = self._pending_radar.pop(0)
@@ -313,9 +332,14 @@ class TeamStrategy(TeamBrain):
             b.brain.knowledge.add(f)
 
     def _early(self, f: Fact) -> None:
-        """Remember which site enemies showed near in the first 40 s (adaptation)."""
+        """Remember where enemies showed in the first 40 s, and near which site (adaptation)."""
         if f.time - getattr(self, "live_t", 0.0) > 40.0 or f.enemy is None:
             return
+        if f.radius <= 1.5:
+            i = self.tm.nearest(f.pos)
+            if i >= 0 and (f.enemy, i) not in self._learned_round:
+                self._learned_round.add((f.enemy, i))
+                self.learned_now[i] += 1.0
         for name, z in self.sites.items():
             if zone_distance(z, f.pos) < 18.0:
                 self.early.setdefault(name, set()).add(f.enemy)
@@ -1012,21 +1036,40 @@ class TeamStrategy(TeamBrain):
                     if p is not None and b.brain.order_throw("smoke", p, 4.0):
                         break
 
+    def _site_of_point(self, p) -> str:
+        return min(self.sites, key=lambda n: zone_distance(self.sites[n], p))
+
     def _attack_side_point(self, target: Point3) -> Point3 | None:
         """A point on the attackers' way back to the charge, to smoke it off."""
-        aspawn = self.spawn_center.get("attack")
-        if aspawn is None:
-            return None
-        path = self.nav.find_path(target, aspawn)
-        if not path:
-            return None
-        return _along(path, 10.0)
+        return self._att_pts.get(self._site_of_point(target))
+
+    def _rotation_point(self, site: str) -> Point3 | None:
+        """Where defenders coming from their spawn enter the site (precomputed)."""
+        return self._rot_pts.get(site)
+
+    def _regroup_point(self, bot, bomb_pos: Point3) -> Point3:
+        """A spot about 16 m short of the site on the bot's side, out of the fight (the
+        retake gathers there)."""
+        p = bot.position()
+        if (p - bomb_pos).length() < 18.0:
+            return Point3(p)
+        dist = self._site_dist.get(self._site_of_point(bomb_pos))
+        if dist is None:
+            return Point3(p)
+        tm = self.tm
+        cand = np.flatnonzero((dist > 13.0) & (dist < 20.0))
+        if len(cand) == 0:
+            return Point3(p)
+        d = np.hypot(tm._xy[cand, 0] - p.x, tm._xy[cand, 1] - p.y) + 0.5 * np.abs(dist[cand] - 16.0)
+        q = tm.pos[int(cand[int(np.argmin(d))])]
+        return Point3(float(q[0]), float(q[1]), float(q[2]))
 
     # ---------------------------------------------------------------- misc
     def round_over(self) -> None:
         """Adaptation: remember where enemies showed early (attackers: defenders at sites)."""
         for name, keys in self.early.items():
             self.site_seen[name] = 0.6 * self.site_seen.get(name, 0) + len(keys)
+        self.learned = self.learned * 0.75 + self.learned_now
 
     def say(self, bot, text: str, key: str | None = None, every: float = 3.0) -> None:
         self.radio(bot, text, key=key, every=every)

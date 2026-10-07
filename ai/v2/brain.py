@@ -390,9 +390,10 @@ class Investigate(Action):
             goal = Point3(*f.pos)
             b.mover.to(goal, dt, ("push", round(goal.x), round(goal.y)), walk=True, look=look)
             return
-        if t.kind != "idle" and not b.arrived and now >= self.hold_until:
+        hurry = t.tag in ("rush", "retake", "flee", "plant") or (b.ctx.time_left or 99.0) < 30.0
+        if t.kind != "idle" and not b.arrived and (now >= self.hold_until or hurry):
             b.actions["task"].run(dt, now, look_override=look)     # carry on, crosshair on the threat
-            bot.intent.walk = True
+            bot.intent.walk = not hurry
             return
         b.look(look, dt, 0.8)
         bot.intent.walk = True
@@ -917,6 +918,21 @@ class BrainV2:
         self._danger_cache = (k, self.bot.now, val)
         return val
 
+    def should_walk(self, pos: Point3) -> bool:
+        """Walk (quiet, accurate) only close to where enemies probably are: a fresh fact within
+        20 m, or most of an enemy expected within 15 m; run when time is short or rushing."""
+        t = self.task
+        if t.tag in ("rush", "flee", "retake") or self.team.plan == "rush":
+            return False
+        left = self.ctx.time_left
+        if left is not None and left < 30.0:
+            return False
+        now = self.bot.now
+        for f in self.knowledge.recent(4.0, now):
+            if f.source != "damage" and math.hypot(f.pos[0] - pos.x, f.pos[1] - pos.y) < 20.0:
+                return True
+        return self.danger_near(pos, 15.0) > 0.55 + 0.35 * self.traits["aggression"]
+
     def likely_point(self, pos: Point3, fwd: Vec3 | None, max_range: float, cone: float, second: bool = False):
         """Head-height point of the likeliest place an enemy can appear in view."""
         i = self.tm.nearest(pos)
@@ -1177,7 +1193,8 @@ class BrainV2:
             return
         site = d.site_at(bot.position())
         if not self.arrived:
-            if self.mover.to(t.pos, dt, ("plant", id(t)), walk=None, via=t.via) or \
+            walk = False if t.tag == "rush" or self.team.plan == "rush" else None
+            if self.mover.to(t.pos, dt, ("plant", id(t)), walk=walk, via=t.via) or \
                     (site is not None and (t.pos - bot.position()).length() < 1.5):
                 self.arrived = True
             self.plant_t = 0.0
