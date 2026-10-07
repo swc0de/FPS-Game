@@ -409,9 +409,12 @@ class Investigate(Action):
             return
         key = (round(f.pos[0] / 6.0), round(f.pos[1] / 6.0))
         if key != self.key:
-            # new information: stop and hold the angle for a moment (the patient ones longer)
+            # new information close by: stop and hold the angle for a moment (the patient ones
+            # longer); a distant or vague callout only turns the crosshair
             self.key = key
-            self.hold_until = now + bot.rng.uniform(0.6, 1.2) + 1.0 * b.traits["patience"]
+            d = math.hypot(f.pos[0] - bot.position().x, f.pos[1] - bot.position().y)
+            near = d < (12.0 if f.source == "radio" else 20.0)
+            self.hold_until = now + (bot.rng.uniform(0.6, 1.2) + 1.0 * b.traits["patience"] if near else 0.0)
         pushing = b.traits["aggression"] > 0.6 and f.source in ("sound", "radio") and b.ctx.allies >= b.ctx.enemies
         if pushing and (Point3(*f.pos) - bot.position()).length() > 6.0:
             goal = Point3(*f.pos)
