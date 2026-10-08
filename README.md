@@ -11,7 +11,7 @@ weapons and characters are original. Third-party art is CC0 only.
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
 > holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
 > aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
-> you confirm the switch: against them v2 wins 37 % of rounds (target 70 %, not reached; results in
+> you confirm the switch: against them v2 wins 42 % of rounds (target 70 %, not reached; results in
 > [docs/results/](docs/results/README.md)). See "Milestone 8 - what to test" below.
 >
 > Milestone 7 added the polish:

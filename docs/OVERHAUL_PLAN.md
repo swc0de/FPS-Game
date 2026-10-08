@@ -931,10 +931,13 @@ be added later behind the same event interface if you want.
     search budget 260 → 140 expansions per tick.
   * All weapon and gadget models built at match load (first uses cost up to 264 ms in a tick, for
     both brains).
-  * Result: AI 1.51 → 1.32 ms per tick, AI p99 4.21 → 3.51 ms (rule met); live tick 3.95 / 6.52 ms
-    (Phase 0 budget 3.97 / 6.64 met; 1.36 × / 1.32 × the same-session legacy control). Head-to-head
-    37 % (30/82, CI 27-47) against 43 % before (CI 33-54): not distinguishable, the halved path
-    budget is the likely cost if there is one. `docs/results/`, ROADMAP decisions.
+  * A bug found by measuring: personal space checked every fourth tick only moved stacked bots a
+    quarter as far (the step lasts one tick); stacking rose from 1.08 to 2.98 per round and the
+    head-to-head read 37 %. The step is now held between checks: stacking 1.38, head-to-head 42 %
+    (32/77, CI 31-53; 43 % before the pass).
+  * Result: AI p99 3.90 ms (rule met), live tick 4.42 / 7.31 ms against a same-session legacy 3.15 / 5.55 (1.40 × / 1.32 ×; budget 1.3 ×). Trades (11.9 %) and unseen deaths
+    (9.2 %) are worse than before the pass; the halved path budget is the likely cause, listed as
+    a decision with its measured cost. `docs/results/`, ROADMAP.
 
 **In progress** (branch `claude/upbeat-maxwell-p1h773-soldiers`)
 * B1 done: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4`
