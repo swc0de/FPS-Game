@@ -874,7 +874,6 @@ be added later behind the same event interface if you want.
 * A8 tooling: `botinfo <name>`, `overlay`, `belief` (radar); bot demo `BOT_DEMO_TICKS`,
   `BOT_DEMO_NORENDER`, `BOT_DEMO_CONSOLE`, team plan and phase in the trace.
 
-**In progress**
 * A9 tuning against legacy, full matches with sides swapped (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`,
   three in parallel). What the measurements found, in order:
   1. Long-range duels that never ended and executes held up by a breach (first 28 rounds: v2 36 %,
@@ -902,12 +901,29 @@ be added later behind the same event interface if you want.
   10. Fairness: one run showed 2 v2 audit violations (shooting an enemy gadget the team had not
      seen in a view cone); fixed. Movement recovers from being stuck (another route, then a step to
      open ground).
-  Head-to-head so far: about 30 % before items 3-6, 42 % (67 rounds, CI 31-54) after 3-5; with 6
-  attack 57 % and defence still weak (17-40 % depending on seed).
+  11. Post-plant: 11 of 15 plants were defused in one batch. Attackers now hide out of sight of the
+     charge on their own side, each next to a peek that sees it, and all swing when they hear the
+     defuse start.
+  12. A holder seen from beyond its gun's reach (an SMG at 40 m) gets out of sight instead of
+     trading at a range it loses.
+  Head-to-head by batch: about 30 % before items 3-6; 42 % (67 rounds) after 3-5; 55 % (65 rounds,
+  CI 43-67) after 9; 28 % (36 rounds, defence 1 of 20) on the next; **final code 43 % (88 rounds,
+  CI 33-54; attack 25/48, defence 13/40)**. Time-boxed as you chose: the reached number is
+  reported as is (`docs/results/`).
+* A9 results: [docs/results/README.md](results/README.md). The behaviour metrics improve except
+  stacking (1.08 per round, target ≤ 0.1) and one stuck defuser in 48 rounds; audit 0.
+  Performance is over budget: the tick costs about 1.35-1.4 × legacy's (budget 1.3 ×). A round of
+  cuts (think cap, smaller path budget, slower team upkeep, cached roster, palette culling) made
+  no measurable difference measured back to back, so it was not kept. Decision to confirm in
+  ROADMAP.
+
+**In progress**
+* B1: the 47-bone game skeleton (`gameplay/skeleton.py`), linear blend skinning with 4 weights
+  and a `mat3x4` palette in every pass, the mannequin ported onto it (branch
+  `claude/upbeat-maxwell-p1h773-soldiers`).
 
 **Next**
-* Defence tuning, utility timing, the head-to-head over 60+ rounds with sides swapped, behaviour
-  metrics, performance budget, README / ROADMAP, PR A.
+* B2-B7 as in section 5; PR A for your review.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

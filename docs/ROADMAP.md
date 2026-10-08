@@ -9,7 +9,7 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
-| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done** (awaiting your review) |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, win-rate target not reached (awaiting your review) |
 | 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | next |
 
 ## Milestone 8 - delivered
@@ -51,6 +51,65 @@ brain is unchanged and still the default until you confirm). Plan, measurements 
   per-bot traits.
 * **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
   head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.
+
+### Milestone 8 results
+
+Full tables and files: [docs/results/](results/README.md).
+
+* **Against legacy: 43 % of rounds** (38 of 88, 95 % CI 33-54; four full matches with sides
+  swapped, same aim and reaction numbers). The target was 70 %. Attack is even (25 of 48), defence
+  is the gap (13 of 40). Earlier batches on earlier commits ranged from 28 % to 55 %, mostly
+  through defence, so one batch still carries about ±10 points.
+* **Behaviour** (v2 against v2, same seeds as the baseline):
+  * deaths while reloading 20 % → 10 %;
+  * trades 13.6 % → 16.1 % of deaths;
+  * time seen by an enemy 28 % → 20 %;
+  * hits per shot 40 % → 49 %;
+  * flashes blind an enemy 41-46 % of the time;
+  * no attack plan above 25 % of rounds;
+  * unseen deaths about the same (8.4 % → 8.0 %).
+* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 14,000
+  times a match.
+* **Performance**:
+  * live tick mean 4.21 ms and p95 7.29 ms against a budget of 3.97 / 6.64 ms (1.3 × Phase 0);
+  * 542 ticks with AI decisions over 4 ms (legacy 282), worst 14.6 ms (legacy 41.1 ms).
+  * Not met (below).
+
+### Milestone 8 decisions to confirm
+
+1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
+   the Milestone 5 bots 70 % of the time; it loses defence rounds. Options:
+   * a) accept it and make v2 the default now (legacy stays behind `--ai legacy`);
+   * b) keep legacy as the default and spend another tuning round on defence (retake and
+     aggressive setups lose most; anchors give up sites without a trade);
+   * c) both: v2 default now, defence tuning as a follow-up.
+   I recommend c): the measured gap is on one side, and v2 is better than legacy on most
+   behaviour metrics (reloading deaths, trades, exposure, hits per shot, utility). It is worse
+   on clumping.
+2. **How the head-to-head was run.** Full matches through `--demo bots` with
+   `BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64` (same 64 Hz game logic, no drawing), four seeds instead
+   of the planned three seeds × two starting sides, because a full match is about 22 rounds.
+3. **Performance budget.** v2 costs about 1.35-1.4 × legacy's tick (budget 1.3 ×). Most of it is
+   the AI, about +0.9 ms per 64 Hz tick on this slow CPU. A first round of cuts made no measurable
+   difference. Options:
+   * a) accept about 1.4 × for v2 (game logic stays under a third of the 15.6 ms tick here);
+   * b) a deeper optimisation pass before v2 becomes the default (batching the per-bot queries
+     across the team, cheaper team upkeep), then measure performance and the head-to-head again;
+   * c) re-define the spike rule as "AI p99 ≤ 4 ms". Neither brain meets "no tick over 4 ms" on this
+     CPU (legacy 282 ticks, v2 542; v2's p99 is 4.2 ms).
+   I recommend b) together with c).
+4. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
+
+### Milestone 8 known issues
+
+* **Win rate 43 %**, defence 33 % (above).
+* **Stacking**: 1.08 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move as
+  a group, and clumps of three rose from about 22 to 38 a match.
+* **Stuck**: one defuser at B site in 48 rounds (target 0; legacy had 2). Path-follower
+  micro-stucks rose from about 80 to 314 a match: bots in groups block each other for under a
+  second.
+* **Performance**: about 1.35-1.4 × legacy per tick (budget 1.3 ×); 542 ticks with AI over 4 ms.
+  Timings on this VM vary by about ±10 % between runs.
 
 ## Milestone 7 - delivered
 
