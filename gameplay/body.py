@@ -46,9 +46,10 @@ from panda3d.core import (BoundingSphere, LODNode, LVecBase4f, NodePath, Point3,
                           Vec3)
 
 from engine.geometry import MeshBuilder, build_skinned
+from engine.physics import EXACT_RAY, segment_capsule
 from gameplay import skeleton as sk
 from gameplay.lean import Lean
-from gameplay.hitboxes import CAPSULES, PARTS, HitboxRig, capsule_mount
+from gameplay.hitboxes import CAPSULES, PARTS, HitboxRig, capsule_length, capsule_mount
 from weapons.models import shared_weapon_model
 
 UPPER_ARM = sk.UPPER_ARM
@@ -101,6 +102,10 @@ def _mirrored() -> list:
 
 
 MIRRORED = _mirrored()
+
+
+_CAPSULE_MOUNTS = {c.name: capsule_mount(c) for c in CAPSULES}             # capsule frame on its bone
+_CAPSULE_HALF = {c.name: capsule_length(c) / 2 for c in CAPSULES}
 HEAD_BONES = np.array([B["neck"], B["head"]], np.int64)     # collapsed for a camera at the eyes
 LOD_SWITCH = ((0.0, 14.0), (14.0, 40.0), (40.0, 100000.0))   # metres from the camera, per LOD
 PACK_POS, PACK_HPR = (0.0, -0.045, -0.04), (0.0, 90.0, 0.0)   # the charge on the plate carrier's back, keypad out
@@ -222,6 +227,18 @@ class CharacterBody:
             np_.setMat(capsule_mount(c))
             self.hit_mounts[c.name] = np_
         self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.hit_mounts, parts=CAPSULES)
+        # the exact capsule test (engine/physics.py EXACT_RAY) in the pose Bullet last synced
+        self._node_hpr, self._node_pos = self.pose.hpr.copy(), self.pose.pos.copy()
+        self._step_pose = None
+        self._step_lists = None
+        self._step_bones: dict = {}
+        self._step_ends: dict = {}
+        for part, np_ in self.rig.parts:
+            if part.b is not None:
+                np_.node().setPythonTag(EXACT_RAY, lambda a, b, c=part: self._exact_capsule(c, a, b))
+        self._hooks = getattr(game.physics, "before_step", None)
+        if self._hooks is not None:
+            self._hooks.append(self._snapshot)
         self.weapon_model = None
         self.weapon_key = ""
         self.pack_model = None
@@ -396,6 +413,9 @@ class CharacterBody:
                 node = nodes.get(i)
                 if node is not None:
                     node.setPosHpr(*pos[i], *hpr[i])
+            idx = list(P.dirty)
+            self._node_hpr[idx] = P.hpr[idx]           # what the nodes hold (the exact capsule test)
+            self._node_pos[idx] = P.pos[idx]
             P.dirty.clear()
         if self._bones is None:
             return
@@ -403,6 +423,42 @@ class CharacterBody:
             self._palette_stale = True
             return
         self._solve_palette()
+
+    # ------------------------------------------------------------ exact hit capsules
+    def _snapshot(self) -> None:
+        """Just before the physics step, where Bullet syncs the kinematic hit capsules from the
+        scene graph: keep that pose, so the exact test checks the capsules shots see (shots test
+        the pose of the last step)."""
+        self._step_pose = (self.root.getMat(), self._node_hpr.copy(), self._node_pos.copy())
+        self._step_lists = None
+        self._step_bones = {}
+        self._step_ends = {}
+
+    def _exact_capsule(self, c, start: Point3, end: Point3):
+        if self._step_pose is None:
+            self._snapshot()                       # created since the last step: Bullet has its pose now
+        ends = self._step_ends.get(c.name)
+        if ends is None:
+            m = _CAPSULE_MOUNTS[c.name] * self._step_bone(B[c.bone])
+            half = _CAPSULE_HALF[c.name]
+            a, b = m.xformPoint(Point3(0, 0, -half)), m.xformPoint(Point3(0, 0, half))
+            ends = (a[0], a[1], a[2]), (b[0], b[1], b[2])
+            self._step_ends[c.name] = ends
+        return segment_capsule(start, end, ends[0], ends[1], c.radius)
+
+    def _step_bone(self, i: int):
+        """Bone ``i`` in world space at the last step, composed the way the nodes are (Panda's
+        own transforms), only along the chain a capsule needs."""
+        m = self._step_bones.get(i)
+        if m is None:
+            if self._step_lists is None:
+                self._step_lists = (self._step_pose[1].tolist(), self._step_pose[2].tolist())
+            hpr, pos = self._step_lists
+            p = int(sk.PARENT[i])
+            parent = self._step_bone(p) if p >= 0 else self._step_pose[0]
+            m = TransformState.makePosHpr(Point3(*pos[i]), Vec3(*hpr[i])).getMat() * parent
+            self._step_bones[i] = m
+        return m
 
     def _solve_palette(self) -> None:
         world = self.pose.solve()
@@ -589,6 +645,7 @@ class CharacterBody:
         if self.weapon_model is not None:
             self.weapon_model.root.show()
         self.rig.set_enabled(True)
+        self._snapshot()
 
     def hide(self) -> None:
         if self.visible:
@@ -785,5 +842,9 @@ class CharacterBody:
 
     def destroy(self) -> None:
         self._drop_ragdoll()
+        if self._hooks is not None and self._snapshot in self._hooks:
+            self._hooks.remove(self._snapshot)
+        for part, np_ in self.rig.parts:
+            np_.node().clearPythonTag(EXACT_RAY)
         self.rig.destroy()
         self.root.removeNode()

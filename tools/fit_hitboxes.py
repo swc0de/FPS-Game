@@ -10,6 +10,10 @@ capsule is a 2D stadium and a sphere a disc, so the areas need no ray casts. For
 (standing, crouched) and view (front, side) it prints the area per hit group against the
 baseline (docs/baseline/soldier_stats.json) and how well the capsules cover the visible
 soldier: the visible soldier with no capsule behind it, and capsule with no soldier in front.
+The outline is exact; which of two overlapping capsules is in front is approximate where one
+slants in depth, so the split between hit groups can differ from the game's. The game's own
+numbers are the ray tests in ``soldier_sheet.py --stats`` (exact since the capsule re-test in
+engine/physics.py).
 
     python tools/fit_hitboxes.py masks.npz                   # report the current capsules
     python tools/fit_hitboxes.py masks.npz --fit visual      # fit the radii to the soldier

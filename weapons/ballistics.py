@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from panda3d.core import Point3, Vec3
 
 from engine import paths
-from engine.physics import MASK_BULLETS, GROUP_HITBOX, PhysicsWorld, surface_of
+from engine.physics import EXACT_RAY, MASK_BULLETS, GROUP_HITBOX, PhysicsWorld, surface_of
 from gameplay.damage import DamageInfo, DamageResult, falloff
 
 MAX_CROSSINGS = 4
@@ -97,6 +97,17 @@ class Ballistics:
         for key, (t_in, node, pos, nrm) in entries.items():
             hitbox = bool((node.getIntoCollideMask() & GROUP_HITBOX).getWord())
             if hitbox and ignore_owner is not None and node.getPythonTag("owner") is ignore_owner:
+                continue
+            if node.hasPythonTag(EXACT_RAY):
+                # a hit capsule: Bullet's entry and exit are approximate (engine/physics.py)
+                r = node.getPythonTag(EXACT_RAY)(origin, end)
+                if r is None:
+                    continue
+                t_in, t_out, pos, nrm, out_pos, out_nrm = r
+                if out_pos is None:
+                    out.append(_Interval(t_in, 1.0, node, pos, nrm, None, None, hitbox))
+                else:
+                    out.append(_Interval(t_in, t_out, node, pos, nrm, out_pos, out_nrm, hitbox))
                 continue
             ex = exits.get(key)
             if ex is None:
