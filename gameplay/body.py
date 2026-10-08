@@ -39,6 +39,7 @@ player needs hit boxes but no body).
 from __future__ import annotations
 
 import math
+import zlib
 
 import numpy as np
 from panda3d.core import (BoundingSphere, LODNode, LVecBase4f, NodePath, Point3, PTA_LVecBase4f, TransformState,
@@ -203,6 +204,7 @@ class CharacterBody:
             np_.setHpr(*hpr)
             self.parts[part.name] = np_
         self.gun = self.nodes[B["weapon"]]
+        self._lod_n = zlib.crc32(name.encode()) & 3          # staggers the animation LOD ticks
         self._bones = None
         self._rows = None
         if visible:
@@ -237,7 +239,7 @@ class CharacterBody:
         self._sig = None
         self.active_clips: dict[str, dict] = {}      # name -> {t, dur, loop, stop}
         self.flinch = (0.0, 0.0, 0.0)                # pitch, roll, time left
-        self._apply()
+        self._apply(force=True)
         if visible:
             self.root.hide()
 
@@ -376,10 +378,11 @@ class CharacterBody:
         """Collapse the head (and helmet, goggles) for a camera at this body's eyes."""
         if on != self.first_person:
             self.first_person = on
-            self._apply()
+            self._apply(force=True)
 
-    def _apply(self) -> None:
-        """Copy the pose to the hit box and weapon nodes, and solve the skinning palette."""
+    def _apply(self, force: bool = False) -> None:
+        """Copy the pose to the hit box and weapon nodes (every tick: gameplay), and solve the
+        skinning palette when it is due (``_palette_due``: drawing only)."""
         P = self.pose
         if P.dirty:
             hpr, pos = P.hpr.tolist(), P.pos.tolist()
@@ -391,12 +394,31 @@ class CharacterBody:
             P.dirty.clear()
         if self._bones is None:
             return
+        if not force and not self._palette_due():
+            return
         world = P.solve()
         if self.first_person:
             world = world.copy()
             world[HEAD_BONES] = np.matmul(COLLAPSE, world[HEAD_BONES])
         sk.palette_rows(world, self._rows[:sk.N_BONES])
         memoryview(self._bones).cast("B")[:] = self._rows.tobytes()
+
+    def _palette_due(self) -> bool:
+        """Animation LOD (OVERHAUL_PLAN 4.4): the skinning palette is only for drawing, so it is
+        solved every tick within 14 m of the camera, every second tick to 40 m and every fourth
+        beyond or behind the camera (where only its shadow can show). The hit box nodes are posed
+        every tick regardless, so gameplay never depends on the view."""
+        self._lod_n += 1
+        cam = getattr(self.game, "camera", None)
+        if cam is None or self.first_person:
+            return True
+        rel = self.root.getPos(cam)                 # camera space: +y is ahead
+        d2 = rel.lengthSquared()
+        if d2 > 9.0 and rel.y < -1.5:
+            return self._lod_n % 4 == 0             # behind the camera: only its shadow can show
+        if d2 < 14.0 * 14.0:
+            return True
+        return self._lod_n % (2 if d2 < 40.0 * 40.0 else 4) == 0
 
     # ------------------------------------------------------------ weapon
     def set_weapon(self, model_key: str | None, cls: str = "rifle") -> None:
@@ -524,7 +546,7 @@ class CharacterBody:
         self.pose.set_hpr(B["root"], 0, 0, 0)
         self.pose.set_pos(B["root"], 0, 0, 0)
         self.flash = 0.0
-        self._apply()
+        self._apply(force=True)
         if self.visible:
             self.root.show()
             self.root.setShaderInput("u_emission", LVecBase4f(0, 0, 0, 0))

@@ -76,12 +76,13 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
     for _ in range(max_rounds):
         if len(f) <= target:
             break
-        # unique edges
+        # unique edges (one int64 key per edge: much faster than unique rows, same order)
         e = np.sort(np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1)
-        e = np.unique(e, axis=0)
-        a, b = e[:, 0], e[:, 1]
+        key = np.unique(e[:, 0] * n + e[:, 1])
+        all_edges = np.stack([key // n, key % n], axis=1)
+        a, b = all_edges[:, 0], all_edges[:, 1]
         ok = (grp[a] == grp[b]) & ~locked[a] & ~locked[b]
-        e, a, b = e[ok], a[ok], b[ok]
+        e, a, b = all_edges[ok], a[ok], b[ok]
         if len(e) == 0:
             break
         qs = q[a] + q[b]
@@ -97,8 +98,7 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
         order = np.argsort(best, kind="stable")
         budget = max(1, (len(f) - target) // 2 + 1)
         nbrs = [set() for _ in range(n)]
-        for x, y in np.unique(np.sort(np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1),
-                              axis=0).tolist():
+        for x, y in all_edges.tolist():
             nbrs[x].add(y)
             nbrs[y].add(x)
         taken = np.zeros(n, bool)
