@@ -228,7 +228,6 @@ class CharacterBody:
             self.hit_mounts[c.name] = np_
         self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.hit_mounts, parts=CAPSULES)
         # the exact capsule test (engine/physics.py EXACT_RAY) in the pose Bullet last synced
-        self._node_hpr, self._node_pos = self.pose.hpr.copy(), self.pose.pos.copy()
         self._step_pose = None
         self._step_lists = None
         self._step_bones: dict = {}
@@ -413,9 +412,6 @@ class CharacterBody:
                 node = nodes.get(i)
                 if node is not None:
                     node.setPosHpr(*pos[i], *hpr[i])
-            idx = list(P.dirty)
-            self._node_hpr[idx] = P.hpr[idx]           # what the nodes hold (the exact capsule test)
-            self._node_pos[idx] = P.pos[idx]
             P.dirty.clear()
         if self._bones is None:
             return
@@ -429,7 +425,12 @@ class CharacterBody:
         """Just before the physics step, where Bullet syncs the kinematic hit capsules from the
         scene graph: keep that pose, so the exact test checks the capsules shots see (shots test
         the pose of the last step)."""
-        self._step_pose = (self.root.getMat(), self._node_hpr.copy(), self._node_pos.copy())
+        hpr, pos = self.pose.hpr.copy(), self.pose.pos.copy()
+        for i in self.pose.dirty:                   # set since the nodes were posed: Bullet syncs the nodes
+            node = self.nodes.get(i)
+            if node is not None:
+                hpr[i], pos[i] = node.getHpr(), node.getPos()
+        self._step_pose = (self.root.getMat(), hpr, pos)
         self._step_lists = None
         self._step_bones = {}
         self._step_ends = {}

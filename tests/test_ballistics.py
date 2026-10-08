@@ -178,6 +178,13 @@ class ExactCapsuleTests(unittest.TestCase):
         self.assertIn(node, [h.node for h in game.physics.ray_cast_all(s, e, GROUP_HITBOX)])
         game.physics.step(1 / 64)
         self.assertNotIn(node, [h.node for h in game.physics.ray_cast_all(s, e, GROUP_HITBOX)])
+        # a pose set but not yet copied to the nodes is not what Bullet synced either
+        body.root.setPos(0, 0, 0)
+        game.physics.step(1 / 64)
+        from gameplay import skeleton as sk
+        body.pose.set_hpr(sk.INDEX["thigh_l"], 0.0, 70.0, 0.0)
+        game.physics.step(1 / 64)
+        self.assertIn(node, [h.node for h in game.physics.ray_cast_all(s, e, GROUP_HITBOX)])
 
 
 if __name__ == "__main__":
