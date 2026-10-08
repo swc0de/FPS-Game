@@ -119,6 +119,24 @@ class SharedModelTests(unittest.TestCase):
         finally:
             wm.build_weapon_model = orig
 
+    def test_prewarm_builds_ahead_so_first_use_does_not(self):
+        import weapons.models as wm
+        calls = []
+        orig = wm.build_weapon_model
+
+        def counting(*a, **kw):
+            calls.append(a[1])
+            return orig(*a, **kw)
+        wm.build_weapon_model = counting
+        try:
+            mats = SimpleNamespace(get=lambda key: FakeMaterial())
+            self.assertEqual(wm.prewarm(mats, [("pistol_p9", "all"), ("pistol_p9", "all")]), 1)
+            self.assertEqual(calls, ["pistol_p9"])
+            wm.shared_weapon_model(mats, "pistol_p9", NodePath("parent"))
+            self.assertEqual(calls, ["pistol_p9"])              # the first use only copies
+        finally:
+            wm.build_weapon_model = orig
+
 
 if __name__ == "__main__":
     unittest.main()

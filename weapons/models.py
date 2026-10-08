@@ -86,6 +86,30 @@ def build_weapon_model(materials, key: str, parent: NodePath | None = None, name
 _PROTOTYPES: dict[tuple, WeaponModel] = {}
 
 
+def _prototype(materials, key: str, flatten: str) -> WeaponModel:
+    pkey = (id(materials), key, flatten)
+    proto = _PROTOTYPES.get(pkey)
+    if proto is None:
+        proto = build_weapon_model(materials, key, None, f"proto:{key}")
+        if flatten == "all":
+            proto.root.flattenStrong()
+            proto.groups = {"body": proto.root}
+        elif flatten == "body" and proto.groups.get("body") is not None:
+            proto.groups["body"].flattenStrong()
+        _PROTOTYPES[pkey] = proto
+    return proto
+
+
+def prewarm(materials, keys) -> int:
+    """Build the prototypes of ``keys`` ((model key, flatten) pairs) now, at load, so that no
+    first use (a bot buying a new gun, a gadget deployed for the first time in round 6) builds
+    one inside the 64 Hz tick. Returns how many were built."""
+    n = len(_PROTOTYPES)
+    for key, flatten in keys:
+        _prototype(materials, key, flatten)
+    return len(_PROTOTYPES) - n
+
+
 def shared_weapon_model(materials, key: str, parent: NodePath, name: str | None = None,
                         flatten: str = "all") -> WeaponModel:
     """A copy of a model that is built only once per key.
@@ -100,16 +124,7 @@ def shared_weapon_model(materials, key: str, parent: NodePath, name: str | None 
     ``flatten``: "all" merges everything per material (third-person guns,
     pickups); "body" merges only the static body group and keeps the other
     groups (an LED) as separate nodes; "none" keeps the hierarchy."""
-    pkey = (id(materials), key, flatten)
-    proto = _PROTOTYPES.get(pkey)
-    if proto is None:
-        proto = build_weapon_model(materials, key, None, f"proto:{key}")
-        if flatten == "all":
-            proto.root.flattenStrong()
-            proto.groups = {"body": proto.root}
-        elif flatten == "body" and proto.groups.get("body") is not None:
-            proto.groups["body"].flattenStrong()
-        _PROTOTYPES[pkey] = proto
+    proto = _prototype(materials, key, flatten)
     root = proto.root.copyTo(parent)
     root.setName(name or f"weapon:{key}")
     if flatten == "all":
