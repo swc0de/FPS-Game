@@ -508,9 +508,9 @@ def assemble(app: Appearance, style: str) -> list[Mesh]:
         for s, hsh in hands.items():
             pieces.append(mesh_lods(hsh, 0.0028, SHARE["hands"] / 2, "skin", "body"))
     # clothing
-    pieces.append(mesh_lods(C.shirt(body, app.seed, look.sleeves), 0.009, SHARE["shirt"], "shirt", "body",
+    pieces.append(mesh_lods(C.shirt(body, app.seed, look.sleeves), 0.012, SHARE["shirt"], "shirt", "body",
                             tag_shape=body))
-    pieces.append(mesh_lods(C.trousers(body, app.seed), 0.009, SHARE["trousers"], "trousers", "body",
+    pieces.append(mesh_lods(C.trousers(body, app.seed), 0.012, SHARE["trousers"], "trousers", "body",
                             tag_shape=body))
     pieces.append(mesh_lods(C.boots(body, app.seed), 0.006, SHARE["boots"], "boots", "body", tag_shape=body))
     # gear

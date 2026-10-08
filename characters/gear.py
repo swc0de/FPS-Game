@@ -83,7 +83,7 @@ def plate_carrier(body: S.Shape, style: str, layout: dict) -> list[Piece]:
     def carrier_fn(p):
         return S.smin(carrier(p) - 0.0012 * value_noise(p, 0.02, 3), band(p), 0.01)
 
-    pieces.append(Piece("carrier", Field(carrier_fn, lo, hi), "carrier", 0.006))
+    pieces.append(Piece("carrier", Field(carrier_fn, lo, hi), "carrier", 0.008))
     if bulky:
         side = _shape(*[S.box((0.165 * sx, 0.0, 1.13), (0.02, 0.07, 0.08), 0.012, "torso") for sx in (-1, 1)])
         pieces.append(Piece("side_plates", side, "carrier", 0.006))
