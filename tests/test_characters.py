@@ -284,6 +284,50 @@ class TwistTests(unittest.TestCase):
             got = self._rings("upperarm_r", "lowerarm_r", self._roll("lowerarm_r", "upperarm_twist_r", roll))
             self.assertTrue((got / rest >= 0.7).all(), (roll, got / rest))
 
+
+class HitCapsuleAlignmentTests(unittest.TestCase):
+    """OVERHAUL_PLAN 7, B hitboxes: the visual and hit box head centres coincide within 1 cm, and
+    every capsule's axis runs inside the body it belongs to."""
+
+    def _head_capsule(self):
+        from gameplay.hitboxes import CAPSULES
+        return np.array(next(c for c in CAPSULES if c.name == "head").a)
+
+    def test_procedural_head_centre(self):
+        from characters import human as H
+        sh, lm = H.head()
+        p = np.random.default_rng(3).uniform(*sh.bounds(), (60000, 3))
+        inside = p[sh(p) < 0]
+        skull = inside[(inside[:, 2] > 1.50) & (np.abs(inside[:, 0]) < 0.07)]
+        front = skull[(np.abs(skull[:, 0]) < 0.03) & (skull[:, 2] > lm["eyes"][0][2] + 0.01)]
+        centre = np.array([0.0, 0.5 * (skull[:, 1].min() + front[:, 1].max()),
+                           0.5 * (skull[:, 2].max() + 1.503)])        # crown to chin (human.head)
+        self.assertLess(np.linalg.norm(centre - self._head_capsule()), 0.01, centre)
+
+    def test_makehuman_head_centres(self):
+        from characters import makehuman as MH
+        data = MH.data_dir()
+        if data is None:
+            self.skipTest("MPFB2 files not downloaded")
+        for name in ("Kestrel", "Sable", "Anvil", "Thorn"):
+            head = MH.head_region(data, appearance(name, 1))
+            v = head["verts"][head["weights"][:, sk.INDEX["head"]] > 0.95]
+            brow = v[(np.abs(v[:, 0]) < 0.03) & (v[:, 2] > head["landmarks"]["eyes"][0][2] + 0.01)]
+            centre = np.array([0.0, 0.5 * (v[:, 1].min() + brow[:, 1].max()), 0.5 * (v[:, 2].max() + v[:, 2].min())])
+            self.assertLess(np.linalg.norm(centre - self._head_capsule()), 0.01, (name, centre))
+
+    def test_capsule_axes_run_inside_the_body(self):
+        from characters import human as H
+        from gameplay.hitboxes import CAPSULES
+        body = H.body()
+        head, _ = H.head()
+        for c in CAPSULES:
+            a = np.array(c.a)
+            b = np.array(c.b) if c.b is not None else a
+            pts = a + np.linspace(0.0, 1.0, 9)[:, None] * (b - a)
+            d = np.minimum(body(pts), head(pts))
+            self.assertTrue((d < 0.0).all(), (c.name, d.round(3)))
+
 class MakeHumanTests(unittest.TestCase):
     def setUp(self):
         from characters import makehuman as MH

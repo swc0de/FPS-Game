@@ -81,7 +81,8 @@ def _capsules() -> tuple:
     from gameplay import skeleton as sk
     P = lambda n: tuple(float(x) for x in sk.REST_WORLD[sk.INDEX[n], 3, :3])
     out = [
-        Capsule("head", "head", "head", (0.0, 0.01, 1.635), None, 0.112),
+        # centred on the visible head (crown to chin, back to brow), MakeHuman and procedural alike
+        Capsule("head", "head", "head", (0.0, 0.011, 1.625), None, 0.112),
         Capsule("neck", "chest", "neck", P("neck"), (0.0, 0.005, P("neck")[2] + 0.085), 0.06),
         Capsule("chest", "chest", "spine_03", (-0.045, 0.0, 1.33), (0.045, 0.0, 1.33), 0.17),
         Capsule("stomach", "stomach", "spine_01", (-0.025, 0.0, 1.06), (0.025, 0.0, 1.06), 0.125),
