@@ -56,16 +56,19 @@ def _boundary_vertices(f: np.ndarray, n: int) -> np.ndarray:
 
 
 def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarray | None = None,
-             attrs: dict | None = None, max_rounds: int = 200, flip_cos: float = 0.5):
+             attrs: dict | None = None, max_rounds: int = 200, flip_cos: float = 0.5,
+             importance: np.ndarray | None = None):
     """Simplify to about ``target`` triangles.
 
     groups: (v,) int, collapses only join vertices of the same group; open
     borders are locked. attrs: {name: (v, ...) array} carried along.
-    Returns (verts, faces, attrs)."""
+    importance: (v,) cost multiplier, > 1 keeps a region denser (the face's
+    eyes and brows, where paint needs the vertices). Returns (verts, faces, attrs)."""
     v = np.asarray(verts, np.float64).copy()
     f = np.asarray(faces, np.int64).copy()
     attrs = {k: np.asarray(a).copy() for k, a in (attrs or {}).items()}
     n = len(v)
+    imp = np.ones(n) if importance is None else np.asarray(importance, np.float64).copy()
     grp = np.zeros(n, np.int64) if groups is None else np.asarray(groups, np.int64).copy()
     locked = _boundary_vertices(f, n)
     q = _quadrics(v, f)
@@ -86,7 +89,7 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
         h = np.concatenate([cands, np.ones(cands.shape[:2] + (1,))], axis=2)
         cost = np.einsum("eki,eij,ekj->ek", h, qs, h)
         pick = np.argmin(cost, axis=1)
-        best = cost[np.arange(len(e)), pick]
+        best = cost[np.arange(len(e)), pick] * np.maximum(imp[a], imp[b])
         newpos = cands[np.arange(len(e)), pick]
         # greedy independent set, cheapest first: an edge collapses only if its ends share exactly
         # two neighbours (the link condition: anything else pinches the surface), and nothing in
@@ -148,6 +151,7 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
             remap[kb] = ka
         v[ka] = kp
         q[ka] = q[ka] + q[kb]
+        imp[ka] = np.maximum(imp[ka], imp[kb])
         f = remap[f]
         f = f[(f[:, 0] != f[:, 1]) & (f[:, 1] != f[:, 2]) & (f[:, 2] != f[:, 0])]
     # compact

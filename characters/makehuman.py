@@ -329,5 +329,9 @@ def head_region(data: Path, app) -> dict | None:
     corners = idx[np.argsort(-np.abs(off[:, 0]))[:6]]
     mouth_z = float(v[corners, 2].mean())
     centre = 0.5 * (eyes[0] + eyes[1]) - np.array([0.0, 0.069, 0.008])     # where human.head's eyes sit
-    lm = {"eyes": eyes, "eye_radius": 0.0118, "centre": centre, "mouth_z": mouth_z}
+    lm = {"eyes": eyes, "eye_radius": 0.0118, "centre": centre, "mouth_z": mouth_z, "mh": True,
+          "hairline_front": 0.066, "brow_dz": 0.018, "brow_soft": 1.8}               # MakeHuman foreheads are taller
+    # the ears: the vertices the ear-size targets move (hair must not grow out of them)
+    ear = np.unique(np.concatenate([target(str(data), f"ears/{s}-ear-scale-incr.target.gz")[0] for s in ("l", "r")]))
+    lm["ears"] = v[ear]
     return {"verts": v[used], "tris": remap[tris], "weights": gw, "landmarks": lm}

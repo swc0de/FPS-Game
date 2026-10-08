@@ -150,38 +150,54 @@ def head_paint(app: Appearance, lm: dict):
             u = 1 - _soft(np.linalg.norm((v - ec) * np.array([1.0, 1.0, 1.8]) - np.array([0, 0.004, -0.03]), axis=1),
                           0.0, 0.016)
             out *= 1 - u[:, None] * 0.12
-        # brows: a band above each eye socket, thinner towards the temples
-        for sx, ec in zip((-1, 1), lm["eyes"]):
+        # brows: a band above each eye socket, thinner towards the temples (on MakeHuman faces
+        # wider and softer: their vertices are further apart than a brow is tall)
+        soft_k = lm.get("brow_soft", 1.0)
+        for sx, ec in zip((-1, 1), sorted(lm["eyes"], key=lambda e: e[0])):
             dx = (v[:, 0] - ec[0]) * sx
-            arch = ec[2] + 0.0155 + 0.003 * (1 - (dx / 0.02) ** 2)
-            thick = 0.0042 if not female else 0.003
-            band = (1 - _soft(np.abs(v[:, 2] - arch), thick * 0.5, thick)) * (1 - _soft(np.abs(dx), 0.018, 0.026)) * \
-                _soft(r[:, 1], 0.05, 0.065)
+            arch = ec[2] + lm.get("brow_dz", 0.0155) + 0.003 * (1 - (dx / 0.02) ** 2)
+            thick = (0.0042 if not female else 0.003) * lm.get("brow_scale", 1.0)
+            band = (1 - _soft(np.abs(v[:, 2] - arch), thick * 0.5 * soft_k, thick * soft_k)) * \
+                (1 - _soft(np.abs(dx), 0.018, 0.026 + 0.006 * (soft_k - 1))) * _soft(r[:, 1], 0.05, 0.065)
+            band = band / soft_k ** 0.5                     # spread wider, darker less
             out = out * (1 - band[:, None]) + band[:, None] * (hair / skin) * 0.9
         # beard shadow or stubble on the jaw, chin and upper lip
-        if not female:
+        if not female and lm.get("mh"):
+            # MakeHuman faces: the beard area from the face's own landmarks, painted in the hair
+            # colour (a beard layer, if any, grows out of it, so its edge never shows skin)
+            full = _mh_beard_region(v, lm, "full_beard")
+            area = _mh_beard_region(v, lm, app.facial_hair) if app.facial_hair in ("moustache",) else full
+            region = 1.0 - _soft(area, -0.014, 0.004)
+            amount = {"none": 0.16, "stubble": 0.5, "moustache": 0.9, "short_beard": 0.92,
+                      "full_beard": 0.95}.get(app.facial_hair, 0.4)
+            if app.facial_hair == "moustache":                      # and a shadow on the jaw
+                shadow = (1.0 - _soft(full, -0.014, 0.004)) * 0.16
+                out = out * (1 - shadow[:, None]) + shadow[:, None] * (hair / skin) * 0.8
+            out = out * (1 - region[:, None] * amount) + region[:, None] * amount * (hair / skin) * 0.85
+        elif not female:
             jaw = (1 - _soft(r[:, 2], -0.055, -0.03)) * _soft(r[:, 2], -0.15, -0.13) * _soft(r[:, 1], -0.01, 0.02)
             upper_lip = (1 - _soft(np.abs(v[:, 2] - (mz + 0.014)), 0.004, 0.009)) * (1 - _soft(np.abs(r[:, 0]), 0.02, 0.03)) \
                 * _soft(r[:, 1], 0.07, 0.085)
             region = np.clip(jaw + upper_lip, 0, 1) * (1 - lips)
             amount = {"none": 0.18, "stubble": 0.55, "moustache": 0.25}.get(app.facial_hair, 0.4)
             out = out * (1 - region[:, None] * amount) + region[:, None] * amount * (hair / skin) * 0.8
-        # scalp: shaved shows a shadow, buzzed shows the hair colour
-        hairline = _hairline(r)
-        scalp = _soft(r[:, 2] - hairline, -0.004, 0.006)
-        amount = {"shaved": 0.2, "buzz": 0.85}.get(app.hair, 0.6)
+        # scalp: shaved shows a shadow, buzzed shows the hair colour, and under longer hair the
+        # scalp is the hair colour (the layer's edge then never shows skin)
+        hairline = _hairline(r, lm.get("hairline_front", 0.052))
+        scalp = _soft(r[:, 2] - hairline, -0.016, 0.0 if app.hair not in ("shaved", "buzz") else 0.006)
+        amount = {"shaved": 0.2, "buzz": 0.85}.get(app.hair, 1.0)
         out = out * (1 - scalp[:, None] * amount) + scalp[:, None] * amount * (hair / skin)
         return out
 
     return paint
 
 
-def _hairline(r: np.ndarray) -> np.ndarray:
+def _hairline(r: np.ndarray, front_z: float = 0.052) -> np.ndarray:
     """Height (relative to the head centre) of the hairline above each point's direction."""
     front = _soft(r[:, 1], 0.0, 0.06)          # 1 at the forehead
     back = _soft(-r[:, 1], 0.02, 0.08)         # 1 at the nape
     side = 1 - np.maximum(front, back)
-    return front * 0.052 + side * 0.012 + back * -0.075
+    return front * front_z + side * 0.012 + back * -0.075
 
 
 def hair_shape(app: Appearance, head_shape: S.Shape, covered: bool) -> S.Shape | None:
@@ -271,7 +287,7 @@ def _top4(dense: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return order.astype(np.float32), w.astype(np.float32)
 
 
-def mesh_cavity(v: np.ndarray, n: np.ndarray, radius: float = 0.02) -> np.ndarray:
+def mesh_cavity(v: np.ndarray, n: np.ndarray, radius: float = 0.02, tris: np.ndarray | None = None) -> np.ndarray:
     """Occlusion for an explicit mesh (no distance field): how much of the surface within
     ``radius`` rises above each vertex's tangent plane (eye sockets, nostrils, ears, the
     mouth's corners)."""
@@ -282,16 +298,26 @@ def mesh_cavity(v: np.ndarray, n: np.ndarray, radius: float = 0.02) -> np.ndarra
         near = np.where((dist > 1e-6) & (dist < radius), 1.0 - dist / radius, 0.0)
         cos = np.einsum("bnk,bk->bn", d, n[s:s + 512]) / np.maximum(dist, 1e-9)
         occ[s:s + 512] = (near * np.clip(cos - 0.1, 0.0, None)).sum(axis=1) / np.maximum(near.sum(axis=1), 1e-9)
-    return np.clip(1.0 - 1.1 * occ, 0.35, 1.0).astype(np.float32)
+    if tris is not None:
+        # smooth over the one-ring a few times: a decimated LOD keeps one sample per vertex, and
+        # unsmoothed samples show as blotches
+        e = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+        e = np.concatenate([e, e[:, ::-1]])
+        deg = np.bincount(e[:, 0], minlength=len(v)).astype(np.float64)
+        for _ in range(4):
+            occ = 0.5 * occ + 0.5 * np.bincount(e[:, 0], weights=occ[e[:, 1]], minlength=len(v)) / np.maximum(deg, 1)
+    return np.clip(1.0 - 0.9 * occ, 0.45, 1.0).astype(np.float32)
 
 
 def explicit_lods(v: np.ndarray, f: np.ndarray, dense: np.ndarray, share: float, slot: str, paint=None,
-                  ao: np.ndarray | None = None, lods: int = len(LOD_BUDGETS)) -> list:
+                  ao: np.ndarray | None = None, lods: int = len(LOD_BUDGETS),
+                  importance: np.ndarray | None = None) -> list:
     """``mesh_lods`` for a mesh that already exists (the MakeHuman head and the layers grown
     from it): simplified in a chain, weights and occlusion carried along; LODs past ``lods``
     are left out."""
     from characters.mesher import vertex_normals
-    attrs = {"w": dense, "ao": ao if ao is not None else np.ones(len(v), np.float32)}
+    attrs = {"w": dense, "ao": ao if ao is not None else np.ones(len(v), np.float32),
+             "imp": importance if importance is not None else np.ones(len(v))}
     out = []
     for k, total in enumerate(LOD_BUDGETS):
         if k >= lods:
@@ -299,7 +325,7 @@ def explicit_lods(v: np.ndarray, f: np.ndarray, dense: np.ndarray, share: float,
             continue
         target = max(int(share * total), 16)
         if len(f) > target:
-            v, f, attrs = decimate(v, f, target, attrs=attrs)
+            v, f, attrs = decimate(v, f, target, attrs=attrs, importance=attrs["imp"])
         n = vertex_normals(v, f)
         joints, weights = _top4(attrs["w"])
         col = np.ones((len(v), 4), np.float32)
@@ -319,70 +345,114 @@ def _sub(v: np.ndarray, f: np.ndarray, keep_tri: np.ndarray):
     return used, remap[f]
 
 
-def mh_hair(app: Appearance, head: dict, covered: bool) -> list:
-    """Hair as a layer grown off the MakeHuman scalp: the scalp's triangles above the hairline,
-    pushed out along the normals by the style's thickness, thinning to nothing at the hairline
-    (where the scalp paint carries the colour) and under a helmet or cap. None at the far LOD."""
+def _layer(skin: Mesh, offset: np.ndarray, keep: np.ndarray, slot: str, any_vertex: bool = False) -> Mesh | None:
+    """A layer grown off one LOD of the skin: its triangles where ``keep`` holds for all three
+    vertices, each vertex pushed out along its normal by ``offset`` (negative: under the skin),
+    the skin's weights and occlusion. Grown per LOD from the same triangles, so the line where it
+    comes out of the skin is smooth at every LOD. ``any_vertex``: keep triangles with any vertex
+    inside (features narrower than a triangle, such as brows)."""
+    inside = keep[skin.tris]
+    used, tris = _sub(skin.pos, skin.tris, inside.any(axis=1) if any_vertex else inside.all(axis=1))
+    if not len(tris):
+        return None
+    col = np.ones((len(used), 4), np.float32)
+    col[:, 3] = skin.col[used, 3]
+    return Mesh(skin.pos[used] + skin.nrm[used] * offset[used, None], skin.nrm[used], col, skin.joints[used],
+                skin.weights[used], np.full(len(used), SLOT[slot], np.float32), tris)
+
+
+def mh_hair(app: Appearance, head: dict, skin: list, covered: bool) -> list:
+    """Hair as a layer grown off the MakeHuman scalp (``skin``: the head's LODs): pushed out
+    along the normals by the style's thickness, coming out of the hair-coloured scalp paint just
+    above the hairline, and thin under a helmet or cap. None at the far LOD (paint only)."""
     if app.hair in ("shaved", "buzz"):
         return []
-    from characters.mesher import vertex_normals
-    v, f, dense = head["verts"], head["tris"], head["weights"]
-    n = vertex_normals(v, f)
-    r = v - head["landmarks"]["centre"]
-    above = r[:, 2] - _hairline(r)
-    used, tris = _sub(v, f, (above[f] > -0.004).all(axis=1))
-    top, sides = {"crew": (0.011, 0.005), "short": (0.016, 0.009), "bun": (0.008, 0.007)}[app.hair]
-    ru, au = r[used], above[used]
-    up = _soft(ru[:, 2], -0.02, 0.07)
-    taper = _soft(au, -0.002, 0.012)
-    thick = (sides + (top - sides) * up) * taper
-    thick += 0.0015 * C.value_noise(v[used], 0.012, app.seed + 31) * taper
-    if covered:
-        thick *= 1.0 - 0.9 * _soft(ru[:, 2], 0.015, 0.03)
-    pos = v[used] + n[used] * (thick + 0.0006)[:, None]
-    pieces = [explicit_lods(pos, tris, dense[used], SHARE["hair"], "hair", lods=2)]
+    lm = head["landmarks"]
+    top, sides = {"crew": (0.011, 0.004), "short": (0.016, 0.006), "bun": (0.008, 0.005)}[app.hair]
+    ears = lm.get("ears")
+    lods = []
+    for k, m in enumerate(skin):
+        if k >= 2 or m is None:
+            lods.append(None)
+            continue
+        r = m.pos - lm["centre"]
+        # how far each vertex is from the ears: the layer thins to nothing within 2.5 cm of them
+        if ears is not None and len(ears):
+            d_ear = np.min(np.linalg.norm(m.pos[:, None, :] - ears[None, ::3, :], axis=2), axis=1)
+        else:
+            d_ear = np.full(len(m.pos), 1.0)
+        above = r[:, 2] - _hairline(r, lm["hairline_front"])
+        up = _soft(r[:, 2], -0.02, 0.07)
+        taper = _soft(above, -0.004, 0.014)
+        thick = (sides + (top - sides) * up) * taper
+        thick = thick + 0.0015 * C.value_noise(m.pos, 0.012, app.seed + 31) * taper
+        if covered:
+            thick = thick * (1.0 - 0.9 * _soft(r[:, 2], 0.015, 0.03))
+        thick = thick * _soft(d_ear, 0.008, 0.025)
+        lods.append(_layer(m, thick - 0.0018, (above > -0.008) & (d_ear > 0.004), "hair"))
+    pieces = [lods]
     if app.hair == "bun":
-        z = head["landmarks"]["centre"][2] + 0.035
+        v = head["verts"]
+        z = lm["centre"][2] + 0.035
         band = v[np.abs(v[:, 2] - z) < 0.006]
-        back = band[:, 1].min() if len(band) else head["landmarks"]["centre"][1] - 0.09
+        back = band[:, 1].min() if len(band) else lm["centre"][1] - 0.09
         bun = S.Shape(prims=[S.ell((0.0, back - 0.012, z), (0.032, 0.03, 0.03), "head")])
         pieces.append(mesh_lods(bun, 0.004, SHARE["hair"] * 0.3, "hair", "head"))
     return pieces
 
 
-def mh_beard(app: Appearance, head: dict) -> list:
-    """Beard or moustache as a layer grown off the MakeHuman jaw, chin and upper lip."""
-    if app.build.female or app.facial_hair not in ("short_beard", "full_beard", "moustache"):
-        return []
-    from characters.mesher import vertex_normals
-    v, f, dense = head["verts"], head["tris"], head["weights"]
-    lm = head["landmarks"]
-    n = vertex_normals(v, f)
-    r = v - lm["centre"]
+def _mh_beard_region(v: np.ndarray, lm: dict, kind: str) -> np.ndarray:
+    """Signed region (< 0 inside) of a beard style on a MakeHuman face: below the cheek line
+    (sideburn to the corner of the mouth), above the throat, in front of the ears, not the lips."""
+    eye_z = float(np.mean([e[2] for e in lm["eyes"]]))
+    eye_y = float(np.mean([e[1] for e in lm["eyes"]]))
     mz = lm["mouth_z"]
-    if app.facial_hair == "moustache":
-        region = np.maximum(np.abs(v[:, 2] - (mz + 0.012)) - 0.006, np.abs(r[:, 0]) - 0.026)
-        region = np.maximum(region, 0.08 - r[:, 1])
-    else:
-        region = np.maximum(r[:, 2] + 0.03, -0.155 - r[:, 2])
-        region = np.maximum(region, -0.005 - r[:, 1])
-        lips = np.maximum(np.abs(v[:, 2] - mz) - 0.007, np.abs(r[:, 0]) - 0.02)
-        region = np.maximum(region, -lips)
-    used, tris = _sub(v, f, (region[f] < 0.004).all(axis=1))
-    if not len(tris):
+    x, y, z = np.abs(v[:, 0]), v[:, 1] - eye_y, v[:, 2]          # y: 0 at the eyes, negative backwards
+    lips = np.maximum(np.abs(z - mz) - 0.0065, x - 0.021)          # < 0 on the lips
+    if kind == "moustache":
+        region = np.maximum(np.abs(z - (mz + 0.011)) - 0.006, x - 0.026)
+        return np.maximum(region, -0.005 - y)
+    front = _soft(y, -0.05, 0.005)                                 # 0 at the sideburn, 1 at the mouth
+    cheek = (eye_z - 0.016) * (1.0 - front) + (mz + 0.02) * front
+    region = np.maximum(z - cheek, (mz - 0.08) - z)                # below the cheek line, above the throat
+    region = np.maximum(region, -0.075 - y)                        # in front of the ears
+    return np.maximum(region, -lips)
+
+
+def mh_beard(app: Appearance, head: dict, skin: list) -> list:
+    """A full beard as a layer grown off the MakeHuman jaw and chin (``skin``: the head's LODs),
+    coming out of the painted beard area (shorter beards and moustaches are paint: head_paint)."""
+    if app.build.female or app.facial_hair != "full_beard":
         return []
-    thick = {"short_beard": 0.004, "full_beard": 0.009, "moustache": 0.004}[app.facial_hair]
-    t = thick * (1.0 - _soft(region[used], -0.008, 0.002)) + 0.0012 * C.value_noise(v[used], 0.008, app.seed + 41)
-    pos = v[used] + n[used] * (np.maximum(t, 0.0) + 0.0005)[:, None]
-    return [explicit_lods(pos, tris, dense[used], SHARE["hair"] * 0.6, "hair", lods=2)]
+    lods = []
+    for k, m in enumerate(skin):
+        if k >= 2 or m is None:
+            lods.append(None)
+            continue
+        region = _mh_beard_region(m.pos, head["landmarks"], "full_beard")
+        inside = _soft(-region, 0.0, 0.012)
+        t = 0.009 * inside + 0.0012 * C.value_noise(m.pos, 0.008, app.seed + 41) * inside
+        lods.append(_layer(m, t - 0.0018, region < 0.004, "hair"))
+    return [lods]
 
 
 def mh_head(app: Appearance, head: dict) -> list:
     """The MakeHuman skin: painted like the procedural head, with mesh occlusion."""
     from characters.mesher import vertex_normals
     v, f = head["verts"], head["tris"]
-    ao = mesh_cavity(v, vertex_normals(v, f))
-    return explicit_lods(v, f, head["weights"], SHARE["head"], "skin", paint=head_paint(app, head["landmarks"]), ao=ao)
+    lm = head["landmarks"]
+    ao = mesh_cavity(v, vertex_normals(v, f), tris=f)
+    # keep the eyes, brows and mouth dense: their paint (brows, lips) needs the vertices
+    eyes = np.asarray(lm["eyes"])
+    d = np.min(np.linalg.norm((v[:, None, :] - eyes[None]) * np.array([0.8, 1.0, 1.2]), axis=2), axis=1)
+    mouth = np.linalg.norm((v - np.array([0.0, eyes[0][1] + 0.025, lm["mouth_z"]])) * np.array([0.7, 1.0, 1.4]), axis=1)
+    importance = 1.0 + 3.0 * (1.0 - _soft(d, 0.02, 0.04)) + 2.0 * (1.0 - _soft(mouth, 0.02, 0.035))
+    if app.hair != "shaved":                       # and the hairline, where hair colour meets skin
+        r = v - lm["centre"]
+        above = np.abs(r[:, 2] - _hairline(r, lm["hairline_front"]))
+        importance += 2.0 * (1.0 - _soft(above, 0.01, 0.025))
+    return explicit_lods(v, f, head["weights"], SHARE["head"], "skin", paint=head_paint(app, lm), ao=ao,
+                         importance=importance)
 
 
 HAIR_SRGB = None
@@ -413,9 +483,10 @@ def assemble(app: Appearance, style: str) -> list[Mesh]:
         mh = makehuman.head_region(makehuman.data_dir(), app)
     if mh is not None:
         lm = mh["landmarks"]
-        pieces.append(mh_head(app, mh))
-        pieces.extend(mh_hair(app, mh, covered))
-        pieces.extend(mh_beard(app, mh))
+        skin = mh_head(app, mh)
+        pieces.append(skin)
+        pieces.extend(mh_hair(app, mh, skin, covered))
+        pieces.extend(mh_beard(app, mh, skin))
     elif look.headgear != "balaclava":
         pieces.append(mesh_lods(head_shape, 0.0035, SHARE["head"], "skin", "body", paint=head_paint(app, lm)))
         hs = hair_shape(app, head_shape, covered)
