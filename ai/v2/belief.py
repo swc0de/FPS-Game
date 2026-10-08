@@ -32,7 +32,7 @@ brains use it to pre-aim, clear corners in order, decide where it is safe
 to walk, and rotate.
 
 Updates are time-sliced: ``step`` advances one field by one hop per call
-(the team strategy calls it every third tick), so no single tick does all
+(the team strategy calls it every fourth tick), so no single tick does all
 the work.
 """
 from __future__ import annotations
@@ -57,15 +57,21 @@ class Field:
         self.ready[idx] = np.minimum(self.ready[idx], t)
 
     def relax(self, graph, iters: int = 2) -> None:
-        src, dst, dst_u, starts, length = graph
+        src, dst, dst_u, starts, length = graph[:5]
         if len(src) == 0:
             return
-        travel = length / self.speed
+        travel, half, a, b = _scratch(graph, self.speed)
         for _ in range(iters):
             # an enemy possible at src walks to dst; it cannot be in dst before dst was
             # last seen empty, and needs part of the way after that (points are ~3 m regions)
-            cand = np.maximum(self.ready[src] + travel, self.seen[dst] + 0.5 * travel)
-            best = np.minimum.reduceat(cand, starts)
+            # (the same arithmetic as max(ready[src] + travel, seen[dst] + 0.5 travel), into
+            # preallocated buffers: this runs every few ticks over every edge)
+            np.take(self.ready, src, out=a)
+            a += travel
+            np.take(self.seen, dst, out=b)
+            b += half
+            np.maximum(a, b, out=a)
+            best = np.minimum.reduceat(a, starts)
             np.minimum(self.ready[dst_u], best, out=best)
             self.ready[dst_u] = best
 
@@ -205,6 +211,17 @@ class PossibilityField:
         return now - self.general.seen
 
 
+def _scratch(graph, speed: float):
+    """Per graph and speed: the travel time of every edge, half of it, and two work buffers."""
+    cache = graph[5]
+    hit = cache.get(speed)
+    if hit is None:
+        travel = graph[4] / speed
+        hit = (travel, 0.5 * travel, np.empty_like(travel), np.empty_like(travel))
+        cache[speed] = hit
+    return hit
+
+
 def _sorted_graph(tm):
     """Edges sorted by destination, with the start index of every destination group."""
     src = tm.edge_src
@@ -212,12 +229,12 @@ def _sorted_graph(tm):
     length = tm.edge_len
     if len(src) == 0:
         z = np.zeros(0, np.int64)
-        return z, z, z, z, np.zeros(0)
+        return z, z, z, z, np.zeros(0), {}
     order = np.argsort(dst, kind="stable")
     src, dst, length = src[order], dst[order], length[order]
     first = np.r_[True, dst[1:] != dst[:-1]]
     starts = np.flatnonzero(first)
-    return src, dst, dst[starts], starts, length
+    return src, dst, dst[starts], starts, length, {}
 
 
 def view_mask(tm, eye, yaw: float, fov: float, max_range: float = 60.0, smokes=()) -> np.ndarray:
@@ -227,11 +244,12 @@ def view_mask(tm, eye, yaw: float, fov: float, max_range: float = 60.0, smokes=(
     i = tm.nearest((eye[0], eye[1], eye[2] - 1.6))
     if i < 0:
         return np.zeros(tm.n, bool)
-    m = tm.visible_mask(i) & tm.in_view(eye, yaw, fov, max_range)
+    m = tm.seen_in_view(i, eye, yaw, fov, max_range)
     m[i] = True
     for c, r in smokes:
-        dx = tm._xy[:, 0] - eye[0]
-        dy = tm._xy[:, 1] - eye[1]
+        idx = np.flatnonzero(m)
+        dx = tm._xy[idx, 0] - eye[0]
+        dy = tm._xy[idx, 1] - eye[1]
         dist = np.hypot(dx, dy)
         cx, cy = c[0] - eye[0], c[1] - eye[1]
         cd = math.hypot(cx, cy)
@@ -241,5 +259,5 @@ def view_mask(tm, eye, yaw: float, fov: float, max_range: float = 60.0, smokes=(
         half = math.asin(min(r / cd, 1.0))
         cosang = (dx * cx + dy * cy) / np.maximum(dist * cd, 1e-6)
         behind = (cosang > math.cos(half)) & (dist > cd - r)
-        m &= ~behind
+        m[idx[behind]] = False
     return m

@@ -105,7 +105,7 @@ class TeamStrategy(TeamBrain):
         self.cfg = load_bot_config().get("v2", {})
         game = director.game
         self.tm = game.tactical_map()
-        self.paths = PathService(director.nav, budget=int(self.cfg.get("path_budget", 260)))
+        self.paths = PathService(director.nav, budget=int(self.cfg.get("path_budget", 140)))
         self.enemy_side = "defend" if side == "attack" else "attack"
         self.field = PossibilityField(self.tm, self.enemy_side)
         self.roles: dict[int, str] = {}
@@ -175,6 +175,11 @@ class TeamStrategy(TeamBrain):
         self._pending_radar: list[tuple[float, Fact]] = []
         self._tick_t = -1.0
         self._tick_n = 0
+        self._think_t = -1.0
+        self._thinks = 0
+        self._stagger = 0 if self.side == "attack" else 1
+        self._bots_t = -1.0
+        self._bots: list = []
         self._observe_i = 0
         self._danger = None
         self._danger_t = -1.0
@@ -256,16 +261,18 @@ class TeamStrategy(TeamBrain):
             table = (1.0 + 3.0 * np.minimum(per, 1.0)).tolist()
             self.paths.set_bias(4, table.__getitem__)
         bots = self.alive_bots()
-        if bots and self._tick_n % 2 == 0 and self.director.match.phase in ("prep", "live", "planted"):
-            # one bot's view every other tick (each bot's every ~10 ticks with five)
+        phase = self._tick_n + self._stagger
+        if bots and phase % 3 == 0 and self.director.match.phase in ("prep", "live", "planted"):
+            # one bot's view every third tick (each bot's every ~15 ticks with five); the two
+            # teams' upkeep is staggered so it never lands on the same tick
             b = bots[self._observe_i % len(bots)]
             self._observe_i += 1
             mask = self._view(b)
             if mask is not None:
                 self.field.observe(mask, now)
                 self._danger = None
-        if self._tick_n % 3 == 0:
-            # one field one hop (about 3 m) every third tick: with six fields that still
+        if phase % 4 == 2:
+            # one field one hop (about 3 m) every fourth tick: with six fields that still
             # spreads faster than anyone runs
             self.field.step(now)
             self._danger = None
@@ -293,8 +300,30 @@ class TeamStrategy(TeamBrain):
         return self._danger
 
     # ----------------------------------------------------------- roster
+    def bots(self) -> list:
+        """This side's bots in the round. Every brain asks several times a tick, so the list is
+        built once per tick (sides and the round only change between ticks; ``reset_round``
+        drops it too)."""
+        now = self.game.loop.time
+        if now != self._bots_t:
+            self._bots_t = now
+            self._bots = [b for b in self.director.bots if b.side == self.side and b.active]
+        return self._bots
+
+    THINKS_PER_TICK = 3
+
+    def think_slot(self, now: float) -> bool:
+        """May one more of the team's bots re-score its actions this tick?"""
+        if now != self._think_t:
+            self._think_t = now
+            self._thinks = 0
+        if self._thinks >= self.THINKS_PER_TICK:
+            return False
+        self._thinks += 1
+        return True
+
     def mates_of(self, bot) -> list:
-        return [b for b in self.alive_bots() if b is not bot]
+        return [b for b in self.bots() if b.alive and b is not bot]
 
     def humans_alive(self) -> int:
         bots = set(map(id, self.director.bots))
@@ -392,7 +421,7 @@ class TeamStrategy(TeamBrain):
         i = tm.nearest(pos)
         if i < 0 or yaw is None:
             return None
-        vis = tm.visible_mask(i) & tm.in_view((pos.x, pos.y, pos.z), yaw, 40.0, 35.0)
+        vis = tm.seen_in_view(i, (pos.x, pos.y, pos.z), yaw, 40.0, 35.0)
         dx = tm._xy[:, 0] - pos.x
         dy = tm._xy[:, 1] - pos.y
         dist = np.hypot(dx, dy)

@@ -305,6 +305,8 @@ class TacticalMap:
         self._near_cache: dict = {}
         for i, p in enumerate(self._pl):
             self._grid.setdefault((int(p[0] // 4.0), int(p[1] // 4.0)), []).append(i)
+        self._grid_np = {k: np.array(v, np.int64) for k, v in self._grid.items()}
+        self._vis_cache: dict = {}
         self.edge_src = self.edges[:, 0].astype(np.int64) if len(self.edges) else np.zeros(0, np.int64)
         self.edge_dst = self.edges[:, 1].astype(np.int64) if len(self.edges) else np.zeros(0, np.int64)
         self.edge_len = self.edges[:, 2].astype(np.float64) if len(self.edges) else np.zeros(0)
@@ -383,7 +385,17 @@ class TacticalMap:
         return bool(row[j >> 3] & (0x80 >> (j & 7)))
 
     def visible_mask(self, i: int, low: bool = False) -> np.ndarray:
-        return np.unpackbits((self.vis_low if low else self.vis)[i])[:self.n].astype(bool)
+        """Points seen from point i, unpacked (recent rows are kept: bots ask about the same
+        few points many times a second). Callers must not modify the result."""
+        key = (i, low)
+        m = self._vis_cache.get(key)
+        if m is None:
+            if len(self._vis_cache) > 256:
+                self._vis_cache.clear()
+            m = np.unpackbits((self.vis_low if low else self.vis)[i])[:self.n].astype(bool)
+            m.flags.writeable = False
+            self._vis_cache[key] = m
+        return m
 
     def in_view(self, eye, yaw_deg: float, fov_deg: float, max_range: float = 60.0) -> np.ndarray:
         """Points inside a horizontal view cone from eye (no occlusion test)."""
@@ -395,6 +407,21 @@ class TacticalMap:
         cosang = (dx * fx + dy * fy) / np.maximum(dist, 1e-3)
         return ((cosang >= math.cos(math.radians(fov_deg * 0.5))) | (dist < 2.0)) & (dist <= max_range)
 
+    def seen_in_view(self, i: int, eye, yaw_deg: float, fov_deg: float, max_range: float = 60.0) -> np.ndarray:
+        """``visible_mask(i) & in_view(...)``, with the cone tested only on the visible points
+        (the same arithmetic per point, a fraction of the work)."""
+        idx = np.flatnonzero(self.visible_mask(i))
+        dx = self._xy[idx, 0] - eye[0]
+        dy = self._xy[idx, 1] - eye[1]
+        dist = np.hypot(dx, dy)
+        h = math.radians(yaw_deg)
+        fx, fy = -math.sin(h), math.cos(h)
+        cosang = (dx * fx + dy * fy) / np.maximum(dist, 1e-3)
+        ok = ((cosang >= math.cos(math.radians(fov_deg * 0.5))) | (dist < 2.0)) & (dist <= max_range)
+        m = np.zeros(self.n, bool)
+        m[idx[ok]] = True
+        return m
+
     def cover_toward(self, i: int, dx: float, dy: float, high: bool = False) -> bool:
         """Is point i covered (within 1.2 m) in the direction (dx, dy)?"""
         k = int(round((math.degrees(math.atan2(dy, dx)) % 360.0) / (360.0 / N_DIRS))) % N_DIRS
@@ -403,8 +430,22 @@ class TacticalMap:
         return bool(bits & ((1 << k) | (1 << ((k + 1) % N_DIRS)) | (1 << ((k - 1) % N_DIRS))))
 
     def points_near(self, p, radius: float, max_dz: float = 2.0) -> np.ndarray:
-        d = np.hypot(self._xy[:, 0] - p[0], self._xy[:, 1] - p[1])
-        return np.flatnonzero((d <= radius) & (np.abs(self._z - p[2]) <= max_dz))
+        """Indices (ascending) of the points within ``radius`` (2D) and ``max_dz``. Small circles
+        take candidates from the 4 m buckets they touch, then the same exact test."""
+        if radius > 6.0:                       # a wide circle touches most buckets: scan everything
+            d = np.hypot(self._xy[:, 0] - p[0], self._xy[:, 1] - p[1])
+            return np.flatnonzero((d <= radius) & (np.abs(self._z - p[2]) <= max_dz))
+        px, py = float(p[0]), float(p[1])
+        cells = [self._grid_np.get((x, y))
+                 for x in range(int((px - radius) // 4.0), int((px + radius) // 4.0) + 1)
+                 for y in range(int((py - radius) // 4.0), int((py + radius) // 4.0) + 1)]
+        cells = [c for c in cells if c is not None]
+        if not cells:
+            return np.zeros(0, np.int64)
+        cand = np.concatenate(cells)
+        cand.sort()
+        d = np.hypot(self._xy[cand, 0] - p[0], self._xy[cand, 1] - p[1])
+        return cand[(d <= radius) & (np.abs(self._z[cand] - p[2]) <= max_dz)]
 
     def site_name(self, i: int) -> str:
         s = int(self.site_id[i])
@@ -419,6 +460,7 @@ class TacticalMap:
         if panel is None:
             self.vis[:] = self._base_vis
             self._pending = []
+            self._vis_cache.clear()
             return
         rows = self._soft_by_panel.get(panel.index)
         if rows is not None:
@@ -443,6 +485,8 @@ class TacticalMap:
         return done
 
     def _set(self, i: int, j: int, on: bool) -> None:
+        self._vis_cache.pop((i, False), None)
+        self._vis_cache.pop((j, False), None)
         for a, b in ((i, j), (j, i)):
             if on:
                 self.vis[a, b >> 3] |= np.uint8(0x80 >> (b & 7))

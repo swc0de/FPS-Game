@@ -620,6 +620,9 @@ class BrainV2:
         self._preaim_pt = None
         self._preaim_until = 0.0
         self._danger_cache = (None, 0.0, 0.0)
+        self._walk_t = -1.0
+        self._walk = False
+        self._space_n = 0
 
     # -------------------------------------------------------------- orders
     def set_task(self, task: Task, force: bool = False) -> None:
@@ -757,7 +760,9 @@ class BrainV2:
         if locked:
             self._locked_look(dt, now)
             return
-        if now >= self.next_think:
+        # re-score every 0.11-0.16 s; at most a few of the team in one tick (the others wait a tick)
+        # so a tick where everyone is due does not become a spike
+        if now >= self.next_think and self.team.think_slot(now):
             self.next_think = now + self.rng.uniform(0.11, 0.16)
             self.think(now)
         if now < self.flashed_until:
@@ -766,8 +771,9 @@ class BrainV2:
         if now < self.frozen_until:
             return                                   # panicked for a moment
         self.action.run(dt, now)
-        if it.wish.lengthSquared() < 0.01:
-            self._personal_space()
+        self._space_n += 1
+        if it.wish.lengthSquared() < 0.01 and self._space_n % 4 == 0:
+            self._personal_space()                   # standing on a teammate: checked 16 times a second
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -1015,7 +1021,16 @@ class BrainV2:
 
     def should_walk(self, pos: Point3) -> bool:
         """Walk (quiet, accurate) close to where enemies probably are: a fresh fact within 20 m,
-        or a real chance of an enemy within 15 m; run when time is short or rushing."""
+        or a real chance of an enemy within 15 m; run when time is short or rushing.
+        Re-decided every 0.1 s: the facts and the field it reads change no faster."""
+        now = self.bot.now
+        if now - self._walk_t < 0.1:
+            return self._walk
+        self._walk_t = now
+        self._walk = self._should_walk(pos)
+        return self._walk
+
+    def _should_walk(self, pos: Point3) -> bool:
         t = self.task
         if t.tag in ("rush", "flee", "retake") or self.team.plan == "rush":
             return False
@@ -1055,8 +1070,8 @@ class BrainV2:
         vis = tm.visible_mask(i)
         src, dst = tm.edge_src, tm.edge_dst
         edge = vis[src] & ~vis[dst]                  # from a visible point into a hidden one
-        w = np.zeros(tm.n)
-        np.add.at(w, src[edge], danger[dst[edge]])
+        # (bincount adds in input order, exactly like np.add.at into zeros, at a fraction of the cost)
+        w = np.bincount(src[edge], weights=danger[dst[edge]], minlength=tm.n)
         w += danger * vis                            # (enemies possibly in view already)
         xy = tm._xy
         dx = xy[:, 0] - pos.x
