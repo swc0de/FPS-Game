@@ -623,6 +623,7 @@ class BrainV2:
         self._walk_t = -1.0
         self._walk = False
         self._space_n = 0
+        self._space_step = None
 
     # -------------------------------------------------------------- orders
     def set_task(self, task: Task, force: bool = False) -> None:
@@ -771,9 +772,17 @@ class BrainV2:
         if now < self.frozen_until:
             return                                   # panicked for a moment
         self.action.run(dt, now)
+        # standing on a teammate: checked 16 times a second, and the step apart held in between
+        # (it only lasts the tick it is set in, so a step set every fourth tick moved a quarter as far)
         self._space_n += 1
-        if it.wish.lengthSquared() < 0.01 and self._space_n % 4 == 0:
-            self._personal_space()                   # standing on a teammate: checked 16 times a second
+        if it.wish.lengthSquared() < 0.01:
+            if self._space_n % 4 == 0:
+                self._space_step = self._personal_space()
+            if self._space_step is not None:
+                it.wish = Vec3(self._space_step)
+                it.walk = True
+        else:
+            self._space_step = None
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -1453,8 +1462,9 @@ class BrainV2:
         else:
             it.wish = -bot.forward() * 0.8
 
-    def _personal_space(self) -> None:
-        """Standing still on top of a teammate: step apart (one grenade or spray gets both)."""
+    def _personal_space(self) -> Vec3 | None:
+        """Standing still on top of a teammate: the step apart (one grenade or spray gets both),
+        or None."""
         bot = self.bot
         p = bot.position()
         for m in self.team.mates_of(bot):
@@ -1465,9 +1475,9 @@ class BrainV2:
                 if d < 1e-3:
                     dx, dy, d = (1.0, 0.0, 1.0) if bot.name > m.name else (-1.0, 0.0, 1.0)
                 if bot.nav.walkable_line(p, (p.x + dx / d * 0.8, p.y + dy / d * 0.8, p.z)):
-                    bot.intent.wish = Vec3(dx / d, dy / d, 0) * 0.6
-                    bot.intent.walk = True
-                return
+                    return Vec3(dx / d, dy / d, 0) * 0.6
+                return None
+        return None
 
     def _shoot_gadget(self, dt: float, now: float) -> None:
         g = self.gadget_target
