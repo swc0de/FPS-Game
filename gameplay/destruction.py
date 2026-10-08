@@ -370,8 +370,9 @@ def _box_mesh(mb, R, c, center, half, uv) -> None:
 class Debris:
     """A few physical chunks that tumble out of destroyed walls."""
 
-    def __init__(self, game, cfg: dict):
+    def __init__(self, game, cfg: dict, rng: random.Random | None = None):
         self.game = game
+        self.rng = rng or random.Random()
         self.max = int(cfg.get("max_bodies", 48))
         self.life = float(cfg.get("lifetime", 8.0))
         self.items: list[list] = []          # [body_np, visual, time left, size]
@@ -392,7 +393,8 @@ class Debris:
         if len(self.items) >= self.max:
             self._remove(0)
         node = BulletRigidBodyNode("debris")
-        dims = Vec3(size, size * random.uniform(0.4, 1.0), size * random.uniform(0.15, 0.4))
+        rng = self.rng
+        dims = Vec3(size, size * rng.uniform(0.4, 1.0), size * rng.uniform(0.15, 0.4))
         node.addShape(BulletBoxShape(dims * 0.5))
         node.setMass(0.4)
         node.setFriction(0.8)
@@ -400,9 +402,9 @@ class Debris:
         node.setIntoCollideMask(GROUP_DEBRIS)
         body = self.game.physics.root.attachNewNode(node)
         body.setPos(Point3(*pos))
-        body.setHpr(random.uniform(0, 360), random.uniform(0, 360), 0)
+        body.setHpr(rng.uniform(0, 360), rng.uniform(0, 360), 0)
         node.setLinearVelocity(vel)
-        node.setAngularVelocity(Vec3(random.uniform(-8, 8), random.uniform(-8, 8), random.uniform(-8, 8)))
+        node.setAngularVelocity(Vec3(rng.uniform(-8, 8), rng.uniform(-8, 8), rng.uniform(-8, 8)))
         self.game.physics.world.attachRigidBody(node)
         vis = self._mesh(mat).copyTo(self.game.render)
         vis.setTransform(body.getTransform(self.game.render))
@@ -433,15 +435,19 @@ class Debris:
 
 
 class DestructionManager:
-    def __init__(self, game, specs: list[PanelSpec]):
+    def __init__(self, game, specs: list[PanelSpec], seed: int | None = None):
         self.game = game
+        # debris is physical (it can deflect a grenade and reshapes Bullet's broadphase), so it
+        # draws from its own generator seeded with the match seed, never the global one, which
+        # the visual effects share: --seed must reproduce a match
+        self.rng = random.Random(f"destruction:{seed}") if seed is not None else random.Random()
         self.cfg = load_config()
         self.chunk = float(self.cfg.get("chunk_size", 0.25))
         self.materials = game.materials
         self.root = game.render.attachNewNode("destructible")
         self.specs = list(specs)
         self.panels: list[Panel] = []
-        self.debris = Debris(game, self.cfg.get("debris", {}))
+        self.debris = Debris(game, self.cfg.get("debris", {}), self.rng)
         self.listeners: list = []            # callback(panel) when a panel changes shape
         self.version = 0
         self.batch_np = None                 # every intact panel, one mesh per material
@@ -562,17 +568,18 @@ class DestructionManager:
             d = n
         d.normalize()
         out = n if n.dot(d) > 0 else -n
-        picks = random.sample(range(count), min(count, 10))
+        picks = self.rng.sample(range(count), min(count, 10))
         for k in picks:
             w = panel.to_world(panel.cell_center_local(ii[k], jj[k]))
             g.effects.debris_burst(w, out, color, props.get("effect", "dust_grey"), strong=kind != "bullet")
         if kind in ("explosion", "charge", "thermal", "melee") or count >= 3:
-            for k in random.sample(range(count), min(count, 4 if kind != "bullet" else 1)):
+            rng = self.rng
+            for k in rng.sample(range(count), min(count, 4 if kind != "bullet" else 1)):
                 w = panel.to_world(panel.cell_center_local(ii[k], jj[k]))
                 speed = 6.0 if kind in ("explosion", "charge", "thermal") else 2.5
-                vel = out * random.uniform(0.5, 1.0) * speed + Vec3(random.uniform(-1, 1), random.uniform(-1, 1),
-                                                                     random.uniform(0.5, 2.0))
-                self.debris.spawn(w, vel, self.chunk * random.uniform(0.5, 0.9), panel.spec.mat)
+                vel = out * rng.uniform(0.5, 1.0) * speed + Vec3(rng.uniform(-1, 1), rng.uniform(-1, 1),
+                                                                 rng.uniform(0.5, 2.0))
+                self.debris.spawn(w, vel, self.chunk * rng.uniform(0.5, 0.9), panel.spec.mat)
         if count >= 2 or kind != "bullet":
             snd = "wall_break" if panel.spec.surface != "wood" else "wood_break"
             g.audio.play_at(snd, Point3(*point), volume=min(0.4 + 0.08 * count, 1.0))

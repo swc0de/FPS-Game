@@ -1448,7 +1448,7 @@ class BrainV2:
             d = math.hypot(dx, dy)
             if d < 1.1 and abs(p.z - q.z) < 1.2:
                 if d < 1e-3:
-                    dx, dy, d = (1.0, 0.0, 1.0) if id(bot) > id(m) else (-1.0, 0.0, 1.0)
+                    dx, dy, d = (1.0, 0.0, 1.0) if bot.name > m.name else (-1.0, 0.0, 1.0)
                 if bot.nav.walkable_line(p, (p.x + dx / d * 0.8, p.y + dy / d * 0.8, p.z)):
                     bot.intent.wish = Vec3(dx / d, dy / d, 0) * 0.6
                     bot.intent.walk = True

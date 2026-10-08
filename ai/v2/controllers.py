@@ -27,6 +27,7 @@ run every tick and decide *how*, on top of the layers every bot shares
 from __future__ import annotations
 
 import math
+import zlib
 
 from panda3d.core import Point3, Vec3
 
@@ -40,6 +41,12 @@ EYE = 1.62
 
 def flat(v: Vec3) -> Vec3:
     return Vec3(v.x, v.y, 0.0)
+
+
+def stable_bit(name: str) -> bool:
+    """A fixed coin flip per bot, the same in every run (id() and hash() change between runs,
+    which broke --seed reproduction)."""
+    return bool(zlib.crc32(name.encode()) & 1)
 
 
 class Mover:
@@ -188,7 +195,7 @@ class Mover:
         if slow <= 0.0:
             self.waiting += 1.0 / 64.0
             if self.waiting > 2.5:                 # don't wait forever: sidestep past
-                side = Vec3(-d.y, d.x, 0) * (1 if (id(b.bot) >> 4) & 1 else -1)
+                side = Vec3(-d.y, d.x, 0) * (1 if stable_bit(b.bot.name) else -1)
                 return (d * 0.4 + side).normalized()
             return Vec3(0, 0, 0)
         self.waiting = 0.0
