@@ -159,7 +159,8 @@ class SheetDemo:
         if pose.get("die"):
             h = math.radians(yaw)
             body.die(Vec3(math.sin(h), -math.cos(h), 0))   # shot from the front
-            for _ in range(80):
+            for _ in range(160):
+                self.game.physics.step(dt)                # the ragdoll falls (Milestone 9)
                 body.animate(dt, pos, yaw, pitch, crouch, Vec3(0, 0, 0), True)
 
     # ------------------------------------------------------------- shots

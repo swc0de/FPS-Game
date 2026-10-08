@@ -186,6 +186,22 @@ class BodyTests(unittest.TestCase):
             np.testing.assert_allclose(node_mat(body.hit_mounts[c.name], body.root), mount @ world[sk.INDEX[c.bone]],
                                        atol=1e-5, err_msg=c.name)
 
+    def test_animation_lod_catches_up_when_the_pose_stops_changing(self):
+        """A far body solves its palette every fourth tick; if the pose stops changing on a
+        skipped tick, the palette still catches up (the pose cache must not freeze it)."""
+        from panda3d.core import PTA_LVecBase4f
+        game, body = make_body()
+        game.camera = game.render.attachNewNode("camera")
+        game.camera.setPos(0, -60, 2)                     # 60 m away, looking along +y at the body
+        body._bones = PTA_LVecBase4f.emptyArray(sk.MAX_BONES * 3)
+        body._rows = np.zeros((sk.MAX_BONES, 3, 4), np.float32)
+        for _ in range(30):                               # one change (crouch), then the same pose
+            body.animate(1 / 64, (0, 0, 0), 0.0, 0.0, 1.0, Vec3(0, 0, 0), True)
+        want = np.zeros((sk.MAX_BONES, 3, 4), np.float32)
+        sk.palette_rows(body.pose.solve(), want[:sk.N_BONES])
+        got = np.frombuffer(memoryview(body._bones).cast("B").tobytes(), np.float32).reshape(sk.MAX_BONES, 3, 4)
+        np.testing.assert_allclose(got[:sk.N_BONES], want[:sk.N_BONES], atol=1e-6)
+
     def test_grip_reached(self):
         """Two-bone IK puts the right hand's grip point on the weapon's grip."""
         game, body = make_body()

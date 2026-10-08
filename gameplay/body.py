@@ -207,6 +207,7 @@ class CharacterBody:
         self._lod_n = zlib.crc32(name.encode()) & 3          # staggers the animation LOD ticks
         self._bones = None
         self._rows = None
+        self._palette_stale = False
         if visible:
             if character is not None:
                 self._build_character(*character)
@@ -395,13 +396,18 @@ class CharacterBody:
         if self._bones is None:
             return
         if not force and not self._palette_due():
+            self._palette_stale = True
             return
-        world = P.solve()
+        self._solve_palette()
+
+    def _solve_palette(self) -> None:
+        world = self.pose.solve()
         if self.first_person:
             world = world.copy()
             world[HEAD_BONES] = np.matmul(COLLAPSE, world[HEAD_BONES])
         sk.palette_rows(world, self._rows[:sk.N_BONES])
         memoryview(self._bones).cast("B")[:] = self._rows.tobytes()
+        self._palette_stale = False
 
     def _palette_due(self) -> bool:
         """Animation LOD (OVERHAUL_PLAN 4.4): the skinning palette is only for drawing, so it is
@@ -629,6 +635,8 @@ class CharacterBody:
                round(crouch, 2), round(lean, 2), self.hold, self.weapon_key)
         if sig == self._sig and speed < 0.05 and self.move_weight < 0.01 and self.kick <= 0.0 and self.flash <= 0 \
                 and not self.active_clips and self.flinch[2] <= 0.0:
+            if self._palette_stale and self._palette_due():
+                self._solve_palette()            # the animation LOD skipped the last change
             return
         self._sig = sig
         ch = self._clip_channels(dt) if self.active_clips else {}
