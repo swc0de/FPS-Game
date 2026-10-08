@@ -436,6 +436,36 @@ def mh_beard(app: Appearance, head: dict, skin: list) -> list:
     return [lods]
 
 
+def _tuck_under(v: np.ndarray, pieces: list, centre: np.ndarray, margin: float = 0.003) -> np.ndarray:
+    """Move the head's vertices that poke out through headgear (a cap or helmet shaped round the
+    procedural skull) just inside it: a vertex outside the gear whose way to the head's centre
+    enters the gear within 4 cm is pulled in to that depth plus ``margin``. Vertices below the
+    brim never meet the gear on the way in and stay."""
+    if not pieces:
+        return v
+    def gear(q):
+        return np.min([pc.shape(q) for pc in pieces], axis=0)
+    out = np.nonzero(gear(v) > -margin)[0]
+    if not len(out):
+        return v
+    v = v.copy()
+    p = v[out]
+    to_c = centre - p
+    to_c /= np.maximum(np.linalg.norm(to_c, axis=1, keepdims=True), 1e-9)
+    done = np.zeros(len(out), bool)
+    entered = np.zeros(len(out), bool)
+    for step in np.arange(0.002, 0.04, 0.002):
+        q = p + to_c * step
+        inside = gear(q) <= -margin
+        new = inside & ~done & entered
+        v[out[new]] = q[new]
+        done |= new
+        entered |= gear(q) < 0.0
+        if done.all():
+            break
+    return v
+
+
 def mh_head(app: Appearance, head: dict) -> list:
     """The MakeHuman skin: painted like the procedural head, with mesh occlusion."""
     from characters.mesher import vertex_normals
@@ -481,6 +511,15 @@ def assemble(app: Appearance, style: str) -> list[Mesh]:
     if look.headgear != "balaclava" and app.makehuman:
         from characters import makehuman
         mh = makehuman.head_region(makehuman.data_dir(), app)
+    if mh is not None and look.headgear in ("helmet", "cap"):
+        # headgear is shaped round the procedural skull; a MakeHuman skull may poke through it
+        if look.headgear == "helmet":
+            hg = G.helmet(style, look.cover, look.ear_pro, look.goggles)
+        else:
+            hg = G.cap() + ([p for p in G.helmet(style, False, True, False) if p.name == "ear_pro"]
+                            if look.ear_pro else [])
+        hg = [p for p in hg if p.name in ("helmet", "helmet_cover", "cap", "ear_pro")]
+        mh["verts"] = _tuck_under(mh["verts"], hg, mh["landmarks"]["centre"] + np.array([0.0, 0.0, 0.01]))
     if mh is not None:
         lm = mh["landmarks"]
         skin = mh_head(app, mh)
