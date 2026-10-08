@@ -120,3 +120,106 @@ class WeightTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ClipTests(unittest.TestCase):
+    def test_channel_interpolation(self):
+        from gameplay.body import _channel
+        keys = [{"t": 0.0, "a": 0.0, "h": None}, {"t": 0.5, "a": 10.0}, {"t": 1.0, "a": 0.0, "h": ["chest", 1, 2, 3]}]
+        self.assertAlmostEqual(_channel(keys, "a", 0.0), 0.0)
+        self.assertAlmostEqual(_channel(keys, "a", 0.5), 10.0)
+        self.assertAlmostEqual(_channel(keys, "a", 0.25), 5.0)            # smoothstep at the midpoint
+        before, after, w = _channel(keys, "h", 0.5)
+        self.assertIsNone(before)
+        self.assertEqual(after, ["chest", 1, 2, 3])
+        self.assertAlmostEqual(w, 0.5)
+        self.assertIsNone(_channel(keys, "missing", 0.5))
+
+    def test_clips_are_well_formed(self):
+        from gameplay.body import clips
+        for name, c in clips().items():
+            ts = [k["t"] for k in c["keys"]]
+            self.assertEqual(ts, sorted(ts), name)
+            self.assertEqual((ts[0], ts[-1]), (0.0, 1.0), name)
+            self.assertGreater(c["duration"], 0.0, name)
+
+    def test_events_keep_hitboxes_on_the_pose_and_end(self):
+        from panda3d.core import NodePath, Vec3
+        from types import SimpleNamespace
+        from engine.physics import PhysicsWorld
+        from gameplay.body import PART_MOUNT, CharacterBody
+        from panda3d.core import Point3, TransformState
+        game = SimpleNamespace(render=NodePath("render"), physics=PhysicsWorld(NodePath("world")))
+        body = CharacterBody(game, object(), visible=False)
+        body.set_weapon("rifle_r7", "rifle")
+        body.event("reload", duration=1.0)
+        for _ in range(40):
+            body.animate(1 / 64, (0, 0, 0), 0.0, 0.0, 0.0, Vec3(0, 0, 0), True)
+        self.assertIn("reload", body.active_clips)
+        world = body.pose.solve()
+        for name, (bone, off, hpr) in PART_MOUNT.items():
+            m = TransformState.makePosHpr(Point3(*off), Vec3(*hpr)).getMat()
+            m = np.array([[m.getCell(i, j) for j in range(4)] for i in range(4)])
+            got = body.parts[name].getMat(body.root)
+            got = np.array([[got.getCell(i, j) for j in range(4)] for i in range(4)])
+            np.testing.assert_allclose(got, m @ world[sk.INDEX[bone]], atol=1e-5)
+        for _ in range(40):
+            body.animate(1 / 64, (0, 0, 0), 0.0, 0.0, 0.0, Vec3(0, 0, 0), True)
+        self.assertNotIn("reload", body.active_clips)
+        body.event("plant")
+        for _ in range(80):
+            body.animate(1 / 64, (0, 0, 0), 0.0, 0.0, 0.0, Vec3(0, 0, 0), True)
+        self.assertIn("plant", body.active_clips)                        # loops until stopped
+        self.assertGreater(body.crouch, 0.9)
+        body.stop("plant")
+        for _ in range(80):
+            body.animate(1 / 64, (0, 0, 0), 0.0, 0.0, 0.0, Vec3(0, 0, 0), True)
+        self.assertNotIn("plant", body.active_clips)
+
+    def test_flinch_does_not_depend_on_health(self):
+        """No hidden-state leak: the flinch is the same whatever the health (OVERHAUL_PLAN 4.2)."""
+        from panda3d.core import NodePath, Vec3
+        from types import SimpleNamespace
+        from engine.physics import PhysicsWorld
+        from gameplay.body import CharacterBody
+        game = SimpleNamespace(render=NodePath("render"), physics=PhysicsWorld(NodePath("world")))
+        flinches = []
+        for hp in (100, 7):
+            owner = SimpleNamespace(damageable=SimpleNamespace(health=hp))
+            body = CharacterBody(game, owner, visible=False)
+            body.event("hit", direction=Vec3(0, 1, 0))
+            flinches.append(body.flinch)
+        self.assertEqual(flinches[0], flinches[1])
+
+
+class MakeHumanTests(unittest.TestCase):
+    def setUp(self):
+        from characters import makehuman as MH
+        self.MH = MH
+        self.data = MH.data_dir()
+        if self.data is None:
+            self.skipTest("MPFB2 files not downloaded (tools/download_assets.py --only characters)")
+
+    def test_retarget_lands_on_the_game_skeleton(self):
+        MH = self.MH
+        base, _, _ = MH.load(str(self.data))
+        v, W = MH.retarget(self.data, base.verts)
+        np.testing.assert_allclose(W.sum(axis=1), 1.0, atol=1e-9)
+        j = MH.joints(self.data, base.verts)
+        tf = MH.bone_transforms(self.data, j)
+        for mh in ("upperarm_l", "lowerarm_r", "thigh_l", "calf_r", "spine_03"):
+            R, s, h, gh = tf[mh]
+            game = MH.BONE_MAP[mh]
+            np.testing.assert_allclose(gh, sk.REST_WORLD[sk.INDEX[game], 3, :3], atol=1e-9)
+        body = base.group_vertices("body")
+        lo, hi = v[body].min(axis=0), v[body].max(axis=0)
+        self.assertLess(abs(lo[2]), 0.05)                                   # feet on the ground
+        self.assertTrue(1.65 < hi[2] < 1.8)                                 # the head on the skeleton's neck
+
+    def test_offline_switch(self):
+        import os
+        os.environ["COLD_SECTOR_OFFLINE"] = "1"
+        try:
+            self.assertIsNone(self.MH.data_dir())
+        finally:
+            del os.environ["COLD_SECTOR_OFFLINE"]

@@ -111,6 +111,50 @@ def _mat(pos=(0, 0, 0), hpr=(0, 0, 0), scale=(1, 1, 1)) -> np.ndarray:
 COLLAPSE = np.diag([1e-4, 1e-4, 1e-4, 1.0])
 
 
+_CLIPS = None
+
+
+def clips() -> dict:
+    """data/character_anims.json (procedural clips: reload, switch, throw, knife, plant, defuse)."""
+    global _CLIPS
+    if _CLIPS is None:
+        import json
+        from engine import paths
+        with open(paths.DATA_DIR / "character_anims.json", "r", encoding="utf-8") as f:
+            _CLIPS = {k: v for k, v in json.load(f).items() if not k.startswith("_")}
+    return _CLIPS
+
+
+def _smooth(t: float) -> float:
+    t = min(max(t, 0.0), 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _channel(keys: list, name: str, t: float):
+    """A channel's value at normalised time t: smoothstep between the keys that set it.
+    Returns (before, after, w) for hand targets (resolved by the caller) or a number."""
+    prev = nxt = None
+    for k in keys:
+        if name not in k:
+            continue
+        if k["t"] <= t:
+            prev = k
+        elif nxt is None:
+            nxt = k
+    if prev is None and nxt is None:
+        return None
+    if prev is None:
+        prev = nxt
+    if nxt is None:
+        nxt = prev
+    span = nxt["t"] - prev["t"]
+    w = _smooth((t - prev["t"]) / span) if span > 1e-9 else 0.0
+    a, b = prev[name], nxt[name]
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return a + (b - a) * w
+    return (a, b, w)
+
+
 def _bind(pos, scale) -> np.ndarray:
     """Row-vector 4x4 matrix placing a mesh inside its part."""
     return _mat(pos, (0, 0, 0), scale)
@@ -183,6 +227,8 @@ class CharacterBody:
         self.flash = 0.0
         self.alive = True
         self._sig = None
+        self.active_clips: dict[str, dict] = {}      # name -> {t, dur, loop, stop}
+        self.flinch = (0.0, 0.0, 0.0)                # pitch, roll, time left
         self._apply()
         if visible:
             self.root.hide()
@@ -344,6 +390,74 @@ class CharacterBody:
             return self.muzzle.getPos(self.game.render)
         return self.gun.getPos(self.game.render)
 
+    # ------------------------------------------------------------ events
+    def event(self, name: str, duration: float | None = None, direction: Vec3 | None = None) -> None:
+        """Animation events: fire, reload, switch, throw, knife, plant, defuse (looping until
+        ``stop``), hit (a flinch away from ``direction``, world space)."""
+        if name == "fire":
+            self.on_fire()
+            return
+        if name == "hit":
+            self._flinch(direction)
+            return
+        if name == "reload" and self.hold == "pistol":
+            name = "reload_pistol"
+        d = clips().get(name)
+        if d is None:
+            return
+        self.active_clips[name] = {"t": 0.0, "dur": max(float(duration or d["duration"]), 0.05),
+                                   "loop": bool(d.get("loop", False)), "stop": False}
+        self._sig = None
+
+    def stop(self, name: str) -> None:
+        """End a looping clip (it plays back to the start, then ends)."""
+        c = self.active_clips.get(name)
+        if c is not None:
+            c["stop"] = True
+
+    def _flinch(self, direction: Vec3 | None) -> None:
+        """A short additive flinch, the same at any health."""
+        if direction is None:
+            self.flinch = (-6.0, 0.0, 0.3)
+            return
+        # the torso gives way along the shot: a shot from behind bends it forward (negative pitch)
+        local = self.root.getRelativeVector(self.game.render, Vec3(direction))
+        self.flinch = (-6.0 * (1.0 if local.y > 0 else -1.0) * min(abs(local.y) + 0.3, 1.0),
+                       6.0 * local.x, 0.3)
+        self._sig = None
+
+    def _clip_channels(self, dt: float) -> dict:
+        """Advance the active clips and sum their channels (hands: the last clip that sets one)."""
+        out: dict = {}
+        done = []
+        for name, c in self.active_clips.items():
+            keys = clips()[name]["keys"]
+            if c["stop"]:
+                c["t"] -= dt / c["dur"]
+                if c["t"] <= 0.0:
+                    done.append(name)
+                    continue
+            else:
+                c["t"] += dt / c["dur"]
+                if c["t"] >= 1.0:
+                    if c["loop"]:
+                        c["t"] = 1.0
+                    else:
+                        done.append(name)
+                        continue
+            for ch in ("weapon_p", "weapon_r", "weapon_h", "weapon_x", "weapon_y", "weapon_z", "spine_p", "neck_p",
+                       "crouch"):
+                v = _channel(keys, ch, c["t"])
+                if v is not None:
+                    out[ch] = max(out.get(ch, 0.0), v) if ch == "crouch" else out.get(ch, 0.0) + v
+            for ch in ("hand_l", "hand_r"):
+                v = _channel(keys, ch, c["t"])
+                if v is not None:
+                    out[ch] = v
+        for name in done:
+            del self.active_clips[name]
+        return out
+
     def on_fire(self, strength: float = 1.0) -> None:
         self.kick = min(self.kick + 0.6 * strength, 1.0)
 
@@ -354,6 +468,8 @@ class CharacterBody:
 
     def reset(self) -> None:
         self._sig = None
+        self.active_clips = {}
+        self.flinch = (0.0, 0.0, 0.0)
         self.dead_t = -1.0
         self.alive = True
         self.pose.set_hpr(B["root"], 0, 0, 0)
@@ -403,9 +519,19 @@ class CharacterBody:
         speed = math.hypot(vel.x, vel.y)
         sig = (round(pos[0], 3), round(pos[1], 3), round(pos[2], 3), round(yaw, 1), round(pitch, 1),
                round(crouch, 2), round(lean, 2), self.hold, self.weapon_key)
-        if sig == self._sig and speed < 0.05 and self.move_weight < 0.01 and self.kick <= 0.0 and self.flash <= 0:
+        if sig == self._sig and speed < 0.05 and self.move_weight < 0.01 and self.kick <= 0.0 and self.flash <= 0 \
+                and not self.active_clips and self.flinch[2] <= 0.0:
             return
         self._sig = sig
+        ch = self._clip_channels(dt) if self.active_clips else {}
+        crouch = max(crouch, ch.get("crouch", 0.0))
+        fp, fr, ft = self.flinch
+        if ft > 0.0:
+            k = ft / 0.3
+            self.flinch = (fp, fr, max(ft - dt, 0.0))
+            fp, fr = fp * k, fr * k
+        else:
+            fp = fr = 0.0
         self.crouch = crouch
         self.aim_pitch = max(-80.0, min(80.0, pitch))
         moving = min(speed / 2.0, 1.0) if on_ground else 0.0
@@ -433,13 +559,15 @@ class CharacterBody:
         lean = -12.0 * crouch - 4.0 * w * vf
         a = self.aim_pitch
         roll = Lean.body_roll(lean_amount)
-        P.set_hpr(B["spine_01"], 0.0, lean + a * 0.25, roll)
-        P.set_hpr(B["spine_03"], 0.0, a * 0.30 - self.kick * 3.0)
-        P.set_hpr(B["neck"], 0.0, a * 0.45 - lean, -roll * 0.35)
+        P.set_hpr(B["spine_01"], 0.0, lean + a * 0.25 + fp, roll + fr)
+        P.set_hpr(B["spine_03"], 0.0, a * 0.30 - self.kick * 3.0 + ch.get("spine_p", 0.0))
+        P.set_hpr(B["neck"], 0.0, a * 0.45 - lean + ch.get("neck_p", 0.0), -roll * 0.35)
         hold = HOLDS[self.hold]["pos"]
-        P.set_pos(B["weapon"], hold[0], hold[1] - self.kick * 0.03, hold[2])
-        gun_p = a * 0.45 + self.kick * 4.0
-        P.set_hpr(B["weapon"], 0.0, gun_p)
+        P.set_pos(B["weapon"], hold[0] + ch.get("weapon_x", 0.0), hold[1] - self.kick * 0.03 + ch.get("weapon_y", 0.0),
+                  hold[2] + ch.get("weapon_z", 0.0))
+        gun_p = a * 0.45 + self.kick * 4.0 + ch.get("weapon_p", 0.0)
+        gun_h, gun_r = ch.get("weapon_h", 0.0), ch.get("weapon_r", 0.0)
+        P.set_hpr(B["weapon"], gun_h, gun_p, gun_r)
         hip_base = 80.0 * crouch
         knee_base = -95.0 * crouch
         for side, sign in (("l", 1.0), ("r", -1.0)):
@@ -448,7 +576,7 @@ class CharacterBody:
             P.set_hpr(B[f"thigh_{side}"], 0.0, hip_base + swing * vf, -swing * vs * 0.6)
             lift = max(0.0, math.sin(self.phase * 1.0 + (0 if sign > 0 else math.pi) + 1.2))
             P.set_hpr(B[f"calf_{side}"], 0.0, knee_base - lift * (40.0 if crouch < 0.5 else 18.0) * w)
-        self._pose_arms(gun_p)
+        self._pose_arms(gun_h, gun_p, gun_r, ch.get("hand_l"), ch.get("hand_r"))
         self._apply()
         if self.flash > 0:
             self.flash -= dt
@@ -456,21 +584,36 @@ class CharacterBody:
             if self.visible:
                 self.root.setShaderInput("u_emission", LVecBase4f(0.45 * k, 0.04 * k, 0.02 * k, 0))
 
-    def _pose_arms(self, gun_p: float) -> None:
-        """Two-bone IK from the shoulders onto the weapon grips, all in spine_03 space."""
+    def _pose_arms(self, gun_h: float, gun_p: float, gun_r: float, clip_l=None, clip_r=None) -> None:
+        """Two-bone IK from the shoulders onto the weapon grips (or a clip's targets), all in
+        spine_03 space."""
         P = self.pose
         g = P.pos[B["weapon"]]
-        p = math.radians(gun_p)
-        cp, sp = math.cos(p), math.sin(p)
+        rot = sk.hpr_matrix(gun_h, gun_p, gun_r)
 
-        def to_chest(a: Point3) -> Vec3:
-            return Vec3(g[0] + a.x, g[1] + a.y * cp - a.z * sp, g[2] + a.y * sp + a.z * cp)
+        def gun_point(a) -> Vec3:
+            v = np.asarray((a[0], a[1], a[2]), np.float64) @ rot
+            return Vec3(g[0] + v[0], g[1] + v[1], g[2] + v[2])
 
-        hand_r = to_chest(self._grips[0])
+        def resolve(target, default: Vec3) -> Vec3:
+            if target is None:
+                return default
+            space, x, y, z = target
+            return gun_point((x, y, z)) if space == "gun" else Vec3(x, y, z)
+
+        def blend(clip, default: Vec3) -> Vec3:
+            if clip is None:
+                return default
+            a, b, w = clip
+            pa, pb = resolve(a, default), resolve(b, default)
+            return pa + (pb - pa) * w
+
+        hand_r = gun_point(self._grips[0])
         if HOLDS[self.hold]["hands"] == 2:
-            hand_l = to_chest(self._grips[1])
+            hand_l = gun_point(self._grips[1])
         else:
             hand_l = Vec3(-0.22, 0.12, -0.32)
+        hand_l, hand_r = blend(clip_l, hand_l), blend(clip_r, hand_r)
         for side, sx, hand in (("l", -1.0, hand_l), ("r", 1.0, hand_r)):
             s = Vec3(SHOULDER[0] * sx, SHOULDER[1], SHOULDER[2])
             elbow = two_bone_elbow(s, hand, UPPER_ARM, FOREARM, Vec3(sx * 0.8, -0.3, -1.0))

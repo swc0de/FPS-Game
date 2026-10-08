@@ -209,8 +209,12 @@ class BotWeapons:
 
 
 class BotAgent(Participant):
-    def __init__(self, game, name: str, side: str, difficulty: str, nav, seed: int | None = None):
+    def __init__(self, game, name: str, side: str, difficulty: str, nav, seed: int | None = None,
+                 appearance_seed: int | None = None):
+        """``appearance_seed``: the procedural soldier for this name (characters/); None = the
+        Milestone 5 mannequin."""
         super().__init__(name)
+        self.appearance_seed = appearance_seed
         cfg = load_bot_config()
         self.game = game
         self.nav = nav
@@ -242,7 +246,8 @@ class BotAgent(Participant):
         from gameplay.match import load_rules
         uniform = load_rules()["teams"][side].get("uniform", "uniform_tan")
         helmet = "metal_tan" if side == "attack" else "metal_olive"
-        return CharacterBody(self.game, self, uniform, helmet, name=f"bot:{self.name}")
+        character = (self.name, self.appearance_seed, side) if self.appearance_seed is not None else None
+        return CharacterBody(self.game, self, uniform, helmet, name=f"bot:{self.name}", character=character)
 
     def restyle(self) -> None:
         """New uniform after switching sides at halftime."""
