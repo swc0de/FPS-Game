@@ -1,22 +1,31 @@
-"""Third-person soldier body: a jointed mannequin with procedural animation
-and hitboxes that follow the pose.
+"""Third-person soldier body: a mannequin on the game skeleton with
+procedural animation and hitboxes that follow the pose.
 
-Skeleton (character faces +Y, origin between the feet)::
+The skeleton is gameplay/skeleton.py (47 bones, the same for every
+appearance). The pose is solved in numpy each tick:
 
-    root (yaw) -> tilt (death fall) -> pelvis -> spine -> chest -> neck -> head
-                                         |                 +-> arms (2-bone IK onto the weapon grips)
-                                         |                 +-> weapon (completes the aim pitch)
-                                         +-> hip -> knee (walk cycle, crouch)
+    root (death fall) -> pelvis -> spine_01..03 -> neck -> head
+                           |                +-> arms (2-bone IK onto the weapon grips)
+                           |                +-> weapon (completes the aim pitch)
+                           +-> thigh -> calf (walk cycle, crouch)
 
-Every body part is a separate node, so the pose is a handful of joint
-rotations per tick. The hit boxes (gameplay/hitboxes.py PARTS: same sizes
-and hit groups as the target dummies) are children of their body part, so
-Panda3D's Bullet integration moves the kinematic boxes with the pose in the
-next physics step: what you see is what you hit.
+and the result goes to two places:
+* the skinning palette (one matrix per bone, render/shaders/skinning.glsl),
+  solved in numpy, for visible bodies only;
+* a NodePath mirror of the 19 bones that carry a hit box or the weapon,
+  which gets each bone's local transform (Panda chains them in C++). The
+  hit boxes (gameplay/hitboxes.py PARTS: same sizes and hit groups as the
+  target dummies) are children of their bone's node, so Panda3D's Bullet
+  integration moves the kinematic boxes with the pose in the next physics
+  step: what you see is what you hit.
+
+The body mesh is the jointed mannequin of Milestone 5, stored in the bind
+pose and rigidly skinned (weight 1 on one bone per part) until the
+procedural human replaces it.
 
 The animation is procedural:
-* aim pitch is spread over spine (25%), chest (30%) and the weapon (45%),
-  the head follows the full pitch;
+* aim pitch is spread over spine_01 (25%), spine_03 (30%) and the weapon
+  (45%), the head follows the full pitch;
 * walking swings the legs with the distance travelled (stride length per
   gait), forwards/backwards with pitch and sideways with roll, and bobs
   the pelvis;
@@ -24,28 +33,30 @@ The animation is procedural:
 * death tips the whole body over around the feet, away from the killing
   shot, while the knees buckle.
 
-``visible=False`` builds the skeleton and hit boxes only (the first-person
+``visible=False`` poses the skeleton and hit boxes only (the first-person
 player needs hit boxes but no body).
 """
 from __future__ import annotations
 
 import math
 
-from panda3d.core import (BoundingSphere, LMatrix4f, LVecBase4f, NodePath, Point3, PTA_LMatrix4f, TransformState,
+import numpy as np
+from panda3d.core import (BoundingSphere, LODNode, LVecBase4f, NodePath, Point3, PTA_LVecBase4f, TransformState,
                           Vec3)
 
 from engine.geometry import MeshBuilder, build_skinned
+from gameplay import skeleton as sk
 from gameplay.lean import Lean
 from gameplay.hitboxes import PARTS, HitboxRig
-from weapons.models import segment_hpr, shared_weapon_model
+from weapons.models import shared_weapon_model
 
-UPPER_ARM = 0.30
-FOREARM = 0.32
-SHOULDER = (0.21, 0.0, 0.24)          # in chest-joint space
-STAND_PELVIS = 0.90
+UPPER_ARM = sk.UPPER_ARM
+FOREARM = sk.LOWER_ARM + sk.PALM      # elbow to the grip in the palm
+SHOULDER = (0.21, 0.0, 0.24)          # in spine_03 space (clavicle + upper arm offsets)
+STAND_PELVIS = sk.STAND_PELVIS
 CROUCH_PELVIS = 0.50
 
-# where the weapon sits in chest space and how its pitch is shared
+# where the weapon sits in spine_03 space and how its pitch is shared
 HOLDS = {
     "long": {"pos": (0.115, 0.17, 0.17), "hands": 2},
     "pistol": {"pos": (0.04, 0.42, 0.16), "hands": 2},
@@ -56,32 +67,53 @@ HOLDS = {
 CLASS_HOLD = {"rifle": "long", "smg": "long", "sniper": "long", "shotgun": "long", "pistol": "pistol",
               "knife": "knife", "grenade": "grenade", "bomb": "bomb"}
 
-# part -> (parent joint, offset, local hpr); arm parts lie along +Y of their joint
+# part -> (bone, offset, local hpr); arm parts lie along +Y of their bone
 PART_MOUNT = {
     "pelvis": ("pelvis", (0, 0, -0.03), (0, 0, 0)),
-    "stomach": ("spine", (0, 0, 0.06), (0, 0, 0)),
-    "chest": ("chest", (0, 0, 0.13), (0, 0, 0)),
+    "stomach": ("spine_01", (0, 0, 0.06), (0, 0, 0)),
+    "chest": ("spine_03", (0, 0, 0.13), (0, 0, 0)),
     "neck": ("neck", (0, 0, 0.02), (0, 0, 0)),
-    "head": ("neck", (0, 0.01, 0.155), (0, 0, 0)),
-    "upper_arm_l": ("shoulder_l", (0, UPPER_ARM * 0.5, 0), (0, -90, 0)),
-    "upper_arm_r": ("shoulder_r", (0, UPPER_ARM * 0.5, 0), (0, -90, 0)),
-    "forearm_l": ("elbow_l", (0, FOREARM * 0.45, 0), (0, -90, 0)),
-    "forearm_r": ("elbow_r", (0, FOREARM * 0.45, 0), (0, -90, 0)),
-    "thigh_l": ("hip_l", (0, 0, -0.215), (0, 0, 0)),
-    "thigh_r": ("hip_r", (0, 0, -0.215), (0, 0, 0)),
-    "calf_l": ("knee_l", (0, 0, -0.21), (0, 0, 0)),
-    "calf_r": ("knee_r", (0, 0, -0.21), (0, 0, 0)),
+    "head": ("head", (0, 0, 0.065), (0, 0, 0)),
+    "upper_arm_l": ("upperarm_l", (0, UPPER_ARM * 0.5, 0), (0, -90, 0)),
+    "upper_arm_r": ("upperarm_r", (0, UPPER_ARM * 0.5, 0), (0, -90, 0)),
+    "forearm_l": ("lowerarm_l", (0, FOREARM * 0.45, 0), (0, -90, 0)),
+    "forearm_r": ("lowerarm_r", (0, FOREARM * 0.45, 0), (0, -90, 0)),
+    "thigh_l": ("thigh_l", (0, 0, -0.215), (0, 0, 0)),
+    "thigh_r": ("thigh_r", (0, 0, -0.215), (0, 0, 0)),
+    "calf_l": ("calf_l", (0, 0, -0.21), (0, 0, 0)),
+    "calf_r": ("calf_r", (0, 0, -0.21), (0, 0, 0)),
 }
 
-
-BONES = [p.name for p in PARTS]          # skinning bone index = part order
-MAX_BONES = 24                            # render/shaders/skinning.glsl
+B = sk.INDEX
 
 
-def _bind(pos, scale) -> list:
-    """Row-vector 4x4 matrix placing a mesh inside its bone (for build_skinned)."""
-    m = TransformState.makePosHprScale(Point3(*pos), Vec3(0, 0, 0), Vec3(*scale)).getMat()
-    return [[m.getCell(r, c) for c in range(4)] for r in range(4)]
+def _mirrored() -> list:
+    """The bones that carry a hit box or the weapon, and all their ancestors, parents first."""
+    keep = set()
+    for name in [m[0] for m in PART_MOUNT.values()] + ["weapon"]:
+        i = B[name]
+        while i >= 0 and i not in keep:
+            keep.add(i)
+            i = int(sk.PARENT[i])
+    return sorted(keep)
+
+
+MIRRORED = _mirrored()
+HEAD_BONES = np.array([B["neck"], B["head"]], np.int64)     # collapsed for a camera at the eyes
+LOD_SWITCH = ((0.0, 14.0), (14.0, 40.0), (40.0, 100000.0))   # metres from the camera, per LOD
+
+
+def _mat(pos=(0, 0, 0), hpr=(0, 0, 0), scale=(1, 1, 1)) -> np.ndarray:
+    m = TransformState.makePosHprScale(Point3(*pos), Vec3(*hpr), Vec3(*scale)).getMat()
+    return np.array([[m.getCell(r, c) for c in range(4)] for r in range(4)])
+
+
+COLLAPSE = np.diag([1e-4, 1e-4, 1e-4, 1.0])
+
+
+def _bind(pos, scale) -> np.ndarray:
+    """Row-vector 4x4 matrix placing a mesh inside its part."""
+    return _mat(pos, (0, 0, 0), scale)
 
 
 def two_bone_elbow(s: Vec3, h: Vec3, l1: float, l2: float, pole: Vec3) -> Vec3:
@@ -103,7 +135,9 @@ def two_bone_elbow(s: Vec3, h: Vec3, l1: float, l2: float, pole: Vec3) -> Vec3:
 
 class CharacterBody:
     def __init__(self, game, owner, uniform: str = "uniform_tan", helmet_mat: str = "metal_olive",
-                 visible: bool = True, name: str = "body"):
+                 visible: bool = True, name: str = "body", character: tuple | None = None):
+        """``character``: (bot name, appearance seed, side) for a procedural soldier
+        (characters/); without it the body is the jointed mannequin."""
         self.game = game
         self.owner = owner
         self.visible = visible
@@ -111,35 +145,27 @@ class CharacterBody:
         self.root = game.render.attachNewNode(name)
         if not visible:
             self.root.hide()
-        self.tilt = self.root.attachNewNode("tilt")
-        j = {}
-        j["pelvis"] = self.tilt.attachNewNode("pelvis")
-        j["spine"] = j["pelvis"].attachNewNode("spine")
-        j["spine"].setPos(0, 0, 0.08)
-        j["chest"] = j["spine"].attachNewNode("chest")
-        j["chest"].setPos(0, 0, 0.20)
-        j["neck"] = j["chest"].attachNewNode("neck")
-        j["neck"].setPos(0, 0, 0.30)
-        for side, sx in (("l", -1), ("r", 1)):
-            j[f"shoulder_{side}"] = j["chest"].attachNewNode(f"shoulder_{side}")
-            j[f"shoulder_{side}"].setPos(SHOULDER[0] * sx, SHOULDER[1], SHOULDER[2])
-            j[f"elbow_{side}"] = j["chest"].attachNewNode(f"elbow_{side}")
-            j[f"hip_{side}"] = j["pelvis"].attachNewNode(f"hip_{side}")
-            j[f"hip_{side}"].setPos(0.105 * sx, 0, -0.06)
-            j[f"knee_{side}"] = j[f"hip_{side}"].attachNewNode(f"knee_{side}")
-            j[f"knee_{side}"].setPos(0, 0, -0.43)
-        j["gun"] = j["chest"].attachNewNode("gun")
-        self.joints = j
+        self.pose = sk.Pose()
+        # the bones that carry the hit box parts and the weapon, as nodes
+        self.nodes: dict[int, NodePath] = {}
+        for i in MIRRORED:
+            parent = self.root if sk.PARENT[i] < 0 else self.nodes[int(sk.PARENT[i])]
+            self.nodes[i] = parent.attachNewNode(sk.BONES[i].name)
         self.parts: dict[str, NodePath] = {}
-        self._bones = None
         for part in PARTS:
-            parent, off, hpr = PART_MOUNT[part.name]
-            np_ = j[parent].attachNewNode(f"part:{part.name}")
+            bone, off, hpr = PART_MOUNT[part.name]
+            np_ = self.nodes[B[bone]].attachNewNode(f"part:{part.name}")
             np_.setPos(*off)
             np_.setHpr(*hpr)
             self.parts[part.name] = np_
+        self.gun = self.nodes[B["weapon"]]
+        self._bones = None
+        self._rows = None
         if visible:
-            self._build_meshes(uniform, helmet_mat)
+            if character is not None:
+                self._build_character(*character)
+            else:
+                self._build_meshes(uniform, helmet_mat)
         self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.parts)
         self.weapon_model = None
         self.weapon_key = ""
@@ -157,17 +183,26 @@ class CharacterBody:
         self.flash = 0.0
         self.alive = True
         self._sig = None
+        self._apply()
+        if visible:
+            self.root.hide()
 
     # ------------------------------------------------------------ meshes
     def _build_meshes(self, uniform: str, helmet_mat: str) -> None:
-        """All parts merged into one GPU-skinned mesh per material (a handful of
-        draw calls per soldier instead of one per part; render/shaders/skinning.glsl)."""
+        """All parts merged into one skinned mesh per material (a handful of draw calls
+        per soldier instead of one per part), stored in the skeleton's bind pose with
+        each part rigidly on its bone (render/shaders/skinning.glsl)."""
         mats = self.game.materials
         body = mats.get(uniform)
         groups: dict[str, list] = {}
 
-        def add(mat: str, mb: MeshBuilder, part: str, bind=None) -> None:
-            groups.setdefault(mat, []).append((mb, BONES.index(part), bind))
+        def add(mat: str, mb: MeshBuilder, part: str, local=None, bone: str | None = None) -> None:
+            """``local`` places the mesh in the part; ``bone`` overrides the part's bone."""
+            name, off, hpr = PART_MOUNT[part]
+            place = _mat(off, hpr) @ sk.REST_WORLD[B[name]]
+            if local is not None:
+                place = local @ place
+            groups.setdefault(mat, []).append((mb, B[bone or name], place))
 
         for part in PARTS:
             mb = MeshBuilder()
@@ -196,43 +231,85 @@ class CharacterBody:
         for side in ("l", "r"):
             hand = MeshBuilder()
             hand.add_chamfer_box((0, 0, FOREARM * 0.5), (0.085, 0.07, 0.1), bevel=0.02)
-            add("glove", hand, f"forearm_{side}")
+            add("glove", hand, f"forearm_{side}", bone=f"hand_{side}")
             boot = MeshBuilder()
             boot.add_chamfer_box((0, 0.04, -0.17), (0.14, 0.27, 0.12), bevel=0.03)
-            add("rubber", boot, f"calf_{side}")
+            add("rubber", boot, f"calf_{side}", bone=f"foot_{side}")
         self.skin = self.root.attachNewNode("skin")
-        # the vertices sit at their bones' origins in the mesh, so the bounds must be given
+        # posed vertices leave the bind-pose bounds (crouch, death fall), so the bounds are given
         self.skin.node().setBounds(BoundingSphere(Point3(0, 0, 0.9), 1.7))
         self.skin.node().setFinal(True)
         for mat, pieces in groups.items():
             node = build_skinned(pieces, f"body:{mat}")
             np_ = self.skin.attachNewNode(node)
             mats.get(mat).apply(np_)
-        self._bones = PTA_LMatrix4f.emptyArray(MAX_BONES)
-        for k in range(MAX_BONES):
-            self._bones[k] = LMatrix4f.identMat()
+        self._bones = PTA_LVecBase4f.emptyArray(sk.MAX_BONES * 3)
+        self._rows = np.zeros((sk.MAX_BONES, 3, 4), np.float32)
+        self._rows[:, 0, 0] = self._rows[:, 1, 1] = self._rows[:, 2, 2] = 1.0
         self.skin.setShaderInput("u_bones", self._bones)
         self.skin.setShaderInput("u_skinned", 1.0)
-        self._update_bones()
-        self.root.hide()
 
-    HEAD_BONES = ("head", "neck")
+    def _build_character(self, bot_name: str, seed: int, side: str) -> None:
+        """The procedural soldier: one skinned mesh, one draw call, its colours a palette table
+        (characters/palette.py, render/shaders/character.frag)."""
+        from characters import build, detail, library, palette
+        from characters.appearance import HAIR_COLOURS, appearance, style_for_side
+        style = style_for_side(side)
+        app = appearance(bot_name, seed)
+        lods = library.meshes(bot_name, seed, style)
+        self.skin = self.root.attachNewNode("skin")
+        self.skin.node().setBounds(BoundingSphere(Point3(0, 0, 0.9), 1.7))
+        self.skin.node().setFinal(True)
+        # levels of detail by distance (OVERHAUL_PLAN 4.4); the shadow cameras are far away
+        # along the sun, so shadow passes pick the coarsest one by themselves
+        lod = LODNode("lod")
+        lod.setCenter(Point3(0, 0, 1.0))
+        lod_np = self.skin.attachNewNode(lod)
+        for k, (near, far) in enumerate(LOD_SWITCH[:len(lods)]):
+            lod.addSwitch(far, near)
+            lod_np.attachNewNode(build.geom_node(lods[k], f"character:{bot_name}:lod{k}"))
+        self.game.renderer.use_character_shader(self.skin)
+        hair = np.array(HAIR_COLOURS[app.hair_colour]) ** 2.2
+        col, par = palette.table(style, app.skin_rgb(), hair, np.array([0.8, 0.8, 0.8]))
+        self._palette = PTA_LVecBase4f.emptyArray(palette.N_SLOTS)
+        self._slot_params = PTA_LVecBase4f.emptyArray(palette.N_SLOTS)
+        memoryview(self._palette).cast("B")[:] = np.ascontiguousarray(col, np.float32).tobytes()
+        memoryview(self._slot_params).cast("B")[:] = np.ascontiguousarray(par, np.float32).tobytes()
+        self.skin.setShaderInput("u_palette", self._palette)
+        self.skin.setShaderInput("u_slotParams", self._slot_params)
+        self.skin.setShaderInput("u_detail", detail.shared_texture())
+        self.triangles = [len(m.tris) for m in lods]
+        self._bones = PTA_LVecBase4f.emptyArray(sk.MAX_BONES * 3)
+        self._rows = np.zeros((sk.MAX_BONES, 3, 4), np.float32)
+        self._rows[:, 0, 0] = self._rows[:, 1, 1] = self._rows[:, 2, 2] = 1.0
+        self.skin.setShaderInput("u_bones", self._bones)
+        self.skin.setShaderInput("u_skinned", 1.0)
 
     def set_first_person(self, on: bool) -> None:
         """Collapse the head (and helmet, goggles) for a camera at this body's eyes."""
         if on != self.first_person:
             self.first_person = on
-            self._update_bones()
+            self._apply()
 
-    def _update_bones(self) -> None:
-        if not self.visible or self._bones is None:
+    def _apply(self) -> None:
+        """Copy the pose to the hit box and weapon nodes, and solve the skinning palette."""
+        P = self.pose
+        if P.dirty:
+            hpr, pos = P.hpr.tolist(), P.pos.tolist()
+            nodes = self.nodes
+            for i in P.dirty:
+                node = nodes.get(i)
+                if node is not None:
+                    node.setPosHpr(*pos[i], *hpr[i])
+            P.dirty.clear()
+        if self._bones is None:
             return
-        root = self.root
-        for k, name in enumerate(BONES):
-            m = self.parts[name].getMat(root)
-            if self.first_person and name in self.HEAD_BONES:
-                m = LMatrix4f.scaleMat(1e-4) * m
-            self._bones[k] = m
+        world = P.solve()
+        if self.first_person:
+            world = world.copy()
+            world[HEAD_BONES] = np.matmul(COLLAPSE, world[HEAD_BONES])
+        sk.palette_rows(world, self._rows[:sk.N_BONES])
+        memoryview(self._bones).cast("B")[:] = self._rows.tobytes()
 
     # ------------------------------------------------------------ weapon
     def set_weapon(self, model_key: str | None, cls: str = "rifle") -> None:
@@ -244,8 +321,8 @@ class CharacterBody:
             self.weapon_model = None
         self.weapon_key = model_key or ""
         self.hold = CLASS_HOLD.get(cls, "long")
-        gun = self.joints["gun"]
-        gun.setPos(*HOLDS[self.hold]["pos"])
+        self.pose.set_pos(B["weapon"], *HOLDS[self.hold]["pos"])
+        gun = self.gun
         if model_key is None:
             self._grips = (Point3(0, 0.05, -0.05), Point3(0, 0.05, -0.05))
             self.muzzle = None
@@ -265,7 +342,7 @@ class CharacterBody:
     def muzzle_pos(self) -> Point3:
         if self.muzzle is not None and not self.muzzle.isEmpty():
             return self.muzzle.getPos(self.game.render)
-        return self.joints["gun"].getPos(self.game.render)
+        return self.gun.getPos(self.game.render)
 
     def on_fire(self, strength: float = 1.0) -> None:
         self.kick = min(self.kick + 0.6 * strength, 1.0)
@@ -279,10 +356,10 @@ class CharacterBody:
         self._sig = None
         self.dead_t = -1.0
         self.alive = True
-        self.tilt.setHpr(0, 0, 0)
-        self.tilt.setPos(0, 0, 0)
+        self.pose.set_hpr(B["root"], 0, 0, 0)
+        self.pose.set_pos(B["root"], 0, 0, 0)
         self.flash = 0.0
-        self._update_bones()
+        self._apply()
         if self.visible:
             self.root.show()
             self.root.setShaderInput("u_emission", LVecBase4f(0, 0, 0, 0))
@@ -320,7 +397,7 @@ class CharacterBody:
         if self.dead_t >= 0.0:
             if self.dead_t < 1.0:
                 self._animate_death(dt)
-                self._update_bones()
+                self._apply()
             return
         # nothing changed (standing still, same view): the pose and hit boxes are current
         speed = math.hypot(vel.x, vel.y)
@@ -337,7 +414,7 @@ class CharacterBody:
         stride = 1.0 if crouch > 0.5 else (1.15 if walking else 1.6)
         self.phase = (self.phase + speed * dt / stride * math.pi) % (2 * math.pi)
         self.kick = max(self.kick - dt * 8.0, 0.0)
-        j = self.joints
+        P = self.pose
         # direction of travel relative to facing
         h = math.radians(yaw)
         fwd = (-math.sin(h), math.cos(h))
@@ -351,41 +428,43 @@ class CharacterBody:
         amp = 16.0 if crouch > 0.5 else (22.0 if walking else 32.0)
         s = math.sin(self.phase)
         bob = abs(math.cos(self.phase)) * 0.03 * w
-        j["pelvis"].setZ(STAND_PELVIS + (CROUCH_PELVIS - STAND_PELVIS) * crouch - bob)
-        j["pelvis"].setR(vs * s * 4.0 * w)
+        P.set_pos(B["pelvis"], 0.0, 0.0, STAND_PELVIS + (CROUCH_PELVIS - STAND_PELVIS) * crouch - bob)
+        P.set_hpr(B["pelvis"], 0.0, 0.0, vs * s * 4.0 * w)
         lean = -12.0 * crouch - 4.0 * w * vf
         a = self.aim_pitch
         roll = Lean.body_roll(lean_amount)
-        j["spine"].setHpr(0, lean + a * 0.25, roll)
-        j["chest"].setP(a * 0.30 - self.kick * 3.0)
-        j["neck"].setHpr(0, a * 0.45 - lean, -roll * 0.35)
-        j["gun"].setP(a * 0.45 + self.kick * 4.0)
-        j["gun"].setY(HOLDS[self.hold]["pos"][1] - self.kick * 0.03)
+        P.set_hpr(B["spine_01"], 0.0, lean + a * 0.25, roll)
+        P.set_hpr(B["spine_03"], 0.0, a * 0.30 - self.kick * 3.0)
+        P.set_hpr(B["neck"], 0.0, a * 0.45 - lean, -roll * 0.35)
+        hold = HOLDS[self.hold]["pos"]
+        P.set_pos(B["weapon"], hold[0], hold[1] - self.kick * 0.03, hold[2])
+        gun_p = a * 0.45 + self.kick * 4.0
+        P.set_hpr(B["weapon"], 0.0, gun_p)
         hip_base = 80.0 * crouch
         knee_base = -95.0 * crouch
         for side, sign in (("l", 1.0), ("r", -1.0)):
             ss = s * sign
             swing = ss * amp * w
-            j[f"hip_{side}"].setHpr(0, hip_base + swing * vf, -swing * vs * 0.6)
+            P.set_hpr(B[f"thigh_{side}"], 0.0, hip_base + swing * vf, -swing * vs * 0.6)
             lift = max(0.0, math.sin(self.phase * 1.0 + (0 if sign > 0 else math.pi) + 1.2))
-            j[f"knee_{side}"].setP(knee_base - lift * (40.0 if crouch < 0.5 else 18.0) * w)
-        self._pose_arms()
-        self._update_bones()
+            P.set_hpr(B[f"calf_{side}"], 0.0, knee_base - lift * (40.0 if crouch < 0.5 else 18.0) * w)
+        self._pose_arms(gun_p)
+        self._apply()
         if self.flash > 0:
             self.flash -= dt
             k = max(self.flash, 0.0) / 0.1
             if self.visible:
                 self.root.setShaderInput("u_emission", LVecBase4f(0.45 * k, 0.04 * k, 0.02 * k, 0))
 
-    def _pose_arms(self) -> None:
-        j = self.joints
-        gun = j["gun"]
-        g = gun.getPos()
-        p = math.radians(gun.getP())
+    def _pose_arms(self, gun_p: float) -> None:
+        """Two-bone IK from the shoulders onto the weapon grips, all in spine_03 space."""
+        P = self.pose
+        g = P.pos[B["weapon"]]
+        p = math.radians(gun_p)
         cp, sp = math.cos(p), math.sin(p)
 
         def to_chest(a: Point3) -> Vec3:
-            return Vec3(g.x + a.x, g.y + a.y * cp - a.z * sp, g.z + a.y * sp + a.z * cp)
+            return Vec3(g[0] + a.x, g[1] + a.y * cp - a.z * sp, g[2] + a.y * sp + a.z * cp)
 
         hand_r = to_chest(self._grips[0])
         if HOLDS[self.hold]["hands"] == 2:
@@ -395,25 +474,25 @@ class CharacterBody:
         for side, sx, hand in (("l", -1.0, hand_l), ("r", 1.0, hand_r)):
             s = Vec3(SHOULDER[0] * sx, SHOULDER[1], SHOULDER[2])
             elbow = two_bone_elbow(s, hand, UPPER_ARM, FOREARM, Vec3(sx * 0.8, -0.3, -1.0))
-            hh, pp = segment_hpr(Point3(s), Point3(elbow))
-            j[f"shoulder_{side}"].setHpr(hh, pp, 0)
-            j[f"elbow_{side}"].setPos(elbow)
-            hh, pp = segment_hpr(Point3(elbow), Point3(hand))
-            j[f"elbow_{side}"].setHpr(hh, pp, 0)
+            # the clavicle is not rotated, so the upper arm aims in spine_03 space
+            upper = sk.aim_hpr(elbow - s)
+            P.set_hpr(B[f"upperarm_{side}"], *upper)
+            P.set_hpr(B[f"lowerarm_{side}"], *sk.relative_hpr(upper, sk.aim_hpr(hand - elbow)))
 
     def _animate_death(self, dt: float) -> None:
         if self.dead_t >= 1.0:
             return
         self.dead_t = min(self.dead_t + dt * 1.8, 1.0)
         t = self.dead_t * self.dead_t
-        j = self.joints
-        self.tilt.setP(86.0 * t * self.fall_dir)
-        self.tilt.setZ(0.13 * t)
-        j["pelvis"].setZ(STAND_PELVIS + (CROUCH_PELVIS - STAND_PELVIS) * min(self.crouch + t * 0.3, 1.0))
+        P = self.pose
+        P.set_hpr(B["root"], 0.0, 86.0 * t * self.fall_dir)
+        P.set_pos(B["root"], 0.0, 0.0, 0.13 * t)
+        P.set_pos(B["pelvis"], 0.0, 0.0,
+                  STAND_PELVIS + (CROUCH_PELVIS - STAND_PELVIS) * min(self.crouch + t * 0.3, 1.0))
         for side in ("l", "r"):
-            j[f"hip_{side}"].setP(40.0 * t * (1 if self.fall_dir < 0 else 0.4))
-            j[f"knee_{side}"].setP(-60.0 * t)
-        j["chest"].setP(-10.0 * t * self.fall_dir)
+            P.set_hpr(B[f"thigh_{side}"], 0.0, 40.0 * t * (1 if self.fall_dir < 0 else 0.4))
+            P.set_hpr(B[f"calf_{side}"], 0.0, -60.0 * t)
+        P.set_hpr(B["spine_03"], 0.0, -10.0 * t * self.fall_dir)
 
     def destroy(self) -> None:
         self.rig.destroy()

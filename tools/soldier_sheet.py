@@ -41,6 +41,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 ANCHOR = (-4.0, 0.0)            # parade ground ("Mid"), open sky, flat asphalt
+ROSTER = {"attack": ("Rook", "Harrow", "Sable", "Dagger", "Mako", "Brine", "Cinder", "Wolfe", "Kestrel", "Jager"),
+          "defend": ("Anvil", "Bastille", "Grail", "Halyard", "Osprey", "Pike", "Thorn", "Vigil", "Rampart", "Tarn")}
 FACING_CAM = 180.0              # soldiers face -Y (towards the camera south of them)
 PANEL = (640, 360)
 COLS = 4
@@ -86,6 +88,7 @@ class SheetDemo:
         self.opts = opts
         self.frame_dt = 1.0 / 30.0
         self.bodies: list = []
+        self._roster_i: dict = {}
         self.queue = [s for s in SHOTS]
         self.wait = 0
         self.files: list[tuple[str, str]] = []
@@ -112,7 +115,14 @@ class SheetDemo:
         from gameplay.match import load_rules
         uniform = load_rules()["teams"][side].get("uniform", "uniform_tan")
         helmet = "metal_tan" if side == "attack" else "metal_olive"
-        b = CharacterBody(self.game, _Owner(side), uniform, helmet, name=f"sheet:{side}")
+        character = None
+        if getattr(self.opts, "procedural", False):
+            # a different soldier each time, from a fixed roster, so sheets are comparable
+            roster = ROSTER[side]
+            k = self._roster_i.get(side, 0)
+            self._roster_i[side] = k + 1
+            character = (roster[k % len(roster)], self.opts.seed, side)
+        b = CharacterBody(self.game, _Owner(side), uniform, helmet, name=f"sheet:{side}", character=character)
         rifle = self.game.weapon_db.weapons["r7" if side == "attack" else "c9"]
         b.set_weapon(rifle.model, rifle.cls)
         b.reset()
@@ -248,11 +258,16 @@ class SheetDemo:
         b = self._body("attack")
         self.stats["body"] = _geom_stats(b.skin) if getattr(b, "skin", None) is not None else {}
         self.stats["weapon"] = _geom_stats(b.weapon_model.root) if b.weapon_model is not None else {}
-        bones = getattr(b, "_bones", None)
-        n_bones = len(bones) if bones is not None else 0
-        self.stats["skinning"] = {"palette_bones": n_bones, "matrix": "mat4",
-                                  "uniform_components": n_bones * 16,
-                                  "weights_per_vertex": 1}
+        pose = getattr(b, "pose", None)
+        if pose is not None:                     # Milestone 9: the game skeleton, linear blend skinning
+            from gameplay import skeleton as sk
+            self.stats["skinning"] = {"palette_bones": sk.N_BONES, "matrix": "mat3x4 (3 vec4 rows)",
+                                      "uniform_components": sk.MAX_BONES * 12, "weights_per_vertex": 4}
+        else:
+            bones = getattr(b, "_bones", None)
+            n_bones = len(bones) if bones is not None else 0
+            self.stats["skinning"] = {"palette_bones": n_bones, "matrix": "mat4",
+                                      "uniform_components": n_bones * 16, "weights_per_vertex": 1}
         self.stats["draw_calls_note"] = ("one draw call per Geom per pass; a soldier is drawn in the main pass, the "
                                          "depth pre-pass and every shadow cascade it overlaps (2-4 by preset), and "
                                          "in local-light shadow maps when a shadowed lamp is near")
@@ -326,6 +341,8 @@ def main(argv=None) -> int:
     ap.add_argument("--stats", default="")
     ap.add_argument("--shots-dir", default="user/screenshots/sheet")
     ap.add_argument("--preset", default="high")
+    ap.add_argument("--procedural", action="store_true", help="Milestone 9 soldiers instead of the mannequin")
+    ap.add_argument("--seed", type=int, default=1, help="appearance seed for --procedural")
     opts, rest = ap.parse_known_args(argv)
 
     from panda3d.core import loadPrcFileData
