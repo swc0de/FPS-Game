@@ -917,13 +917,35 @@ be added later behind the same event interface if you want.
   no measurable difference measured back to back, so it was not kept. Decision to confirm in
   ROADMAP.
 
-**In progress**
-* B1: the 47-bone game skeleton (`gameplay/skeleton.py`), linear blend skinning with 4 weights
-  and a `mat3x4` palette in every pass, the mannequin ported onto it (branch
-  `claude/upbeat-maxwell-p1h773-soldiers`).
+* A10, the performance pass you chose (deeper pass; spike rule "AI p99 ≤ 4 ms"):
+  * **Reproducible `--seed`**: seeded matches drifted apart because the debris of breakable walls
+    drew from the unseeded global `random` (debris bodies change Bullet's contact order). Debris
+    now has its own seeded generator, and the order-dependent depenetration sum is sorted. Every
+    optimisation below was checked against a per-tick state log of a seeded match.
+  * Exact cuts (state log identical): field relaxation into preallocated buffers, the team's view
+    tested only on points in line of sight, 4 m point buckets, cached line-of-sight rows, the
+    roster built once per tick.
+  * Cadence cuts (behaviour nearly the same): three re-thinks per team per tick at most, view
+    sampled every third tick and the field stepped every fourth (teams staggered), walking
+    re-decided every 0.1 s, spacing every other tick and personal space every fourth, the path
+    search budget 260 → 140 expansions per tick.
+  * All weapon and gadget models built at match load (first uses cost up to 264 ms in a tick, for
+    both brains).
+  * Result: AI 1.51 → 1.32 ms per tick, AI p99 4.21 → 3.51 ms (rule met); live tick 3.95 / 6.52 ms
+    (Phase 0 budget 3.97 / 6.64 met; 1.36 × / 1.32 × the same-session legacy control). Head-to-head
+    37 % (30/82, CI 27-47) against 43 % before (CI 33-54): not distinguishable, the halved path
+    budget is the likely cost if there is one. `docs/results/`, ROADMAP decisions.
+
+**In progress** (branch `claude/upbeat-maxwell-p1h773-soldiers`)
+* B1 done: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4`
+  palette in every pass.
+* B2-B4: the procedural soldier (body, clothing, gear, materials, three LODs within 12k / 4k /
+  1.2k triangles), MakeHuman faces when fetched (procedural offline), animation events from the
+  bots' weapons and the bomb, ragdoll deaths.
+* B5: hit capsules fitted to the visible soldier; areas reported, waiting for your decision.
 
 **Next**
-* B2-B7 as in section 5; PR A for your review.
+* B6-B7: integration, animation LOD and performance, the after sheet, PR B.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

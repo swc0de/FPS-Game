@@ -54,62 +54,56 @@ brain is unchanged and still the default until you confirm). Plan, measurements 
 
 ### Milestone 8 results
 
-Full tables and files: [docs/results/](results/README.md).
+Full tables and files: [docs/results/](results/README.md). Measured after the performance pass
+you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 
-* **Against legacy: 43 % of rounds** (38 of 88, 95 % CI 33-54; four full matches with sides
-  swapped, same aim and reaction numbers). The target was 70 %. Attack is even (25 of 48), defence
-  is the gap (13 of 40). Earlier batches on earlier commits ranged from 28 % to 55 %, mostly
-  through defence, so one batch still carries about ±10 points.
-* **Behaviour** (v2 against v2, same seeds as the baseline):
-  * deaths while reloading 20 % → 10 %;
-  * trades 13.6 % → 16.1 % of deaths;
-  * time seen by an enemy 28 % → 20 %;
-  * hits per shot 40 % → 49 %;
-  * flashes blind an enemy 41-46 % of the time;
-  * no attack plan above 25 % of rounds;
-  * unseen deaths about the same (8.4 % → 8.0 %).
-* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 14,000
+* **Against legacy: 37 % of rounds** (30 of 82, 95 % CI 27-47; four full matches with sides
+  swapped, same aim and reaction numbers). The target was 70 %. Before the performance pass the
+  same four seeds gave 43 % (CI 33-54); the intervals overlap, so the pass may or may not have
+  cost a few points (the halved path search budget is the likely suspect). Attack 16 of 38,
+  defence 14 of 44.
+* **Behaviour** (v2 against v2, same seeds as the baseline): being re-measured on the final code; before the pass deaths while reloading fell from 20 % to 10 %, trades rose from 13.6 % to 16.1 % of deaths, and no attack plan took more than 25 % of rounds.
+* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 13,000
   times a match.
 * **Performance**:
-  * live tick mean 4.21 ms and p95 7.29 ms against a budget of 3.97 / 6.64 ms (1.3 × Phase 0);
-  * 542 ticks with AI decisions over 4 ms (legacy 282), worst 14.6 ms (legacy 41.1 ms).
-  * Not met (below).
+  * live tick mean 3.95 ms and p95 6.52 ms against a budget of 3.97 / 6.64 ms (1.3 × Phase 0):
+    met. Against the legacy control measured in the same session (2.91 / 4.95 ms) v2 is still
+    1.36 × / 1.32 ×; this session's machine was about 7 % faster than the last one;
+  * the AI's own cost fell 13 % (1.51 → 1.32 ms per tick); its p99 is 3.51 ms (rule ≤ 4 ms: met;
+    legacy 3.11 ms);
+  * all gun, grenade, gadget and charge models are built at match load: their first use cost up
+    to 264 ms in one tick, for both brains.
 
 ### Milestone 8 decisions to confirm
 
 1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
-   the Milestone 5 bots 70 % of the time; it loses defence rounds. Options:
+   the Milestone 5 bots 70 % of the time; it loses most defence rounds. Options:
    * a) accept it and make v2 the default now (legacy stays behind `--ai legacy`);
    * b) keep legacy as the default and spend another tuning round on defence (retake and
      aggressive setups lose most; anchors give up sites without a trade);
    * c) both: v2 default now, defence tuning as a follow-up.
    I recommend c): the measured gap is on one side, and v2 is better than legacy on most
-   behaviour metrics (reloading deaths, trades, exposure, hits per shot, utility). It is worse
-   on clumping.
-2. **How the head-to-head was run.** Full matches through `--demo bots` with
+   behaviour metrics (reloading deaths, deaths to an unseen enemy, exposure, hits per shot,
+   utility). It is worse on clumping.
+2. **The path search budget.** The performance pass halved it (260 → 140 node expansions per
+   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. The
+   head-to-head went from 43 % to 37 % across the pass (not significant). Options:
+   * a) keep 140 (spike rule met with margin);
+   * b) go back to 260 and measure the AI p99 and the head-to-head again (not measured with the
+     other cuts in place; before the pass the p99 was 4.21 ms);
+   I recommend a) for now and b) as part of the defence tuning round, measured with it.
+3. **How the head-to-head was run.** Full matches through `--demo bots` with
    `BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64` (same 64 Hz game logic, no drawing), four seeds instead
    of the planned three seeds × two starting sides, because a full match is about 22 rounds.
-3. **Performance budget.** v2 costs about 1.35-1.4 × legacy's tick (budget 1.3 ×). Most of it is
-   the AI, about +0.9 ms per 64 Hz tick on this slow CPU. A first round of cuts made no measurable
-   difference. Options:
-   * a) accept about 1.4 × for v2 (game logic stays under a third of the 15.6 ms tick here);
-   * b) a deeper optimisation pass before v2 becomes the default (batching the per-bot queries
-     across the team, cheaper team upkeep), then measure performance and the head-to-head again;
-   * c) re-define the spike rule as "AI p99 ≤ 4 ms". Neither brain meets "no tick over 4 ms" on this
-     CPU (legacy 282 ticks, v2 542; v2's p99 is 4.2 ms).
-   I recommend b) together with c).
 4. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
 
 ### Milestone 8 known issues
 
-* **Win rate 43 %**, defence 33 % (above).
-* **Stacking**: 1.08 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move as
-  a group, and clumps of three rose from about 22 to 38 a match.
-* **Stuck**: one defuser at B site in 48 rounds (target 0; legacy had 2). Path-follower
-  micro-stucks rose from about 80 to 314 a match: bots in groups block each other for under a
-  second.
-* **Performance**: about 1.35-1.4 × legacy per tick (budget 1.3 ×); 542 ticks with AI over 4 ms.
-  Timings on this VM vary by about ±10 % between runs.
+* **Win rate 37 %**, defence 32 % (above).
+* **Stacking**: 1.08 incidents per round before the pass (target ≤ 0.1; legacy 3.4); being re-measured.
+* **Stuck**: one defuser at B site in 48 rounds before the pass (target 0; legacy had 2); being re-measured.
+* **Performance**: within the Phase 0 budget, but about 1.32-1.36 × legacy's tick measured in the
+  same session (budget 1.3 ×). Timings on this VM vary by about ±10 % between sessions.
 
 ## Milestone 7 - delivered
 

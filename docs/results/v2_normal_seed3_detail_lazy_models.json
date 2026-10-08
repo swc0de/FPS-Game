@@ -7,95 +7,766 @@
   "0": "v2",
   "1": "v2"
  },
- "wall_seconds": 972.910676240921,
+ "wall_seconds": 968.4679453372955,
  "python": "3.11.15",
  "timing": {
   "live": {
    "ticks": 44110,
    "total_ms": {
-    "mean": 3.951996146499879,
-    "p50": 3.857530500226858,
-    "p95": 6.519556900457244,
-    "p99": 8.03226622001601,
-    "max": 76.16717100063397
+    "mean": 4.101949174655069,
+    "p50": 4.010137000477698,
+    "p95": 6.727806749449883,
+    "p99": 8.169245889530426,
+    "max": 76.34871800019027
    },
    "ai_ms": {
-    "mean": 0.0,
-    "p50": 0.0,
-    "p95": 0.0,
-    "p99": 0.0,
-    "max": 0.0
+    "mean": 1.3204400443879254,
+    "p50": 1.1964035020355368,
+    "p95": 2.643745900195426,
+    "p99": 3.5186051193613705,
+    "max": 73.29599199965742
    },
-   "ai_ticks_over_4ms": 0,
+   "ai_ticks_over_4ms": 186,
    "ai_decisions_ms": {
-    "mean": 0.0,
-    "p50": 0.0,
-    "p95": 0.0,
-    "p99": 0.0,
-    "max": 0.0
+    "mean": 1.317117117092278,
+    "p50": 1.1950269990848028,
+    "p95": 2.6393180991817635,
+    "p99": 3.5109522708535215,
+    "max": 34.17455800263269
    },
-   "ai_decision_ticks_over_4ms": 0,
+   "ai_decision_ticks_over_4ms": 181,
    "subsystems_mean_ms": {
-    "ai_decisions": 0.0,
-    "demo_tick": 0.026630441848403845,
-    "gc": 0.001830471911311912
+    "ai_decisions": 1.317117117092278,
+    "animation": 0.8198998962836376,
+    "brains": 1.3029708749484037,
+    "bullet": 0.9223883991639775,
+    "demo_tick": 0.02714627782683818,
+    "destruction": 0.006772906434586702,
+    "gadget_ai": 0.010453550531839294,
+    "gc": 0.00250451299023687,
+    "gc_in_ai": 0.0006639518022572307,
+    "movement": 0.6551232014368819,
+    "perception": 0.17396854683823898,
+    "tactical": 0.22473573135462738,
+    "team": 0.007015618907682384
    },
    "subsystems_p99_ms": {
-    "ai_decisions": 0.0,
-    "demo_tick": 0.14832873011982844,
-    "gc": 0.0
+    "ai_decisions": 3.5109522708535215,
+    "animation": 1.7069529810214563,
+    "brains": 3.442902690903785,
+    "bullet": 1.7622192801172778,
+    "demo_tick": 0.14787866045480721,
+    "destruction": 0.027614919827101358,
+    "gadget_ai": 0.24023967958783013,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 1.313406489052795,
+    "perception": 1.0716957705153605,
+    "tactical": 0.4701246402873945,
+    "team": 0.2242684097018334
    }
   },
   "all": {
    "ticks": 61136,
    "total_ms": {
-    "mean": 3.8389311972186086,
-    "p50": 3.7418344995785446,
-    "p95": 6.37468274976527,
-    "p99": 7.872497749940522,
-    "max": 225.83928699987155
+    "mean": 3.9878612981070636,
+    "p50": 3.90258549941791,
+    "p95": 6.551527749934394,
+    "p99": 8.046547650155846,
+    "max": 270.9495319995767
    },
    "ai_ms": {
-    "mean": 0.0,
-    "p50": 0.0,
-    "p95": 0.0,
-    "p99": 0.0,
-    "max": 0.0
+    "mean": 1.179252678580743,
+    "p50": 1.0474225005054905,
+    "p95": 2.4865174996193673,
+    "p99": 3.385733799814264,
+    "max": 265.61889500044344
    },
-   "ai_ticks_over_4ms": 0,
+   "ai_ticks_over_4ms": 201,
    "ai_decisions_ms": {
-    "mean": 0.0,
-    "p50": 0.0,
-    "p95": 0.0,
-    "p99": 0.0,
-    "max": 0.0
+    "mean": 1.1703187857678774,
+    "p50": 1.0464199995112722,
+    "p95": 2.4802517509669997,
+    "p99": 3.3593249002478847,
+    "max": 34.17455800263269
    },
-   "ai_decision_ticks_over_4ms": 0,
+   "ai_decision_ticks_over_4ms": 187,
    "subsystems_mean_ms": {
-    "ai_decisions": 0.0,
-    "demo_tick": 0.020896725397361014,
-    "gc": 0.0014113953645496285
+    "ai_decisions": 1.1703187857678774,
+    "animation": 0.8300609611055987,
+    "brains": 1.1646998875415728,
+    "bullet": 0.9263503908852465,
+    "demo_tick": 0.021046413257125727,
+    "destruction": 0.006821764620906882,
+    "gadget_ai": 0.009434956637079635,
+    "gc": 0.001964369111499645,
+    "gc_in_ai": 0.0005946166251915423,
+    "movement": 0.668953562827321,
+    "perception": 0.1553552561178872,
+    "tactical": 0.2118438275985274,
+    "team": 0.005117834402090433
    },
    "subsystems_p99_ms": {
-    "ai_decisions": 0.0,
-    "demo_tick": 0.1419315498424112,
-    "gc": 0.0
+    "ai_decisions": 3.3593249002478847,
+    "animation": 1.9295484999474866,
+    "brains": 3.3095326004058747,
+    "bullet": 1.7662126500454178,
+    "demo_tick": 0.14172030023473786,
+    "destruction": 0.02855669918062657,
+    "gadget_ai": 0.22113935006018492,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 1.3362928991227818,
+    "perception": 1.0213097006271716,
+    "tactical": 0.465363700004673,
+    "team": 0.1937076001468092
    }
   },
-  "slowest_single_brain_update_ms": 0.0,
+  "slowest_single_brain_update_ms": 264.0009609995104,
   "gc_pauses": {
-   "count": 226,
-   "mean": 0.41030711950002796,
-   "p50": 0.1774130000740115,
-   "p95": 0.7664945003398316,
-   "p99": 1.4407339999706892,
-   "max": 39.50641499977792,
+   "count": 229,
+   "mean": 0.5327626288233731,
+   "p50": 0.1843230002123164,
+   "p95": 1.0120535995156388,
+   "p99": 1.528219759748026,
+   "max": 62.39856599950144,
    "over_4ms": 1
   },
-  "queries": {},
+  "queries": {
+   "q:bomb_plant": {
+    "calls": 7,
+    "mean": 0.07324928576833502,
+    "p50": 0.06796999969083117,
+    "p95": 0.10815290033860944,
+    "p99": 0.11515298019730834,
+    "max": 0.11690300016198307,
+    "over_4ms": 0
+   },
+   "q:breach": {
+    "calls": 1380,
+    "mean": 0.003097420275862796,
+    "p50": 0.0023400002646667417,
+    "p95": 0.0045787998260493614,
+    "p99": 0.010211839780822629,
+    "max": 0.27868299912370276,
+    "over_4ms": 0
+   },
+   "q:defend_setup": {
+    "calls": 8,
+    "mean": 1.2733257501622575,
+    "p50": 1.1162260007040459,
+    "p95": 1.9294858497687524,
+    "p99": 2.219825969850717,
+    "max": 2.2924109998712083,
+    "over_4ms": 0
+   },
+   "q:deploy_gadget": {
+    "calls": 14,
+    "mean": 24.905246142874862,
+    "p50": 0.2994635001414281,
+    "p95": 115.01598790055132,
+    "p99": 234.1350783806409,
+    "max": 263.9148510006635,
+    "over_4ms": 4
+   },
+   "q:fire": {
+    "calls": 570,
+    "mean": 1.5267325543901646,
+    "p50": 1.4288064999163907,
+    "p95": 2.562363899551201,
+    "p99": 3.2044439398759827,
+    "max": 5.65141299921379,
+    "over_4ms": 3
+   },
+   "q:flee": {
+    "calls": 2,
+    "mean": 1.4627139998992789,
+    "p50": 1.4627139998992789,
+    "p95": 1.571159500235808,
+    "p99": 1.5807991002657218,
+    "max": 1.5832090002732002,
+    "over_4ms": 0
+   },
+   "q:hearing": {
+    "calls": 469037,
+    "mean": 0.0028245198564759186,
+    "p50": 0.0009179993867292069,
+    "p95": 0.012910000077681616,
+    "p99": 0.044252000079723075,
+    "max": 0.9314589997302392,
+    "over_4ms": 0
+   },
+   "q:radio_hud": {
+    "calls": 749,
+    "mean": 0.01776224567542224,
+    "p50": 0.01688599968474591,
+    "p95": 0.025919800282281365,
+    "p99": 0.05369868016714457,
+    "max": 0.07722400005150121,
+    "over_4ms": 0
+   },
+   "q:set_weapon_model": {
+    "calls": 285,
+    "mean": 1.5903269684202856,
+    "p50": 0.04474600063986145,
+    "p95": 0.14560020026692658,
+    "p99": 74.1761277999834,
+    "max": 103.82778700022754,
+    "over_4ms": 7
+   },
+   "q:throw_drone": {
+    "calls": 29,
+    "mean": 1.26040051722596,
+    "p50": 0.2934120002464624,
+    "p95": 0.722207999569946,
+    "p99": 19.23986216002956,
+    "max": 26.437067000188108,
+    "over_4ms": 1
+   },
+   "q:use_gadget": {
+    "calls": 21,
+    "mean": 0.1461481428382935,
+    "p50": 0.030593000701628625,
+    "p95": 0.6865320001452346,
+    "p99": 0.7049151996397995,
+    "max": 0.7095109995134408,
+    "over_4ms": 0
+   },
+   "q:v2_field_observe": {
+    "calls": 35623,
+    "mean": 0.02005474454793365,
+    "p50": 0.018679999811865855,
+    "p95": 0.03718220013979591,
+    "p99": 0.0659556803293526,
+    "max": 0.6299820006461232,
+    "over_4ms": 0
+   },
+   "q:v2_field_step": {
+    "calls": 30091,
+    "mean": 0.25236020494579103,
+    "p50": 0.24473700068483595,
+    "p95": 0.3386974999557424,
+    "p99": 0.42059549878103986,
+    "max": 2.316756001164322,
+    "over_4ms": 0
+   },
+   "q:v2_find_cover": {
+    "calls": 11226,
+    "mean": 0.11698490139190035,
+    "p50": 0.10959549990730011,
+    "p95": 0.17634075015848794,
+    "p99": 0.2280015005453606,
+    "max": 4.390853999211686,
+    "over_4ms": 1
+   },
+   "q:v2_lean": {
+    "calls": 371237,
+    "mean": 0.0024723703459054594,
+    "p50": 0.0014050001482246444,
+    "p95": 0.003455000296526123,
+    "p99": 0.03805328015005219,
+    "max": 1.7629600006330293,
+    "over_4ms": 0
+   },
+   "q:v2_paths": {
+    "calls": 120349,
+    "mean": 0.030953640377920127,
+    "p50": 0.00609600010648137,
+    "p95": 0.014925799405318659,
+    "p99": 1.044000080219123,
+    "max": 5.08688100035215,
+    "over_4ms": 1
+   },
+   "q:v2_post_plant": {
+    "calls": 7,
+    "mean": 0.7217904288024458,
+    "p50": 0.684952000483463,
+    "p95": 0.9186082005726347,
+    "p99": 0.9466368410176073,
+    "max": 0.9536440011288505,
+    "over_4ms": 0
+   },
+   "q:v2_preaim": {
+    "calls": 85255,
+    "mean": 0.005078795493761186,
+    "p50": 0.0021099995137774386,
+    "p95": 0.005526000040845247,
+    "p99": 0.11237618045925131,
+    "max": 2.0678860000771238,
+    "over_4ms": 0
+   },
+   "q:v2_team_tick": {
+    "calls": 469037,
+    "mean": 0.04897223901157766,
+    "p50": 0.0007279995770659298,
+    "p95": 0.30838620004942635,
+    "p99": 0.7496145997720328,
+    "max": 7.2355279999101185,
+    "over_4ms": 5
+   },
+   "q:v2_think": {
+    "calls": 41627,
+    "mean": 0.2612962191160931,
+    "p50": 0.24714400024095085,
+    "p95": 0.49209499984499405,
+    "p99": 0.6149526401713953,
+    "max": 4.7842450003372505,
+    "over_4ms": 1
+   },
+   "q:v2_throw": {
+    "calls": 1880,
+    "mean": 0.03382790798792833,
+    "p50": 0.006935500550753204,
+    "p95": 0.16474219987685493,
+    "p99": 0.32809737043862697,
+    "max": 9.965050000573683,
+    "over_4ms": 2
+   }
+  },
   "spikes": {
-   "count": 0,
-   "worst": []
+   "count": 201,
+   "worst": [
+    {
+     "t": 585.265625,
+     "round": 6,
+     "phase": "prep",
+     "ai_ms": 265.61889500044344,
+     "tick_ms": 270.9495319995767,
+     "parts": {
+      "brains": 265.62,
+      "q:deploy_gadget": 263.91,
+      "animation": 1.72,
+      "movement": 1.59,
+      "bullet": 1.3,
+      "q:v2_team_tick": 0.44,
+      "tactical": 0.4
+     },
+     "slowest_bot": "Anvil [defend] hp 100 sr90 task/hold:hold [awper] task:0.58 "
+    },
+    {
+     "t": 64.65625,
+     "round": 1,
+     "phase": "live",
+     "ai_ms": 73.29599199965742,
+     "tick_ms": 76.34871800019027,
+     "parts": {
+      "brains": 73.3,
+      "q:set_weapon_model": 72.06,
+      "animation": 1.15,
+      "bullet": 0.83,
+      "movement": 0.65,
+      "q:v2_think": 0.47
+     },
+     "slowest_bot": "Kestrel [attack] hp 87 bomb task/plant:plant [trade] task:1.05 reload:0.57 alert:0.55 "
+    },
+    {
+     "t": 10.671875,
+     "round": 1,
+     "phase": "prep",
+     "ai_ms": 35.68786699997872,
+     "tick_ms": 38.2817330000762,
+     "parts": {
+      "brains": 35.69,
+      "q:deploy_gadget": 34.84,
+      "bullet": 0.8,
+      "animation": 0.75,
+      "movement": 0.65
+     },
+     "slowest_bot": "Osprey [defend] hp 100 p9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 19.21875,
+     "round": 1,
+     "phase": "prep",
+     "ai_ms": 34.95168200061016,
+     "tick_ms": 37.14516700074455,
+     "parts": {
+      "brains": 34.95,
+      "q:deploy_gadget": 34.35,
+      "movement": 0.68,
+      "bullet": 0.65,
+      "animation": 0.41
+     },
+     "slowest_bot": "Grail [defend] hp 100 p9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 939.59375,
+     "round": 8,
+     "phase": "planted",
+     "ai_ms": 34.17455800263269,
+     "tick_ms": 36.160109000775265,
+     "parts": {
+      "brains": 34.17,
+      "perception": 16.75,
+      "bullet": 0.63,
+      "movement": 0.51,
+      "animation": 0.49,
+      "q:v2_team_tick": 0.32
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 engage/guard:post [trade] engage:1.08 task:0.50 "
+    },
+    {
+     "t": 8.0,
+     "round": 1,
+     "phase": "prep",
+     "ai_ms": 32.399406998592895,
+     "tick_ms": 35.878151999895636,
+     "parts": {
+      "gadget_ai": 28.38,
+      "q:throw_drone": 27.0,
+      "brains": 4.01,
+      "q:v2_team_tick": 2.82,
+      "q:v2_paths": 1.86,
+      "q:defend_setup": 1.22,
+      "bullet": 1.22,
+      "movement": 0.85,
+      "animation": 0.8,
+      "q:v2_think": 0.52,
+      "q:v2_field_step": 0.33
+     },
+     "slowest_bot": "Thorn [defend] hp 100 p9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 479.609375,
+     "round": 5,
+     "phase": "live",
+     "ai_ms": 14.523067000482115,
+     "tick_ms": 20.891234999908193,
+     "parts": {
+      "brains": 14.52,
+      "q:v2_team_tick": 7.28,
+      "perception": 6.7,
+      "bullet": 3.2,
+      "animation": 1.71,
+      "movement": 0.91,
+      "tactical": 0.32
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 584.734375,
+     "round": 6,
+     "phase": "prep",
+     "ai_ms": 13.285462001476844,
+     "tick_ms": 16.163295999831462,
+     "parts": {
+      "brains": 13.29,
+      "q:deploy_gadget": 12.67,
+      "animation": 0.9,
+      "bullet": 0.89,
+      "movement": 0.72
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold [anchor] task:0.58 "
+    },
+    {
+     "t": 137.40625,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 12.419391998264473,
+     "tick_ms": 17.7151119996779,
+     "parts": {
+      "brains": 12.42,
+      "q:v2_throw": 9.97,
+      "q:set_weapon_model": 9.75,
+      "animation": 2.11,
+      "movement": 1.39,
+      "bullet": 1.19,
+      "q:v2_think": 0.54,
+      "tactical": 0.34
+     },
+     "slowest_bot": "Jager [attack] hp 100 grenade throw/move:clear [support] throw:0.90 alert:0.83 task:0.50 "
+    },
+    {
+     "t": 61.0,
+     "round": 1,
+     "phase": "live",
+     "ai_ms": 10.578245000033348,
+     "tick_ms": 14.329947999613069,
+     "parts": {
+      "gadget_ai": 8.49,
+      "brains": 1.88,
+      "bullet": 1.28,
+      "animation": 1.09,
+      "movement": 0.88,
+      "q:v2_team_tick": 0.49,
+      "q:v2_think": 0.36,
+      "tactical": 0.32,
+      "perception": 0.32
+     },
+     "slowest_bot": "Kestrel [attack] hp 87 p9 alert/plant:plant [trade] alert:0.80 task:0.70 "
+    },
+    {
+     "t": 215.5,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 9.825582999837934,
+     "tick_ms": 21.010966000176268,
+     "parts": {
+      "brains": 9.73,
+      "bullet": 7.57,
+      "q:v2_team_tick": 5.59,
+      "q:v2_paths": 3.96,
+      "animation": 1.71,
+      "movement": 1.3,
+      "q:v2_think": 0.57,
+      "tactical": 0.32
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 task/move:rush [trade] task:0.58 "
+    },
+    {
+     "t": 240.375,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 8.868461000020034,
+     "tick_ms": 39.42210199966212,
+     "parts": {
+      "animation": 13.44,
+      "brains": 8.87,
+      "bullet": 6.89,
+      "perception": 6.33,
+      "movement": 5.36,
+      "q:v2_think": 0.42,
+      "q:v2_team_tick": 0.37,
+      "tactical": 0.35
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 engage/move:rush [trade] engage:1.08 task:0.50 "
+    },
+    {
+     "t": 888.0,
+     "round": 8,
+     "phase": "live",
+     "ai_ms": 8.48364500052412,
+     "tick_ms": 23.296801999094896,
+     "parts": {
+      "brains": 8.01,
+      "movement": 5.59,
+      "animation": 4.22,
+      "bullet": 4.16,
+      "q:v2_preaim": 2.08,
+      "q:v2_think": 1.53,
+      "q:v2_team_tick": 0.64,
+      "gadget_ai": 0.3
+     },
+     "slowest_bot": "Anvil [defend] hp 100 c9 task/hold:hold [anchor] task:0.50 "
+    },
+    {
+     "t": 83.421875,
+     "round": 1,
+     "phase": "planted",
+     "ai_ms": 8.265385999948194,
+     "tick_ms": 9.560042999510188,
+     "parts": {
+      "brains": 8.27,
+      "q:v2_throw": 7.36,
+      "q:set_weapon_model": 7.13,
+      "q:v2_think": 0.45,
+      "bullet": 0.37,
+      "movement": 0.35
+     },
+     "slowest_bot": "Jager [attack] hp 2 grenade throw/guard:post [support] throw:0.91 alert:0.90 task:0.50 "
+    },
+    {
+     "t": 907.5,
+     "round": 8,
+     "phase": "live",
+     "ai_ms": 7.90127500295057,
+     "tick_ms": 13.0405800009612,
+     "parts": {
+      "brains": 7.2,
+      "q:v2_team_tick": 3.67,
+      "q:v2_paths": 2.34,
+      "q:v2_think": 1.86,
+      "bullet": 1.75,
+      "movement": 1.43,
+      "animation": 1.27,
+      "q:v2_find_cover": 0.49,
+      "q:v2_field_step": 0.46,
+      "team": 0.44,
+      "tactical": 0.34
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 task/move:clear [trade] task:0.58 "
+    },
+    {
+     "t": 168.703125,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 6.556527001521317,
+     "tick_ms": 18.847114999516634,
+     "parts": {
+      "movement": 6.85,
+      "brains": 6.56,
+      "tactical": 6.49,
+      "bullet": 3.87,
+      "animation": 1.05,
+      "q:v2_think": 0.35
+     },
+     "slowest_bot": "Sable [attack] hp 100 r7 task/plant:plant [lurker] task:1.05 alert:0.56 reload:0.51 "
+    },
+    {
+     "t": 588.4375,
+     "round": 6,
+     "phase": "live",
+     "ai_ms": 6.481291000454803,
+     "tick_ms": 11.385601999791106,
+     "parts": {
+      "brains": 6.48,
+      "q:v2_team_tick": 2.14,
+      "movement": 1.68,
+      "animation": 1.54,
+      "bullet": 1.13,
+      "q:v2_think": 0.59,
+      "tactical": 0.38,
+      "q:v2_field_step": 0.35
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 task/move:fake [support] task:0.58 "
+    },
+    {
+     "t": 35.40625,
+     "round": 1,
+     "phase": "live",
+     "ai_ms": 6.3151879994620685,
+     "tick_ms": 9.073974999409984,
+     "parts": {
+      "brains": 6.32,
+      "q:v2_team_tick": 5.25,
+      "q:v2_paths": 5.09,
+      "bullet": 0.98,
+      "animation": 0.86,
+      "movement": 0.62,
+      "q:v2_think": 0.33
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 p9 task/move:stage [trade] task:0.58 "
+    },
+    {
+     "t": 687.0,
+     "round": 7,
+     "phase": "prep",
+     "ai_ms": 6.063515001187625,
+     "tick_ms": 10.173194999879343,
+     "parts": {
+      "gadget_ai": 3.73,
+      "brains": 2.33,
+      "q:defend_setup": 2.29,
+      "q:v2_team_tick": 1.64,
+      "bullet": 1.42,
+      "q:throw_drone": 1.32,
+      "q:v2_paths": 1.14,
+      "movement": 1.06,
+      "gc": 1.03,
+      "gc_in_ai": 1.03,
+      "animation": 1.01
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 349.78125,
+     "round": 4,
+     "phase": "live",
+     "ai_ms": 5.855931998667074,
+     "tick_ms": 9.222296998814272,
+     "parts": {
+      "brains": 5.86,
+      "q:v2_team_tick": 4.76,
+      "animation": 1.39,
+      "q:v2_paths": 1.23,
+      "bullet": 1.04,
+      "perception": 0.75,
+      "movement": 0.55
+     },
+     "slowest_bot": "Jager [attack] hp 100 r7 engage/move:clear [support] engage:1.08 task:0.50 "
+    },
+    {
+     "t": 233.515625,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 5.781013000159874,
+     "tick_ms": 12.256026000613929,
+     "parts": {
+      "brains": 5.78,
+      "perception": 2.46,
+      "animation": 2.02,
+      "movement": 1.79,
+      "bullet": 1.78,
+      "q:v2_think": 0.67,
+      "q:v2_team_tick": 0.53,
+      "q:v2_field_step": 0.42,
+      "tactical": 0.4
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 874.75,
+     "round": 8,
+     "phase": "live",
+     "ai_ms": 5.737352003052365,
+     "tick_ms": 12.22988500012434,
+     "parts": {
+      "brains": 5.55,
+      "bullet": 2.18,
+      "animation": 2.16,
+      "perception": 1.85,
+      "q:v2_team_tick": 1.63,
+      "movement": 1.53,
+      "q:v2_think": 1.23,
+      "q:v2_field_step": 0.3
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 alert/move:clear [trade] alert:0.79 task:0.50 "
+    },
+    {
+     "t": 244.75,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 5.710236999220797,
+     "tick_ms": 10.538886000176717,
+     "parts": {
+      "brains": 5.08,
+      "q:v2_team_tick": 3.48,
+      "q:v2_paths": 3.14,
+      "animation": 1.64,
+      "bullet": 1.49,
+      "movement": 1.14,
+      "q:v2_think": 0.92,
+      "team": 0.52
+     },
+     "slowest_bot": "Anvil [defend] hp 100 c9 alert/hold:hold [anchor] alert:0.87 task:0.50 "
+    },
+    {
+     "t": 100.75,
+     "round": 2,
+     "phase": "prep",
+     "ai_ms": 5.670410999300657,
+     "tick_ms": 10.54179099992325,
+     "parts": {
+      "brains": 2.86,
+      "gadget_ai": 2.8,
+      "q:v2_team_tick": 1.86,
+      "animation": 1.86,
+      "bullet": 1.48,
+      "q:throw_drone": 1.39,
+      "q:defend_setup": 1.26,
+      "q:v2_paths": 1.25,
+      "movement": 1.0,
+      "q:v2_think": 0.43
+     },
+     "slowest_bot": "Thorn [defend] hp 100 p9 task/hold:hold [rotator] task:0.58 "
+    },
+    {
+     "t": 726.90625,
+     "round": 7,
+     "phase": "live",
+     "ai_ms": 5.635692000396375,
+     "tick_ms": 8.677607000208809,
+     "parts": {
+      "brains": 5.64,
+      "perception": 2.11,
+      "bullet": 1.06,
+      "animation": 0.87,
+      "q:v2_think": 0.75,
+      "movement": 0.73
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold [anchor] task:0.58 "
+    }
+   ]
   }
  },
  "behaviour": {
