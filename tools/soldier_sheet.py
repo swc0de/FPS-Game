@@ -15,7 +15,7 @@ the two show exactly the same views.
 Shots: close up at 2 m (front, side, back), 10 m, 40 m (colour and
 greyscale: team readability by value only; rendered at the pixel size a
 1920x1080 screen shows, as a centre crop), crouching, aiming at +60 and -60
-degrees, leaning both ways, running, reloading and dead. Vanguard (attack) is
+degrees, leaning both ways, running, reloading and dead, and (Milestone 9) faces at 0.9 m. Vanguard (attack) is
 always on the left of a pair, Bastion (defence) on the right.
 
 Statistics written with ``--stats``:
@@ -72,6 +72,8 @@ SHOTS = [
                              ("defend", 0.5, 0, 240, {"event": "reload"})], (0, -2.6, 1.5, 1.1)),
     ("death", "dead", [("attack", -0.8, 0.2, 180, {"die": True}), ("defend", 0.9, 0.0, 120, {"die": True})],
      (0, -3.6, 1.9, 0.3)),
+    ("faces", "faces at 0.9 m (not in the before sheet)", [("attack", -0.25, 0.05, 195, {}), ("defend", 0.25, 0.05, 165, {})],
+     (0, -0.9, 1.63, 1.6)),
 ]
 
 
