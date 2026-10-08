@@ -939,16 +939,28 @@ be added later behind the same event interface if you want.
     (9.2 %) are worse than before the pass; the halved path budget is the likely cause, listed as
     a decision with its measured cost. `docs/results/`, ROADMAP.
 
-**In progress** (branch `claude/upbeat-maxwell-p1h773-soldiers`)
-* B1 done: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4`
-  palette in every pass.
-* B2-B4: the procedural soldier (body, clothing, gear, materials, three LODs within 12k / 4k /
-  1.2k triangles), MakeHuman faces when fetched (procedural offline), animation events from the
-  bots' weapons and the bomb, ragdoll deaths.
-* B5: hit capsules fitted to the visible soldier; areas reported, waiting for your decision.
+* Workstream B (branch `claude/upbeat-maxwell-p1h773-soldiers`), results in
+  [docs/results_m9/](results_m9/README.md):
+  * B1: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4` palette in
+    every pass.
+  * B2-B3: the procedural soldier (body, clothing, gear from distance fields, surface nets,
+    quadric decimation to three LODs), the palette and character shader; MakeHuman / MPFB2 faces
+    when fetched (head placed on the game skeleton, hair, beards and brows as paint plus layers
+    grown from the skin), procedural faces offline. Fixed on the way: decimation that retried
+    refused collapses forever (meshes 2-25 × over budget), helmet meshes that cracked or pinched
+    and locked the decimation, MakeHuman skulls poking through caps.
+  * B4: animation events from the bots' weapons and the bomb (reload, switch, throw, knife, plant,
+    defuse, hit flinch), Bullet ragdolls on death.
+  * B5: hit capsules on the bones fitted to the visible soldier, as you chose; the plan's sync of
+    the hit boxes right after posing is not possible with Panda's Bullet (kinematic bodies move
+    only in the step), kept as before as you chose; head centres within 1 cm.
+  * B6: animation LOD for the palette (the hit boxes still every tick), a far LOD for held guns
+    (5 draw calls per soldier near, 2 far), faster builds.
+  * B7: the after sheet (`docs/images/soldiers_after.jpg`), statistics, docs.
 
-**Next**
-* B6-B7: integration, animation LOD and performance, the after sheet, PR B.
+**In progress**
+* B: the AI balance re-run with the new hit boxes (the A behaviour metrics and a head-to-head
+  subset), then PR B.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings
