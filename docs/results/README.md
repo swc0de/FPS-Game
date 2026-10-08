@@ -129,7 +129,7 @@ Detailed runs (per-subsystem timers; their overhead raises the totals a little):
 | AI decisions, p99 ms | 3.11 | **3.90** | 4.21 |
 | ticks with AI decisions over 4 ms | 282 | 412 | 542 |
 | worst AI tick ms | 41.1 | 62.9 (a 60 ms garbage-collection pause inside a re-think); 15.9 without it | 14.6 |
-| path search budget 260 instead of 140 (decision 2) | | being measured | |
+| path search budget 260 instead of 140 (decision 2) | | AI mean 1.46 ms, **p99 4.15 ms** (over the rule), 488 ticks over 4 ms | |
 
 * **The spike rule you chose (AI p99 ≤ 4 ms) is met**, by a small margin (3.51 and 3.90 ms in two
   sessions). The AI's own cost fell 6-13 %.

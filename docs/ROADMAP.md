@@ -95,9 +95,11 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
    the pass, trades and unseen deaths are worse than legacy's (the head-to-head is unchanged at
    42 %). Options:
    * a) keep 140 (spike rule met with margin);
-   * b) go back to 260 and measure the AI p99 and the head-to-head again (not measured with the
-     other cuts in place; before the pass the p99 was 4.21 ms);
-   I recommend a) for now and b) as part of the defence tuning round, measured with it.
+   * b) go back to 260: measured on the final code, the AI p99 rises from 3.90 to 4.15 ms, over
+     the rule you chose (AI mean 1.42 → 1.46 ms); its effect on trades is being measured;
+   * c) keep 140 and make trading cheaper instead (a trade route from the path cache, not a
+     new search), as part of the defence tuning round.
+   I recommend c): b) breaks the spike rule.
 3. **The tick budget.** The spike rule you chose is met, but the whole tick is about 1.32-1.40 ×
    legacy's (budget 1.3 ×). Going further needs a structural change (batching the per-bot
    queries across the team), not more trimming. Options: a) accept about 1.35-1.4 × for v2 (game
