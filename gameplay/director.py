@@ -134,6 +134,31 @@ class MatchDirector:
         self._kill_z = float(game.level.data.get("bounds", [[0, 0, -50]])[0][2]) - 3.0
         self.feed: list[dict] = []
         self.radio_log: list[dict] = []
+        self._prewarm_models()
+
+    def _prewarm_models(self) -> None:
+        """Build every gun, grenade, gadget and charge model once now (a few seconds at load)
+        rather than on first use inside a tick: the first deploy of a gadget kind cost up to
+        260 ms in one tick, the first gun of a kind 70 ms (docs/results). Decision-neutral."""
+        import time
+        import gameplay.observation  # noqa: F401  (the drone and camera are Deployables too)
+        from gameplay import gadgets
+        from weapons.models import prewarm
+        db = self.game.weapon_db
+        keys = [(w.model, "all") for w in db.weapons.values() if w.model]
+        keys += [(g.model, "all") for g in db.grenades.values() if g.model]
+        keys.append(("bomb_charge", "all"))
+        seen, todo = set(), [gadgets.Deployable]
+        while todo:
+            cls = todo.pop()
+            todo.extend(cls.__subclasses__())
+            if cls.model and cls.model not in seen:
+                seen.add(cls.model)
+                keys.append((cls.model, "body"))
+        t0 = time.perf_counter()
+        n = prewarm(self.game.materials, sorted(set(keys)))
+        if n:
+            print(f"[match] built {n} weapon and gadget models in {time.perf_counter() - t0:.1f}s")
 
     # ------------------------------------------------------------ roster
     def _build_roster(self) -> None:

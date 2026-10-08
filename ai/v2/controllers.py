@@ -27,6 +27,7 @@ run every tick and decide *how*, on top of the layers every bot shares
 from __future__ import annotations
 
 import math
+import zlib
 
 from panda3d.core import Point3, Vec3
 
@@ -40,6 +41,12 @@ EYE = 1.62
 
 def flat(v: Vec3) -> Vec3:
     return Vec3(v.x, v.y, 0.0)
+
+
+def stable_bit(name: str) -> bool:
+    """A fixed coin flip per bot, the same in every run (id() and hash() change between runs,
+    which broke --seed reproduction)."""
+    return bool(zlib.crc32(name.encode()) & 1)
 
 
 class Mover:
@@ -165,12 +172,29 @@ class Mover:
         return path if len(path) >= 2 else None
 
     def _spacing(self, wish: Vec3, pos: Point3) -> Vec3:
-        """Keep out of a teammate's back and out of a doorway someone is in."""
+        """Keep out of a teammate's back and out of a doorway someone is in (the slow-down is
+        worked out every other tick and held in between)."""
         if wish.lengthSquared() < 1e-6:
             return wish
         b = self.b
         d = Vec3(wish)
         d.normalize()
+        self._space_n = getattr(self, "_space_n", 0) + 1
+        if self._space_n % 2 == 1 and hasattr(self, "_slow"):
+            slow = self._slow
+        else:
+            slow = self._slow_factor(d, pos, b)
+            self._slow = slow
+        if slow <= 0.0:
+            self.waiting += 1.0 / 64.0
+            if self.waiting > 2.5:                 # don't wait forever: sidestep past
+                side = Vec3(-d.y, d.x, 0) * (1 if stable_bit(b.bot.name) else -1)
+                return (d * 0.4 + side).normalized()
+            return Vec3(0, 0, 0)
+        self.waiting = 0.0
+        return d * slow if slow < 1.0 else wish
+
+    def _slow_factor(self, d: Vec3, pos: Point3, b) -> float:
         slow = 1.0
         for m in b.team.mates_of(b.bot):
             q = m.position()
@@ -185,14 +209,7 @@ class Mover:
                 slow = min(slow, 0.0)              # a teammate is going through the doorway ahead
         if slow < 1.0 and b.at_door(pos):
             slow = 1.0                             # never stop in a doorway
-        if slow <= 0.0:
-            self.waiting += 1.0 / 64.0
-            if self.waiting > 2.5:                 # don't wait forever: sidestep past
-                side = Vec3(-d.y, d.x, 0) * (1 if (id(b.bot) >> 4) & 1 else -1)
-                return (d * 0.4 + side).normalized()
-            return Vec3(0, 0, 0)
-        self.waiting = 0.0
-        return d * slow if slow < 1.0 else wish
+        return slow
 
 
 class AimPolicy:

@@ -36,7 +36,7 @@
              "strafe": 0.9, "grenades": 1.0, "fire_tolerance": 1.0, "max_burst": 20}
  },
  "v2": {
-  "path_budget": 260,
+  "path_budget": 140,
   "radio": {"delay": 0.55, "delay_range": [0.3, 1.2], "fuzz": 2.5, "batch": 0.6, "miss": 0.0},
   "humanize": {
    "easy": {"reaction_sigma": 0.3},

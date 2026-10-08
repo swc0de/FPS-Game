@@ -65,7 +65,7 @@ class Game(ShowBase):
         self.audio = AudioSystem(self, settings.audio, self.weapon_db.weapons, log=self.log)
         self.effects = Effects(self)
         from gameplay.destruction import DestructionManager
-        self.destruction = DestructionManager(self, self.level.panel_specs)
+        self.destruction = DestructionManager(self, self.level.panel_specs, seed=getattr(self.args, "seed", None))
         self.ballistics.destruction = self.destruction
         self.pickups = PickupManager(self)
         self.dummies: list[TargetDummy] = []

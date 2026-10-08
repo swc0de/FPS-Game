@@ -1,0 +1,4589 @@
+{
+ "ai": "team 0 (defend): legacy, team 1 (attack): v2",
+ "seed": 202,
+ "difficulty": "normal",
+ "behaviour": {
+  "rounds": 16,
+  "wins_by_side": {
+   "attack": 9,
+   "defend": 7
+  },
+  "attack_win_pct": 56.25,
+  "results": {
+   "attack/elimination": 8,
+   "attack/bomb_detonated": 1,
+   "defend/time": 2,
+   "defend/bomb_defused": 3,
+   "defend/elimination": 2
+  },
+  "avg_round_s": 72.189453125,
+  "kills": 102,
+  "deaths_total": 104,
+  "headshot_pct": 30.392156862745097,
+  "plants": 11,
+  "defuses": 3,
+  "shots": 1046,
+  "bullet_hits": 459,
+  "accuracy_pct": 43.881453154875715,
+  "deaths_while_reloading": 17,
+  "deaths_while_reloading_pct": 16.666666666666668,
+  "deaths_with_empty_mag": 0,
+  "unseen_deaths": 4,
+  "unseen_deaths_pct": 3.9215686274509802,
+  "never_saw_killer_this_round_pct": 0.9803921568627451,
+  "traded_pct": 17.647058823529413,
+  "traded_of_tradeable_pct": 33.333333333333336,
+  "tradeable_deaths": 54,
+  "exposure_before_death_s": {
+   "mean": 2.419577205882353,
+   "n": 102
+  },
+  "exposed_share_pct": 22.67782311614497,
+  "exposed_s_per_death": 19.805889423076923,
+  "stacking_incidents": 93,
+  "stacking_per_round": 5.8125,
+  "stacking_where": {
+   "Main Gate": 16,
+   "Bunker": 11,
+   "West Yard": 10,
+   "Mid": 10,
+   "T Spawn": 10,
+   "B Long": 9,
+   "A Connector": 6,
+   "B Yard": 4,
+   "A Site": 3,
+   "B Site": 3,
+   "HQ": 2,
+   "A Long": 2,
+   "West Gate": 2,
+   "B Connector": 1,
+   "CT Spawn": 1,
+   "Tunnel": 1,
+   "Barracks": 1,
+   "A Ramp": 1
+  },
+  "clumps": 29,
+  "stuck_bots": 0,
+  "stuck_reports": [],
+  "micro_stuck_events": 111,
+  "grenades_thrown": {
+   "v2:defend:flash": 13,
+   "v2:defend:smoke": 1,
+   "v2:defend:frag": 1,
+   "v2:attack:flash": 5
+  },
+  "utility": {
+   "flash": {
+    "detonated": 18,
+    "effective": 4,
+    "effective_pct": 22.22222222222222,
+    "team_flashes": 10
+   },
+   "smoke": {
+    "detonated": 1,
+    "effective": 1,
+    "effective_pct": 100.0,
+    "enemy_sightings_blocked": 2
+   },
+   "frag": {
+    "detonated": 1,
+    "effective": 0,
+    "effective_pct": 0.0
+   }
+  },
+  "attack_plans": {
+   "execute": 11,
+   "default": 2,
+   "rush": 2,
+   "contact": 1
+  },
+  "attack_plans_pct": {
+   "execute": 68.75,
+   "default": 12.5,
+   "rush": 12.5,
+   "contact": 6.25
+  },
+  "attack_plan_sites": {
+   "execute A": 6,
+   "execute B": 5,
+   "default B": 2,
+   "rush B": 1,
+   "rush A": 1,
+   "contact B": 1
+  },
+  "defender_hold_spots": {
+   "distinct": 20,
+   "samples": 62,
+   "top": [
+    [
+     [
+      -5.0,
+      45.3
+     ],
+     12
+    ],
+    [
+     [
+      4.0,
+      34.3
+     ],
+     11
+    ],
+    [
+     [
+      29.0,
+      25.6
+     ],
+     6
+    ],
+    [
+     [
+      -36.2,
+      26.0
+     ],
+     5
+    ],
+    [
+     [
+      39.2,
+      23.2
+     ],
+     4
+    ],
+    [
+     [
+      -46.6,
+      22.6
+     ],
+     4
+    ],
+    [
+     [
+      -28.0,
+      33.0
+     ],
+     3
+    ],
+    [
+     [
+      47.0,
+      29.0
+     ],
+     3
+    ]
+   ]
+  },
+  "info_leaks": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 24,
+   "exact_killer_position_broadcast_after_unseen_kill": 2
+  },
+  "info_leaks_per_round": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 1.5,
+   "exact_killer_position_broadcast_after_unseen_kill": 0.125
+  },
+  "by_ai": {
+   "legacy": {
+    "rounds": 16,
+    "wins_by_side": {
+     "attack": 9,
+     "defend": 7
+    },
+    "attack_win_pct": 56.25,
+    "results": {
+     "attack/elimination": 8,
+     "attack/bomb_detonated": 1,
+     "defend/time": 2,
+     "defend/bomb_defused": 3,
+     "defend/elimination": 2
+    },
+    "avg_round_s": 72.189453125,
+    "kills": 69,
+    "deaths_total": 35,
+    "headshot_pct": 31.884057971014492,
+    "plants": 11,
+    "defuses": 3,
+    "shots": 646,
+    "bullet_hits": 250,
+    "accuracy_pct": 38.69969040247678,
+    "deaths_while_reloading": 10,
+    "deaths_while_reloading_pct": 30.303030303030305,
+    "deaths_with_empty_mag": 0,
+    "unseen_deaths": 2,
+    "unseen_deaths_pct": 6.0606060606060606,
+    "never_saw_killer_this_round_pct": 3.0303030303030303,
+    "traded_pct": 39.39393939393939,
+    "traded_of_tradeable_pct": 50.0,
+    "tradeable_deaths": 26,
+    "exposure_before_death_s": {
+     "mean": 2.8584280303030303,
+     "n": 33
+    },
+    "exposed_share_pct": 24.945625114645843,
+    "exposed_s_per_death": 33.99821428571428,
+    "stacking_incidents": 76,
+    "stacking_per_round": 4.75,
+    "stacking_where": {
+     "Main Gate": 16,
+     "Mid": 10,
+     "West Yard": 9,
+     "B Long": 7,
+     "Bunker": 6,
+     "T Spawn": 6,
+     "A Connector": 6,
+     "B Yard": 4,
+     "A Site": 3,
+     "B Site": 3,
+     "A Long": 2,
+     "West Gate": 2,
+     "B Connector": 1,
+     "Tunnel": 1
+    },
+    "clumps": 20,
+    "stuck_bots": 0,
+    "stuck_reports": [],
+    "micro_stuck_events": 15,
+    "grenades_thrown": {},
+    "utility": {
+     "flash": {
+      "detonated": 0,
+      "effective": 0,
+      "effective_pct": 0.0,
+      "team_flashes": 0
+     },
+     "smoke": {
+      "detonated": 0,
+      "effective": 0,
+      "effective_pct": 0.0,
+      "enemy_sightings_blocked": 0
+     },
+     "frag": {
+      "detonated": 0,
+      "effective": 0,
+      "effective_pct": 0.0
+     }
+    },
+    "attack_plans": {
+     "execute": 9,
+     "default": 1,
+     "rush": 2
+    },
+    "attack_plans_pct": {
+     "execute": 75.0,
+     "default": 8.333333333333334,
+     "rush": 16.666666666666668
+    },
+    "attack_plan_sites": {
+     "execute A": 5,
+     "execute B": 4,
+     "default B": 1,
+     "rush B": 1,
+     "rush A": 1
+    },
+    "defender_hold_spots": {
+     "distinct": 20,
+     "samples": 62,
+     "top": [
+      [
+       [
+        -5.0,
+        45.3
+       ],
+       12
+      ],
+      [
+       [
+        4.0,
+        34.3
+       ],
+       11
+      ],
+      [
+       [
+        29.0,
+        25.6
+       ],
+       6
+      ],
+      [
+       [
+        -36.2,
+        26.0
+       ],
+       5
+      ],
+      [
+       [
+        39.2,
+        23.2
+       ],
+       4
+      ],
+      [
+       [
+        -46.6,
+        22.6
+       ],
+       4
+      ],
+      [
+       [
+        -28.0,
+        33.0
+       ],
+       3
+      ],
+      [
+       [
+        47.0,
+        29.0
+       ],
+       3
+      ]
+     ]
+    },
+    "info_leaks": {
+     "exact_attacker_position_when_shot_by_unseen_enemy": 24,
+     "exact_killer_position_broadcast_after_unseen_kill": 2
+    },
+    "info_leaks_per_round": {
+     "exact_attacker_position_when_shot_by_unseen_enemy": 1.5,
+     "exact_killer_position_broadcast_after_unseen_kill": 0.125
+    }
+   },
+   "v2": {
+    "rounds": 16,
+    "wins_by_side": {
+     "attack": 9,
+     "defend": 7
+    },
+    "attack_win_pct": 56.25,
+    "results": {
+     "attack/elimination": 8,
+     "attack/bomb_detonated": 1,
+     "defend/time": 2,
+     "defend/bomb_defused": 3,
+     "defend/elimination": 2
+    },
+    "avg_round_s": 72.189453125,
+    "kills": 33,
+    "deaths_total": 69,
+    "headshot_pct": 27.272727272727273,
+    "plants": 11,
+    "defuses": 3,
+    "shots": 400,
+    "bullet_hits": 209,
+    "accuracy_pct": 52.25,
+    "deaths_while_reloading": 7,
+    "deaths_while_reloading_pct": 10.144927536231885,
+    "deaths_with_empty_mag": 0,
+    "unseen_deaths": 2,
+    "unseen_deaths_pct": 2.898550724637681,
+    "never_saw_killer_this_round_pct": 0.0,
+    "traded_pct": 7.246376811594203,
+    "traded_of_tradeable_pct": 17.857142857142858,
+    "tradeable_deaths": 28,
+    "exposure_before_death_s": {
+     "mean": 2.2096920289855073,
+     "n": 69
+    },
+    "exposed_share_pct": 20.169552930947034,
+    "exposed_s_per_death": 12.606884057971014,
+    "stacking_incidents": 17,
+    "stacking_per_round": 1.0625,
+    "stacking_where": {
+     "Bunker": 5,
+     "T Spawn": 4,
+     "HQ": 2,
+     "B Long": 2,
+     "CT Spawn": 1,
+     "Barracks": 1,
+     "West Yard": 1,
+     "A Ramp": 1
+    },
+    "clumps": 9,
+    "stuck_bots": 0,
+    "stuck_reports": [],
+    "micro_stuck_events": 96,
+    "grenades_thrown": {
+     "v2:defend:flash": 13,
+     "v2:defend:smoke": 1,
+     "v2:defend:frag": 1,
+     "v2:attack:flash": 5
+    },
+    "utility": {
+     "flash": {
+      "detonated": 18,
+      "effective": 4,
+      "effective_pct": 22.22222222222222,
+      "team_flashes": 10
+     },
+     "smoke": {
+      "detonated": 1,
+      "effective": 1,
+      "effective_pct": 100.0,
+      "enemy_sightings_blocked": 2
+     },
+     "frag": {
+      "detonated": 1,
+      "effective": 0,
+      "effective_pct": 0.0
+     }
+    },
+    "attack_plans": {
+     "default": 1,
+     "execute": 2,
+     "contact": 1
+    },
+    "attack_plans_pct": {
+     "default": 25.0,
+     "execute": 50.0,
+     "contact": 25.0
+    },
+    "attack_plan_sites": {
+     "default B": 1,
+     "execute B": 1,
+     "contact B": 1,
+     "execute A": 1
+    },
+    "defender_hold_spots": {
+     "distinct": 20,
+     "samples": 62,
+     "top": [
+      [
+       [
+        -5.0,
+        45.3
+       ],
+       12
+      ],
+      [
+       [
+        4.0,
+        34.3
+       ],
+       11
+      ],
+      [
+       [
+        29.0,
+        25.6
+       ],
+       6
+      ],
+      [
+       [
+        -36.2,
+        26.0
+       ],
+       5
+      ],
+      [
+       [
+        39.2,
+        23.2
+       ],
+       4
+      ],
+      [
+       [
+        -46.6,
+        22.6
+       ],
+       4
+      ],
+      [
+       [
+        -28.0,
+        33.0
+       ],
+       3
+      ],
+      [
+       [
+        47.0,
+        29.0
+       ],
+       3
+      ]
+     ]
+    },
+    "info_leaks": {
+     "exact_attacker_position_when_shot_by_unseen_enemy": 24,
+     "exact_killer_position_broadcast_after_unseen_kill": 2
+    },
+    "info_leaks_per_round": {
+     "exact_attacker_position_when_shot_by_unseen_enemy": 1.5,
+     "exact_killer_position_broadcast_after_unseen_kill": 0.125
+    }
+   }
+  },
+  "head_to_head": {
+   "legacy": {
+    "wins": 13,
+    "n": 16,
+    "p": 0.8125,
+    "lo": 0.5699064013154177,
+    "hi": 0.9340852122641324,
+    "won_on_attack": 9,
+    "rounds_on_attack": 12,
+    "won_on_defend": 4,
+    "rounds_on_defend": 4
+   },
+   "v2": {
+    "wins": 3,
+    "n": 16,
+    "p": 0.1875,
+    "lo": 0.06591478773586765,
+    "hi": 0.4300935986845823,
+    "won_on_attack": 0,
+    "rounds_on_attack": 4,
+    "won_on_defend": 3,
+    "rounds_on_defend": 12
+   }
+  },
+  "deaths": [
+   {
+    "t": 53.421875,
+    "round": 1,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 2.680575370788574,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 56.65625,
+    "round": 1,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.546875,
+    "distance": 13.897104263305664,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 58.359375,
+    "round": 1,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.53125,
+    "distance": 16.167238235473633,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 60.546875,
+    "round": 1,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 9.96875,
+    "distance": 30.490150451660156,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 71.84375,
+    "round": 1,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Vigil",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.5625,
+    "distance": 9.682868957519531,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 72.171875,
+    "round": 1,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.0625,
+    "distance": 8.477161407470703,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 74.421875,
+    "round": 1,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Vigil",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.046875,
+    "distance": 13.152522087097168,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 80.75,
+    "round": 1,
+    "victim": "Mako",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Vigil",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.09375,
+    "distance": 12.676602363586426,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 82.40625,
+    "round": 1,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.515625,
+    "distance": 11.365863800048828,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 148.421875,
+    "round": 2,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.6875,
+    "distance": 4.733941078186035,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 158.078125,
+    "round": 2,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 8.828125,
+    "distance": 36.743446350097656,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 163.65625,
+    "round": 2,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.359375,
+    "distance": 10.680693626403809,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 177.8125,
+    "round": 2,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.71875,
+    "distance": 14.82249641418457,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 178.5,
+    "round": 2,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.46875,
+    "distance": 21.58190155029297,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 179.984375,
+    "round": 2,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.828125,
+    "distance": 25.61851692199707,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 229.234375,
+    "round": 3,
+    "victim": "Mako",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.96875,
+    "distance": 8.498705863952637,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 229.578125,
+    "round": 3,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 9.318742752075195,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 232.125,
+    "round": 3,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.34375,
+    "distance": 28.56439971923828,
+    "victim_mode": "reposition",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 236.078125,
+    "round": 3,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.46875,
+    "distance": 28.138168334960938,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 238.96875,
+    "round": 3,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.484375,
+    "distance": 27.87212562561035,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 263.828125,
+    "round": 3,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.078125,
+    "distance": 31.83564567565918,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 287.21875,
+    "round": 3,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": null,
+    "killer_side": null,
+    "killer_ai": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 287.21875,
+    "round": 3,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": null,
+    "killer_side": null,
+    "killer_ai": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 346.796875,
+    "round": 4,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.734375,
+    "distance": 6.153390407562256,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 347.578125,
+    "round": 4,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.828125,
+    "distance": 2.8971548080444336,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 351.03125,
+    "round": 4,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.03125,
+    "distance": 18.59070587158203,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 358.46875,
+    "round": 4,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.171875,
+    "distance": 28.209741592407227,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 369.359375,
+    "round": 4,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.265625,
+    "distance": 21.629913330078125,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 376.59375,
+    "round": 4,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.375,
+    "distance": 19.443618774414062,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 433.78125,
+    "round": 5,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.625,
+    "distance": 32.56336975097656,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 437.53125,
+    "round": 5,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Vigil",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.71875,
+    "distance": 40.10553741455078,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 444.234375,
+    "round": 5,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.546875,
+    "distance": 15.082762718200684,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 452.453125,
+    "round": 5,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.546875,
+    "distance": 14.805695533752441,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 459.421875,
+    "round": 5,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.484375,
+    "distance": 14.45748519897461,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 463.96875,
+    "round": 5,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.328125,
+    "distance": 18.44643783569336,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 472.90625,
+    "round": 5,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.890625,
+    "distance": 31.135114669799805,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 547.0625,
+    "round": 6,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.8125,
+    "distance": 25.92924690246582,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 586.609375,
+    "round": 6,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.015625,
+    "distance": 27.07245635986328,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 613.90625,
+    "round": 6,
+    "victim": "Harrow",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 8.4375,
+    "distance": 39.10736083984375,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 674.40625,
+    "round": 7,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.78125,
+    "distance": 17.814706802368164,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 686.078125,
+    "round": 7,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.484375,
+    "distance": 38.835880279541016,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 688.03125,
+    "round": 7,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.125,
+    "distance": 39.594268798828125,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 702.0,
+    "round": 7,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.875,
+    "distance": 8.560169219970703,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 702.28125,
+    "round": 7,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.875,
+    "distance": 8.670450210571289,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 709.1875,
+    "round": 7,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.5,
+    "distance": 10.626750946044922,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 738.59375,
+    "round": 7,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.75,
+    "distance": 22.664796829223633,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 792.828125,
+    "round": 8,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.515625,
+    "distance": 33.316036224365234,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 796.9375,
+    "round": 8,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.0625,
+    "distance": 33.448814392089844,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 812.328125,
+    "round": 8,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.984375,
+    "distance": 4.013104438781738,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 822.0625,
+    "round": 8,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.78125,
+    "distance": 6.449357032775879,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 823.578125,
+    "round": 8,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.609375,
+    "distance": 7.695687294006348,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 831.390625,
+    "round": 8,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.640625,
+    "distance": 17.20810317993164,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 886.34375,
+    "round": 9,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.9375,
+    "distance": 22.944904327392578,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 890.421875,
+    "round": 9,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.828125,
+    "distance": 21.763059616088867,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 891.65625,
+    "round": 9,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.359375,
+    "distance": 33.05898666381836,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 893.65625,
+    "round": 9,
+    "victim": "Mako",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.296875,
+    "distance": 31.348608016967773,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 895.3125,
+    "round": 9,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.59375,
+    "distance": 33.463253021240234,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 900.4375,
+    "round": 9,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.5,
+    "distance": 39.708438873291016,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 905.078125,
+    "round": 9,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.671875,
+    "distance": 51.373897552490234,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 955.796875,
+    "round": 10,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.15625,
+    "distance": 22.851472854614258,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 961.296875,
+    "round": 10,
+    "victim": "Harrow",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.5,
+    "distance": 18.135822296142578,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 961.5625,
+    "round": 10,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.4375,
+    "distance": 18.92155647277832,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 969.078125,
+    "round": 10,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.875,
+    "distance": 23.71186065673828,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 981.40625,
+    "round": 10,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.140625,
+    "distance": 12.14355754852295,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 983.40625,
+    "round": 10,
+    "victim": "Mako",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.046875,
+    "distance": 17.32609748840332,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 991.25,
+    "round": 10,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.421875,
+    "distance": 15.091351509094238,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 991.59375,
+    "round": 10,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.578125,
+    "distance": 16.23191261291504,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 994.078125,
+    "round": 10,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.25,
+    "distance": 15.40334701538086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1100.0625,
+    "round": 11,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.90625,
+    "distance": 23.197093963623047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1203.671875,
+    "round": 12,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.40625,
+    "distance": 27.66094970703125,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1203.890625,
+    "round": 12,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.421875,
+    "distance": 27.11379623413086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1236.03125,
+    "round": 12,
+    "victim": "Halyard",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.25,
+    "distance": 25.94008445739746,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1237.65625,
+    "round": 12,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 13.578876495361328,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1237.703125,
+    "round": 12,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.984375,
+    "distance": 13.666332244873047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1291.40625,
+    "round": 12,
+    "victim": "Vigil",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.4375,
+    "distance": 21.010419845581055,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1292.859375,
+    "round": 12,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "victim_ai": "legacy",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "killer_ai": "v2",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.671875,
+    "distance": 13.171061515808105,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1293.34375,
+    "round": 12,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "attack",
+    "killer_ai": "legacy",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.3125,
+    "distance": 14.054080963134766,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1369.453125,
+    "round": 13,
+    "victim": "Vigil",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.171875,
+    "distance": 25.18196678161621,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1378.984375,
+    "round": 13,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.984375,
+    "distance": 25.98391342163086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1389.390625,
+    "round": 13,
+    "victim": "Jager",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.796875,
+    "distance": 34.224918365478516,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1398.875,
+    "round": 13,
+    "victim": "Mako",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.78125,
+    "distance": 28.58489227294922,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1406.46875,
+    "round": 13,
+    "victim": "Harrow",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.1875,
+    "distance": 13.976651191711426,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1416.65625,
+    "round": 13,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.65625,
+    "distance": 10.245295524597168,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1421.875,
+    "round": 13,
+    "victim": "Halyard",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.375,
+    "distance": 2.4605603218078613,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1424.890625,
+    "round": 13,
+    "victim": "Osprey",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.015625,
+    "distance": 14.270015716552734,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1492.359375,
+    "round": 14,
+    "victim": "Halyard",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Jager",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.515625,
+    "distance": 15.617035865783691,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1502.96875,
+    "round": 14,
+    "victim": "Vigil",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.59375,
+    "distance": 28.988632202148438,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1505.59375,
+    "round": 14,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.625,
+    "distance": 24.3646183013916,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1509.578125,
+    "round": 14,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.046875,
+    "distance": 20.870922088623047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1513.828125,
+    "round": 14,
+    "victim": "Osprey",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Mako",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.203125,
+    "distance": 22.336881637573242,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1581.953125,
+    "round": 15,
+    "victim": "Vigil",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.328125,
+    "distance": 21.70587730407715,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1596.40625,
+    "round": 15,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.25,
+    "distance": 20.19097137451172,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1599.328125,
+    "round": 15,
+    "victim": "Halyard",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.328125,
+    "distance": 20.95791244506836,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1601.09375,
+    "round": 15,
+    "victim": "Osprey",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.15625,
+    "distance": 20.69519805908203,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1602.171875,
+    "round": 15,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.015625,
+    "distance": 20.854320526123047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1670.6875,
+    "round": 16,
+    "victim": "Jager",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Osprey",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.390625,
+    "distance": 18.836929321289062,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1680.21875,
+    "round": 16,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.5625,
+    "distance": 30.062551498413086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1683.015625,
+    "round": 16,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.34375,
+    "distance": 17.998409271240234,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1684.859375,
+    "round": 16,
+    "victim": "Mako",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Halyard",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.1875,
+    "distance": 20.832033157348633,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1688.09375,
+    "round": 16,
+    "victim": "Halyard",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.3125,
+    "distance": 21.740781784057617,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1692.765625,
+    "round": 16,
+    "victim": "Osprey",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.578125,
+    "distance": 2.669032096862793,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1693.921875,
+    "round": 16,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.609375,
+    "distance": 5.150870323181152,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1701.59375,
+    "round": 16,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "victim_ai": "legacy",
+    "killer": "Vigil",
+    "killer_side": "attack",
+    "killer_ai": "v2",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.078125,
+    "distance": 5.730872631072998,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1703.296875,
+    "round": 16,
+    "victim": "Vigil",
+    "victim_side": "attack",
+    "victim_ai": "v2",
+    "killer": "Harrow",
+    "killer_side": "defend",
+    "killer_ai": "legacy",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.265625,
+    "distance": 4.388221263885498,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   }
+  ],
+  "stacking": [
+   {
+    "t": 37.359375,
+    "round": 1,
+    "pair": [
+     "Tarn",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "HQ",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 45.734375,
+    "round": 1,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 45.984375,
+    "round": 1,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 123.171875,
+    "round": 2,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 123.171875,
+    "round": 2,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 123.234375,
+    "round": 2,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 124.109375,
+    "round": 2,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 125.171875,
+    "round": 2,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 125.671875,
+    "round": 2,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 128.609375,
+    "round": 2,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 128.859375,
+    "round": 2,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 137.734375,
+    "round": 2,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "seek"
+    ]
+   },
+   {
+    "t": 144.046875,
+    "round": 2,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 167.921875,
+    "round": 2,
+    "pair": [
+     "Tarn",
+     "Vigil"
+    ],
+    "ai": "v2",
+    "where": "CT Spawn",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 220.046875,
+    "round": 3,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 220.734375,
+    "round": 3,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 335.609375,
+    "round": 4,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "A Long",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 339.796875,
+    "round": 4,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 340.234375,
+    "round": 4,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 422.609375,
+    "round": 5,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "West Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 425.484375,
+    "round": 5,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "A Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 425.734375,
+    "round": 5,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Gate",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 429.671875,
+    "round": 5,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 448.421875,
+    "round": 5,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "A Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 519.109375,
+    "round": 6,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 519.359375,
+    "round": 6,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 519.671875,
+    "round": 6,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 527.796875,
+    "round": 6,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 587.921875,
+    "round": 6,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "alert",
+     "task"
+    ]
+   },
+   {
+    "t": 658.921875,
+    "round": 7,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 663.984375,
+    "round": 7,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 689.671875,
+    "round": 7,
+    "pair": [
+     "Tarn",
+     "Grail"
+    ],
+    "ai": "v2",
+    "where": "B Long",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 776.234375,
+    "round": 8,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 778.109375,
+    "round": 8,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 778.734375,
+    "round": 8,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 778.984375,
+    "round": 8,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 782.484375,
+    "round": 8,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 785.734375,
+    "round": 8,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 786.921875,
+    "round": 8,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 796.046875,
+    "round": 8,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 796.171875,
+    "round": 8,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 796.359375,
+    "round": 8,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 800.171875,
+    "round": 8,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 801.609375,
+    "round": 8,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 801.921875,
+    "round": 8,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 871.234375,
+    "round": 9,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 871.796875,
+    "round": 9,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 872.609375,
+    "round": 9,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 872.984375,
+    "round": 9,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 873.046875,
+    "round": 9,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 890.046875,
+    "round": 9,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Site",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 944.796875,
+    "round": 10,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 945.046875,
+    "round": 10,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 949.546875,
+    "round": 10,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 956.234375,
+    "round": 10,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 957.671875,
+    "round": 10,
+    "pair": [
+     "Sable",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 958.609375,
+    "round": 10,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "A Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 960.671875,
+    "round": 10,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "A Site",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 968.296875,
+    "round": 10,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "A Site",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1042.671875,
+    "round": 11,
+    "pair": [
+     "Mako",
+     "Sable"
+    ],
+    "ai": "legacy",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1045.984375,
+    "round": 11,
+    "pair": [
+     "Tarn",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "HQ",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1058.796875,
+    "round": 11,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1059.734375,
+    "round": 11,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1061.921875,
+    "round": 11,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1062.046875,
+    "round": 11,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1201.296875,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1201.484375,
+    "round": 12,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "alert"
+    ]
+   },
+   {
+    "t": 1202.171875,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1205.296875,
+    "round": 12,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1205.859375,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Harrow"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1207.734375,
+    "round": 12,
+    "pair": [
+     "Jager",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1208.046875,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1208.109375,
+    "round": 12,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1216.734375,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "Tunnel",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1216.796875,
+    "round": 12,
+    "pair": [
+     "Harrow",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1218.921875,
+    "round": 12,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "B Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1423.609375,
+    "round": 13,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "B Site",
+    "modes": [
+     "retreat",
+     "engage"
+    ]
+   },
+   {
+    "t": 1472.609375,
+    "round": 14,
+    "pair": [
+     "Tarn",
+     "Osprey"
+    ],
+    "ai": "v2",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1472.984375,
+    "round": 14,
+    "pair": [
+     "Tarn",
+     "Grail"
+    ],
+    "ai": "v2",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1499.984375,
+    "round": 14,
+    "pair": [
+     "Tarn",
+     "Grail"
+    ],
+    "ai": "v2",
+    "where": "B Long",
+    "modes": [
+     "retreat",
+     "alert"
+    ]
+   },
+   {
+    "t": 1512.796875,
+    "round": 14,
+    "pair": [
+     "Sable",
+     "Jager"
+    ],
+    "ai": "legacy",
+    "where": "B Yard",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1552.484375,
+    "round": 15,
+    "pair": [
+     "Mako",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "B Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1568.671875,
+    "round": 15,
+    "pair": [
+     "Tarn",
+     "Grail"
+    ],
+    "ai": "v2",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1568.984375,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Osprey"
+    ],
+    "ai": "v2",
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1575.421875,
+    "round": 15,
+    "pair": [
+     "Tarn",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "Bunker",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1577.421875,
+    "round": 15,
+    "pair": [
+     "Tarn",
+     "Osprey"
+    ],
+    "ai": "v2",
+    "where": "Bunker",
+    "modes": [
+     "engage",
+     "task"
+    ]
+   },
+   {
+    "t": 1578.046875,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Osprey"
+    ],
+    "ai": "v2",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "engage"
+    ]
+   },
+   {
+    "t": 1586.296875,
+    "round": 15,
+    "pair": [
+     "Osprey",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "retreat"
+    ]
+   },
+   {
+    "t": 1594.296875,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "Bunker",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1640.796875,
+    "round": 16,
+    "pair": [
+     "Harrow",
+     "Rook"
+    ],
+    "ai": "legacy",
+    "where": "B Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1654.234375,
+    "round": 16,
+    "pair": [
+     "Tarn",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "Barracks",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1665.296875,
+    "round": 16,
+    "pair": [
+     "Tarn",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "West Yard",
+    "modes": [
+     "engage",
+     "task"
+    ]
+   },
+   {
+    "t": 1684.171875,
+    "round": 16,
+    "pair": [
+     "Osprey",
+     "Halyard"
+    ],
+    "ai": "v2",
+    "where": "A Ramp",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   }
+  ],
+  "rounds_detail": [
+   {
+    "round": 1,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 54.421875
+   },
+   {
+    "round": 2,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 63.578125
+   },
+   {
+    "round": 3,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 73.234375
+   },
+   {
+    "round": 4,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 55.375
+   },
+   {
+    "round": 5,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 62.3125
+   },
+   {
+    "round": 6,
+    "winner": "defend",
+    "reason": "time",
+    "winner_ai": "v2",
+    "attack_ai": "legacy",
+    "length": 115.0
+   },
+   {
+    "round": 7,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 82.6875
+   },
+   {
+    "round": 8,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 58.796875
+   },
+   {
+    "round": 9,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 39.6875
+   },
+   {
+    "round": 10,
+    "winner": "defend",
+    "reason": "bomb_defused",
+    "winner_ai": "v2",
+    "attack_ai": "legacy",
+    "length": 66.640625
+   },
+   {
+    "round": 11,
+    "winner": "defend",
+    "reason": "time",
+    "winner_ai": "v2",
+    "attack_ai": "legacy",
+    "length": 115.0
+   },
+   {
+    "round": 12,
+    "winner": "attack",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "legacy",
+    "length": 104.625
+   },
+   {
+    "round": 13,
+    "winner": "defend",
+    "reason": "bomb_defused",
+    "winner_ai": "legacy",
+    "attack_ai": "v2",
+    "length": 101.65625
+   },
+   {
+    "round": 14,
+    "winner": "defend",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "v2",
+    "length": 42.828125
+   },
+   {
+    "round": 15,
+    "winner": "defend",
+    "reason": "elimination",
+    "winner_ai": "legacy",
+    "attack_ai": "v2",
+    "length": 54.34375
+   },
+   {
+    "round": 16,
+    "winner": "defend",
+    "reason": "bomb_defused",
+    "winner_ai": "legacy",
+    "attack_ai": "v2",
+    "length": 64.84375
+   }
+  ],
+  "plans_detail": [
+   {
+    "round": 1,
+    "plan": "execute",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 2,
+    "plan": "execute",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 3,
+    "plan": "execute",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 4,
+    "plan": "execute",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 5,
+    "plan": "execute",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 6,
+    "plan": "execute",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 7,
+    "plan": "default",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 8,
+    "plan": "execute",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 9,
+    "plan": "rush",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 10,
+    "plan": "rush",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 11,
+    "plan": "execute",
+    "site": "A",
+    "ai": "legacy"
+   },
+   {
+    "round": 12,
+    "plan": "execute",
+    "site": "B",
+    "ai": "legacy"
+   },
+   {
+    "round": 13,
+    "plan": "default",
+    "site": "B",
+    "ai": "v2"
+   },
+   {
+    "round": 14,
+    "plan": "execute",
+    "site": "B",
+    "ai": "v2"
+   },
+   {
+    "round": 15,
+    "plan": "contact",
+    "site": "B",
+    "ai": "v2"
+   },
+   {
+    "round": 16,
+    "plan": "execute",
+    "site": "A",
+    "ai": "v2"
+   }
+  ],
+  "audit": {
+   "checked_reads": 1640421,
+   "orders": 17,
+   "violations": {
+    "legacy": 9928,
+    "v2": 0,
+    "other": 0
+   },
+   "by_site": [
+    {
+     "ai": "legacy",
+     "what": "enemy head_pos() without sight",
+     "site": "ai/brain.py:420 _engage",
+     "count": 2561,
+     "first": "t=51.6 Jager read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy center_of_mass() without sight",
+     "site": "ai/brain.py:421 _engage",
+     "count": 2561,
+     "first": "t=51.6 Jager read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy velocity() without sight",
+     "site": "ai/brain.py:426 _engage",
+     "count": 2561,
+     "first": "t=51.6 Jager read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "charge carrier identity (hidden)",
+     "site": "ai/tactics.py:521 _update_defend",
+     "count": 1675,
+     "first": "t=1335.5 defenders"
+    },
+    {
+     "ai": "legacy",
+     "what": "unseen enemy gadget (signal_jammer)",
+     "site": "ai/gadget_ai.py:490 <listcomp>",
+     "count": 166,
+     "first": "t=45.0 attack"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy head_pos() without sight",
+     "site": "ai/brain.py:285 _watch_point",
+     "count": 116,
+     "first": "t=70.6 Sable read Grail"
+    },
+    {
+     "ai": "legacy",
+     "what": "unseen enemy gadget (motion_sensor)",
+     "site": "ai/gadget_ai.py:490 <listcomp>",
+     "count": 90,
+     "first": "t=151.0 attack"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/brain.py:555 _strafe",
+     "count": 46,
+     "first": "t=52.3 Rook read Grail"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/tactics.py:318 on_teammate_killed",
+     "count": 36,
+     "first": "t=74.4 attack read Vigil"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/perception.py:165 on_damaged",
+     "count": 26,
+     "first": "t=53.5 Mako read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/brain.py:202 on_damaged",
+     "count": 26,
+     "first": "t=53.5 Mako read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/perception.py:170 on_damaged",
+     "count": 22,
+     "first": "t=53.5 Mako read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/brain.py:484 _engage",
+     "count": 16,
+     "first": "t=137.6 Rook read Osprey"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/tactics.py:316 on_teammate_killed",
+     "count": 14,
+     "first": "t=74.4 attack read Vigil"
+    },
+    {
+     "ai": "legacy",
+     "what": "enemy position() without sight",
+     "site": "ai/perception.py:168 on_damaged",
+     "count": 4,
+     "first": "t=150.6 Harrow read Tarn"
+    },
+    {
+     "ai": "legacy",
+     "what": "unseen enemy gadget (motion_sensor)",
+     "site": "ai/gadget_ai.py:494 <lambda>",
+     "count": 4,
+     "first": "t=151.0 attack"
+    },
+    {
+     "ai": "legacy",
+     "what": "unseen enemy gadget (motion_sensor)",
+     "site": "ai/gadget_ai.py:496 _emp",
+     "count": 4,
+     "first": "t=151.0 attack"
+    }
+   ]
+  }
+ }
+}

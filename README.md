@@ -11,7 +11,8 @@ weapons and characters are original. Third-party art is CC0 only.
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
 > holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
 > aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
-> you confirm the switch. See "Milestone 8 - what to test" below.
+> you confirm the switch: against them v2 wins 37 % of rounds (target 70 %, not reached; results in
+> [docs/results/](docs/results/README.md)). See "Milestone 8 - what to test" below.
 >
 > Milestone 7 added the polish:
 > * **A main menu** over a camera tour of the map: play (side, difficulty, team sizes), watch a bot match,
@@ -145,9 +146,9 @@ Milestone 5 bots on one team for a comparison.
    precise as an area name: "Two B Long, one tagged"), the radar (they glance at it now and then, never
    mid-fight), pings and the kill feed. Hide after being seen and they lose you; shoot them from out of sight
    and they only know the direction. `--audit` checks this while you play and reports at the end.
-2. **Fights.** They break off long-range duels that go nowhere, step behind cover between bursts and hold the
-   corner you would come round instead of re-peeking at a rhythm, back off a step when hurt, fight back when
-   shot, trade a teammate (the two closest swing, the others keep their angles), pop-flash a corner they know
+2. **Fights.** They break off long-range duels that go nowhere and get out of sight when your gun outranges
+   theirs, jiggle between bursts at range, hide to reload and then hold the corner you would come round
+   instead of re-peeking at a rhythm, back off a step when hurt, fight back when shot, trade a teammate (the two closest swing, the others keep their angles), pop-flash a corner they know
    you are behind and swing while you are blind.
 3. **Attacking.** A plan per round, announced on the radio, and rarely the same twice: default (map control
    and a mid-round call to the quieter site), execute (utility, then entry and his trader), split, fake (two
@@ -160,9 +161,10 @@ Milestone 5 bots on one team for a comparison.
    site, or one plus utility, or a teammate dying there). A spot that got someone killed twice is used less.
 5. **Roles and styles.** Entry, trader, support, lurker, AWPer; anchor, rotator. Every bot has fixed traits
    (aggression, patience, teamwork, utility, risk): `botinfo <name>` shows them.
-6. **Difficulty** changes decision quality too: reaction times are a lognormal draw around the profile's mean,
-   a bot busy with one enemy notices a second one late, flicks overshoot, stress widens the aim error, and the
-   easier bots make more mistakes (over-peeking, reloading in the open, trading late, missing calls, flinching
+6. **Difficulty** changes decision quality, not aim: reaction times are a lognormal draw around the profile's
+   mean (the same mean as before), a bot busy with one enemy notices a second one late, a fast flick decides
+   only which side of the target the usual first-shot error falls on, stress makes mistakes likelier, and the
+   easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
    when shot from behind).
 7. **Debugging.** Console: `botinfo <name>` (the decision and everything behind it), `overlay` (labels over the
    bots with their action, the runner-up scores, the task and the fact behind it), `belief attack|defend|off`
