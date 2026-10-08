@@ -13,7 +13,9 @@ Visual only:
   leave the simulation and the pose stays until the round resets.
 
 Joints: cone-twist at the neck, spine, shoulders and hips (swing and twist
-limits like a human's), hinges at the elbows and knees (one way only).
+limits like a human's, around the pose at death), hinges at the elbows and
+knees about the limb's sideways axis, one way only: the limits are
+anatomical (0 = straight), shifted by the bend the soldier died with.
 """
 from __future__ import annotations
 
@@ -44,18 +46,21 @@ PARTS = (
 )
 HEAD_LENGTH = 0.18
 
-# (parent part, child part, kind, limits): cone-twist (swing1, swing2, twist) or hinge (low, high) in degrees
+# (parent part, child part, kind, limits): cone-twist (swing1, swing2, twist) or hinge (low, high) in degrees;
+# hinge limits are the child's turn about its bone's +x (right-handed) from straight: elbows bend the
+# forearm forwards (positive), knees the shin backwards (negative). Bullet's limits are soft (about
+# 10 degrees of give under a falling body), so they stop short of straight and of fully folded.
 JOINTS = (
     ("pelvis", "spine_02", "cone", (25, 25, 15)),
     ("spine_02", "head", "cone", (40, 40, 45)),
     ("spine_02", "upperarm_l", "cone", (80, 80, 50)),
     ("spine_02", "upperarm_r", "cone", (80, 80, 50)),
-    ("upperarm_l", "lowerarm_l", "hinge", (0, 140)),
-    ("upperarm_r", "lowerarm_r", "hinge", (0, 140)),
+    ("upperarm_l", "lowerarm_l", "hinge", (8, 135)),
+    ("upperarm_r", "lowerarm_r", "hinge", (8, 135)),
     ("pelvis", "thigh_l", "cone", (70, 35, 20)),
     ("pelvis", "thigh_r", "cone", (70, 35, 20)),
-    ("thigh_l", "calf_l", "hinge", (-140, 0)),
-    ("thigh_r", "calf_r", "hinge", (-140, 0)),
+    ("thigh_l", "calf_l", "hinge", (-130, -5)),
+    ("thigh_r", "calf_r", "hinge", (-130, -5)),
 )
 
 
@@ -65,6 +70,20 @@ def _mat_to_np(m: LMatrix4f) -> np.ndarray:
 
 def _np_to_mat(a: np.ndarray) -> LMatrix4f:
     return LMatrix4f(*a.ravel().tolist())
+
+
+def _basis(axis: np.ndarray, row: int, hint: np.ndarray) -> np.ndarray:
+    """Orthonormal rows (3, 3) with ``axis`` as row ``row`` (0 = x, 2 = z)."""
+    a = axis / max(np.linalg.norm(axis), 1e-9)
+    h = hint if abs(np.dot(hint, a)) < 0.9 else np.array([0.0, 0.0, 1.0]) if abs(a[2]) < 0.9 \
+        else np.array([0.0, 1.0, 0.0])
+    if row == 0:
+        y = np.cross(h, a)
+        y /= np.linalg.norm(y)
+        return np.stack([a, y, np.cross(a, y)])
+    x = np.cross(h, a)
+    x /= np.linalg.norm(x)
+    return np.stack([x, np.cross(a, x), a])
 
 
 class Ragdoll:
@@ -84,7 +103,9 @@ class Ragdoll:
         self.time = 0.0
         self.calm = 0.0
         self.frozen = False
+        self.axis: dict[str, np.ndarray] = {}            # each capsule's axis at death, model space
         root_mat = _mat_to_np(root.getMat(self.render))
+        self.root_mat = root_mat
         for bone, child, radius, mass in PARTS:
             bw = world[B[bone]]
             a = bw[3, :3]
@@ -97,6 +118,7 @@ class Ragdoll:
             centre = (a + b) * 0.5
             # capsule frame: z along the segment, centred on it (Bullet capsules run along z)
             z = axis / max(np.linalg.norm(axis), 1e-6)
+            self.axis[bone] = z
             x = np.cross(bw[1, :3] if abs(np.dot(bw[1, :3], z)) < 0.9 else bw[0, :3], z)
             x /= np.linalg.norm(x)
             y = np.cross(z, x)
@@ -124,16 +146,34 @@ class Ragdoll:
 
     def _joint(self, pa: str, ch: str, kind: str, lim: tuple, world: np.ndarray) -> None:
         a, b = self.bodies[pa], self.bodies[ch]
-        pivot = Point3(*world[B[ch]][3, :3])                      # at the child's joint, model space
-        pivot_w = self.render.getRelativePoint(self.root, pivot)
-        fa = TransformState.makePos(a.getRelativePoint(self.render, pivot_w))
-        fb = TransformState.makePos(b.getRelativePoint(self.render, pivot_w))
+        frame = np.eye(4)
+        frame[3, :3] = world[B[ch]][3, :3]                       # the pivot: the child's joint
+        if kind == "cone":
+            # Bullet's cone-twist: x is the twist axis (along the child limb)
+            frame[:3, :3] = _basis(self.axis[ch], 0, world[B[ch]][1, :3])
+        else:
+            # Bullet's hinge turns about z: the limb's bend axis (the child bone's sideways axis
+            # when the limb is nearly straight)
+            side = world[B[ch]][0, :3]
+            up, down = self.axis[pa], self.axis[ch]
+            bend = np.cross(up, down)
+            if np.linalg.norm(bend) > 0.2:
+                side = bend * (1.0 if np.dot(bend, side) >= 0.0 else -1.0)
+            frame[:3, :3] = _basis(side, 2, down)
+            # angle 0 is the pose at death: shift the anatomical limits by the bend it already has,
+            # then flip them (Bullet's hinge angle is minus the child's turn about the axis)
+            bent = math.degrees(math.atan2(float(np.dot(np.cross(up, down), frame[2, :3])), float(np.dot(up, down))))
+            lo, hi = min(lim[0] - bent, 0.0), max(lim[1] - bent, 0.0)
+            lim = (-hi, -lo)
+        frame_r = frame @ self.root_mat
+        fa = TransformState.makeMat(_np_to_mat(frame_r @ np.linalg.inv(_mat_to_np(a.getMat(self.render)))))
+        fb = TransformState.makeMat(_np_to_mat(frame_r @ np.linalg.inv(_mat_to_np(b.getMat(self.render)))))
         if kind == "cone":
             c = BulletConeTwistConstraint(a.node(), b.node(), fa, fb)
-            c.setLimit(*lim, softness=0.9, bias=0.3, relaxation=1.0)
+            c.setLimit(*lim, softness=0.9, bias=0.6, relaxation=1.0)
         else:
             c = BulletHingeConstraint(a.node(), b.node(), fa, fb)
-            c.setLimit(*lim, softness=0.9, bias=0.3, relaxation=1.0)
+            c.setLimit(*lim, softness=0.9, bias=0.6, relaxation=1.0)
         c.setDebugDrawSize(0.0)
         self.physics.world.attachConstraint(c, True)
         self.constraints.append(c)

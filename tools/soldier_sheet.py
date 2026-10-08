@@ -282,6 +282,9 @@ class SheetDemo:
         self.stats["animate_ms_per_tick_10_soldiers"] = self.stats["animate_us_per_call_running"] * 10 / 1000
         b.destroy()
         self.stats["hitbox_areas_cm2"] = _hitbox_areas(self.game, self._body, self.ground)
+        mesh = _mesh_areas(self.game, self._body, self.ground)
+        if mesh:
+            self.stats["visible_areas_cm2"] = mesh
 
 
 def _geom_stats(root) -> dict:
@@ -332,6 +335,76 @@ def _hitbox_areas(game, make_body, ground: float) -> dict:
             out[key] = {k: round(v * 1e4, 1) for k, v in sorted(areas.items())}
             out[key]["total"] = round(sum(areas.values()) * 1e4, 1)
         b.destroy()
+    return out
+
+
+# the hit group a vertex belongs to, by its strongest bone (gameplay/hitboxes.py's groups)
+_GROUP_PREFIX = (("head", "head"), ("neck", "chest"), ("spine_03", "chest"), ("clavicle", "chest"),
+                 ("spine_02", "stomach"), ("spine_01", "stomach"), ("pelvis", "stomach"), ("root", "stomach"),
+                 ("upperarm", "arm"), ("lowerarm", "arm"), ("hand", "arm"), ("thumb", "arm"), ("index", "arm"),
+                 ("fingers", "arm"), ("thigh", "leg"), ("calf", "leg"), ("foot", "leg"), ("toe", "leg"))
+
+
+def _mesh_areas(game, make_body, ground: float) -> dict:
+    """Projected area per hit group of the visible soldier (LOD0, skinned on the CPU, z-buffered
+    on the same 5 mm grid and views as ``_hitbox_areas``): what the hit boxes should cover."""
+    import numpy as np
+    from panda3d.core import Point3, Vec3
+    from gameplay import skeleton as sk
+    groups = ["head", "chest", "stomach", "arm", "leg"]
+    bone_group = np.array([groups.index(next(g for pre, g in _GROUP_PREFIX if b.name.startswith(pre)))
+                           for b in sk.BONES])
+    out = {}
+    step = 0.005
+    for crouch in (0.0, 1.0):
+        b = make_body("attack")
+        mesh = getattr(b, "mesh_lod0", None)
+        if mesh is None:
+            b.destroy()
+            return {}
+        pos = Point3(30.0, -60.0, ground)
+        for _ in range(4):
+            b.animate(1 / 64, pos, 0.0, 0.0, crouch, Vec3(0, 0, 0), True)
+        p = sk.skin_points(mesh.pos, mesh.joints, mesh.weights, b._rows[:sk.N_BONES].astype(np.float64))
+        strongest = mesh.joints[np.arange(len(p)), np.argmax(mesh.weights, axis=1)].astype(np.int64)
+        vg = bone_group[strongest]
+        tg = vg[mesh.tris[:, 0]]
+        b.destroy()
+        for view, (u_ax, d_ax) in (("front", (0, 1)), ("side", (1, 0))):
+            # u across the view, depth towards the viewer (the soldier faces +y; the side view looks from +x)
+            sign = -1.0 if view == "front" else 1.0
+            u = p[:, u_ax] * (sign if view == "front" else -1.0)
+            z = p[:, 2]
+            depth = p[:, d_ax]
+            nu, nz = 260, 400
+            zbuf = np.full((nz, nu), -np.inf)
+            gbuf = np.full((nz, nu), -1)
+            for t, g in zip(mesh.tris, tg):
+                tu, tz, td = u[t] / step + nu / 2, z[t] / step, depth[t]
+                i0, i1 = max(int(np.floor(tz.min())), 0), min(int(np.ceil(tz.max())), nz - 1)
+                j0, j1 = max(int(np.floor(tu.min())), 0), min(int(np.ceil(tu.max())), nu - 1)
+                if i1 < i0 or j1 < j0:
+                    continue
+                jj, ii = np.meshgrid(np.arange(j0, j1 + 1) + 0.5, np.arange(i0, i1 + 1) + 0.5)
+                (x0, x1, x2), (y0, y1, y2) = tu, tz
+                den = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+                if abs(den) < 1e-12:
+                    continue
+                a = ((y1 - y2) * (jj - x2) + (x2 - x1) * (ii - y2)) / den
+                bb = ((y2 - y0) * (jj - x2) + (x0 - x2) * (ii - y2)) / den
+                c = 1.0 - a - bb
+                inside = (a >= 0) & (bb >= 0) & (c >= 0)
+                if not inside.any():
+                    continue
+                d = a * td[0] + bb * td[1] + c * td[2]
+                sub_z = zbuf[i0:i1 + 1, j0:j1 + 1]
+                sub_g = gbuf[i0:i1 + 1, j0:j1 + 1]
+                win = inside & (d > sub_z)
+                sub_z[win] = d[win]
+                sub_g[win] = g
+            key = f"{'crouch' if crouch else 'stand'}_{view}"
+            out[key] = {groups[k]: round(float((gbuf == k).sum()) * step * step * 1e4, 1) for k in range(len(groups))}
+            out[key]["total"] = round(float((gbuf >= 0).sum()) * step * step * 1e4, 1)
     return out
 
 

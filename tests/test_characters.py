@@ -85,6 +85,15 @@ class MeshingTests(unittest.TestCase):
         self.assertLess(np.abs(sh(v2)).max(), 0.004)
 
 
+    def test_decimation_reaches_the_target_on_thin_plates(self):
+        # a plate a few cells thick: many collapses across its rim would flip a face; refused
+        # ones must not hold up their neighbourhood round after round
+        sh = S.Shape().add(S.box((0, 0, 0), (0.15, 0.012, 0.2), 0.004, "a"))
+        v, f, _ = surface_nets(sh, *sh.bounds(0.01), cell=0.006)
+        v2, f2, _ = decimate(v, f, 200, max_rounds=200)
+        self.assertLessEqual(len(f2), 230)
+        self.assertTrue(closed(f2))
+
 class WeightTests(unittest.TestCase):
     def test_weights_are_normalised_and_stay_in_their_region(self):
         from characters import human as H
@@ -200,21 +209,24 @@ class MakeHumanTests(unittest.TestCase):
         if self.data is None:
             self.skipTest("MPFB2 files not downloaded (tools/download_assets.py --only characters)")
 
-    def test_retarget_lands_on_the_game_skeleton(self):
-        MH = self.MH
-        base, _, _ = MH.load(str(self.data))
-        v, W = MH.retarget(self.data, base.verts)
-        np.testing.assert_allclose(W.sum(axis=1), 1.0, atol=1e-9)
-        j = MH.joints(self.data, base.verts)
-        tf = MH.bone_transforms(self.data, j)
-        for mh in ("upperarm_l", "lowerarm_r", "thigh_l", "calf_r", "spine_03"):
-            R, s, h, gh = tf[mh]
-            game = MH.BONE_MAP[mh]
-            np.testing.assert_allclose(gh, sk.REST_WORLD[sk.INDEX[game], 3, :3], atol=1e-9)
-        body = base.group_vertices("body")
-        lo, hi = v[body].min(axis=0), v[body].max(axis=0)
-        self.assertLess(abs(lo[2]), 0.05)                                   # feet on the ground
-        self.assertTrue(1.65 < hi[2] < 1.8)                                 # the head on the skeleton's neck
+    def test_head_sits_upright_on_the_game_neck(self):
+        from characters import appearance as A
+        for name in ("Kestrel", "Sable", "Anvil"):
+            head = self.MH.head_region(self.data, A.appearance(name, 1))
+            v, lm = head["verts"], head["landmarks"]
+            np.testing.assert_allclose(head["weights"].sum(axis=1), 1.0, atol=1e-9)
+            hv = v[head["weights"][:, sk.INDEX["head"]] > 0.95]
+            # the head's middle where the procedural head's is (hit sphere, helmet)
+            self.assertAlmostEqual(0.5 * (hv[:, 2].max() + hv[:, 2].min()), self.MH.HEAD_MID_Z, delta=0.002)
+            self.assertTrue(0.20 < hv[:, 2].max() - hv[:, 2].min() < 0.26)
+            # upright and facing +y: eyes level, in front of the skull, the mouth below them
+            le, re = lm["eyes"]
+            self.assertLess(abs(le[2] - re[2]), 0.002)
+            self.assertLess(le[0], -0.02)
+            self.assertGreater(re[0], 0.02)
+            self.assertGreater(le[1], 0.06)
+            self.assertTrue(0.04 < le[2] - lm["mouth_z"] < 0.09)
+            self.assertLess(v[:, 2].min(), 1.46)                          # the neck goes under the collar
 
     def test_offline_switch(self):
         import os

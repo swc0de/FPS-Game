@@ -1,10 +1,11 @@
-"""The MakeHuman base human (MPFB2, CC0 1.0) for the soldiers' faces and hands.
+"""The MakeHuman base human (MPFB2, CC0 1.0) for the soldiers' faces.
 
 ``tools/download_assets.py --only characters`` fetches a pinned set of files
 into assets/characters/mpfb2/ after checking the licence (OVERHAUL_PLAN 6).
 This module reads them (plain text: OBJ, gzipped ``.target`` offset lists,
 JSON rig and weights; no new dependency) and turns one appearance into a
-head-and-neck mesh and hands on the game skeleton:
+head-and-neck mesh on the game skeleton (the body, hands and clothing stay
+procedural, characters/human.py: they are under clothing, gloves and gear):
 
 1. **Shape**: the base mesh plus weighted targets - ethnicity, gender and
    build ("macrodetails"), then face proportions (head shape, nose, mouth,
@@ -12,14 +13,10 @@ head-and-neck mesh and hands on the game skeleton:
    face numbers.
 2. **Joints**: every rig joint is the centre of a named vertex group of the
    shaped mesh, so joints follow the shape.
-3. **Retarget**: each MakeHuman bone gets the similarity transform (turn,
-   uniform scale, move) that puts its head and tail on the game skeleton's
-   bind pose; vertices follow by linear blend with MakeHuman's own weights,
-   so the mesh lands on the shared skeleton (B-3: one skeleton, one set of
-   hit boxes for every appearance).
-4. **Weights**: MakeHuman's game-engine weights renamed to the game's bones
-   (middle, ring and pinky become the one "fingers" chain, ball becomes toe),
-   with the twist shares of characters/weights.py.
+3. **Placement**: the head and neck move onto the game skeleton's joints and
+   the head's middle onto the procedural head's (``place_head``), so every
+   face shares one skeleton, one set of hit boxes and the helmet (B-3).
+4. **Weights**: MakeHuman's game-engine weights renamed to the game's bones.
 
 Without the files everything falls back to characters/human.py; nothing
 downloaded is ever required to play.
@@ -182,77 +179,155 @@ def joints(data: Path, verts: np.ndarray) -> dict[str, tuple[np.ndarray, np.ndar
     return {bone: (at(b["head"]), at(b["tail"])) for bone, b in rig.items() if "head" in b and "tail" in b}
 
 
-# ------------------------------------------------------------------- retarget
-def _rotation_between(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """The smallest rotation (3x3, column vectors) taking direction a onto direction b."""
-    a = a / max(np.linalg.norm(a), 1e-12)
-    b = b / max(np.linalg.norm(b), 1e-12)
-    v = np.cross(a, b)
-    c = float(a @ b)
-    if c < -0.999999:
-        axis = np.cross(a, [1.0, 0.0, 0.0])
-        if np.linalg.norm(axis) < 1e-6:
-            axis = np.cross(a, [0.0, 1.0, 0.0])
-        axis /= np.linalg.norm(axis)
-        return 2.0 * np.outer(axis, axis) - np.eye(3)
-    vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-    return np.eye(3) + vx + vx @ vx / (1.0 + c)
-
-
-def _game_segment(bone: str):
-    from characters.weights import SEGMENTS
-    from gameplay import skeleton as sk
-    if bone in SEGMENTS:
-        return SEGMENTS[bone]
-    p = sk.REST_WORLD[sk.INDEX[bone], 3, :3]
-    return p, p + np.array([0.0, 0.0, 0.1])
-
-
-FINGER_PREFIXES = ("thumb", "index", "middle", "ring", "pinky")
-
-
-def bone_transforms(data: Path, j: dict) -> dict[str, tuple[np.ndarray, float, np.ndarray, np.ndarray]]:
-    """Per MakeHuman bone: (R, s, mh_head, game_head) with x' = game_head + s R (x - mh_head).
-    Fingers move rigidly with their hand (MakeHuman's finger shapes are kept)."""
-    out = {}
-    for mh, game in BONE_MAP.items():
-        if mh not in j or mh.split("_")[0] in FINGER_PREFIXES or mh == "Root":
-            continue
-        h, t = j[mh]
-        gh, gt = _game_segment(game)
-        R = _rotation_between(t - h, gt - gh)
-        s = float(np.linalg.norm(gt - gh) / max(np.linalg.norm(t - h), 1e-9))
-        if mh.startswith("hand_") or mh in ("head", "neck_01"):
-            s = 1.0              # short or arbitrary segments: keep the natural size, only turn and move
-        out[mh] = (R, s, h, gh)
-    for mh in BONE_MAP:
-        if mh.split("_")[0] in FINGER_PREFIXES and mh in j:
-            out[mh] = out[f"hand_{mh[-1]}"]
-    out["Root"] = out["pelvis"]
-    return out
-
-
-def retarget(data: Path, verts_mh: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Shaped MakeHuman vertices -> game bind pose. Returns (game vertices, per-vertex
-    MakeHuman weights as a (n, bones) dense matrix over ``list(BONE_MAP)``)."""
+# ---------------------------------------------------------------- placement
+def weight_matrix(data: Path, n: int) -> np.ndarray:
+    """MakeHuman's game-engine weights as a dense (n, bones) matrix over ``list(BONE_MAP)``,
+    rows summing to 1 (unweighted vertices go to the pelvis)."""
     _, _, weights = load(str(data))
-    j = joints(data, verts_mh)
-    tf = bone_transforms(data, j)
-    v = to_game(verts_mh)
     names = list(BONE_MAP)
-    W = np.zeros((len(v), len(names)))
+    W = np.zeros((n, len(names)))
     for k, name in enumerate(names):
         for vi, w in weights.get(name, []):
             W[int(vi), k] = float(w)
-    sums = W.sum(axis=1)
-    W[sums <= 1e-9, names.index("pelvis")] = 1.0
-    W /= W.sum(axis=1, keepdims=True)
-    out = np.zeros_like(v)
-    for k, name in enumerate(names):
-        sel = W[:, k] > 0
-        if not sel.any():
-            continue
-        R, s, h, gh = tf[name]
-        moved = gh + s * (v[sel] - h) @ R.T
-        out[sel] += W[sel, k:k + 1] * moved
-    return out, W
+    W[W.sum(axis=1) <= 1e-9, names.index("pelvis")] = 1.0
+    return W / W.sum(axis=1, keepdims=True)
+
+
+# the procedural head's vertical centre (characters/human.py: crown 1.743, chin 1.503), which the
+# head hit sphere and the helmet are built around
+HEAD_MID_Z = 1.623
+
+
+def place_head(data: Path, verts_mh: np.ndarray, W: np.ndarray) -> np.ndarray:
+    """Shaped MakeHuman vertices -> game space, head and neck only.
+
+    Both rest poses hold the head upright, so the head and the neck only move: each onto its
+    game joint, blended by the head's weight (the neck stretches or shortens in between). The
+    head is then lifted or lowered so its middle (crown to chin) sits where the procedural
+    head's does: the hit sphere and the helmet fit every face. Turning the bones onto the
+    game's axes instead would pitch the face."""
+    from gameplay import skeleton as sk
+    names = list(BONE_MAP)
+    j = joints(data, verts_mh)
+    g = to_game(verts_mh)
+    a = W[:, names.index("head")][:, None]
+    t_head = sk.REST_WORLD[sk.INDEX["head"], 3, :3] - j["head"][0]
+    t_neck = sk.REST_WORLD[sk.INDEX["neck"], 3, :3] - j["neck_01"][0]
+    v = g + a * t_head + (1.0 - a) * t_neck
+    base, _, _ = load(str(data))
+    body = base.group_vertices("body")
+    head = body[W[body, names.index("head")] > 0.95]
+    mid = 0.5 * (v[head, 2].max() + v[head, 2].min())
+    v[:, 2] += a[:, 0] * (HEAD_MID_Z - mid)
+    return v
+
+
+# ----------------------------------------------------------------- appearance
+def _pair(mix: dict, decr: str, incr: str, x: float) -> None:
+    """A signed amount x (-1..1) on a decrease/increase target pair."""
+    x = max(-1.0, min(1.0, x))
+    if x >= 0:
+        mix[incr] = mix.get(incr, 0.0) + x
+    else:
+        mix[decr] = mix.get(decr, 0.0) - x
+
+
+def _levels(u: float) -> dict[str, float]:
+    """0..1 over MakeHuman's min / average / max levels (piecewise linear)."""
+    u = max(0.0, min(1.0, u))
+    if u < 0.5:
+        return {"min": 1.0 - 2.0 * u, "average": 2.0 * u}
+    return {"average": 2.0 - 2.0 * u, "max": 2.0 * u - 1.0}
+
+
+def mix_for(app) -> dict[str, float]:
+    """Target weights for one appearance (characters/appearance.py)."""
+    import random
+    f = app.face
+    g = "female" if app.build.female else "male"
+    mix: dict[str, float] = {}
+    # ancestry: three fractions from the bot's name, leaning with the skin tone
+    r = random.Random(f"ancestry:{app.name}:{app.seed}")
+    raw = {"african": r.random() * (0.25 + 1.5 * app.melanin), "asian": r.random() * 0.8,
+           "caucasian": r.random() * (0.25 + 1.5 * (1.0 - app.melanin))}
+    total = sum(raw.values())
+    for e, w in raw.items():
+        mix[f"macrodetails/{e}-{g}-young.target.gz"] = w / total
+    # build: muscle and weight levels (bilinear over MakeHuman's universal targets)
+    muscle = _levels(app.build.muscle)
+    weight = _levels(0.5 + 0.35 * app.build.mass)
+    for m, wm in muscle.items():
+        for w, ww in weight.items():
+            mix[f"macrodetails/universal-{g}-young-{m}muscle-{w}weight.target.gz"] = wm * ww
+    # face: each proportion a signed amount on its target pair
+    _pair(mix, "head/head-scale-horiz-decr.target.gz", "head/head-scale-horiz-incr.target.gz", (f.width - 1) / 0.08)
+    _pair(mix, "head/head-fat-decr.target.gz", "head/head-fat-incr.target.gz", 0.4 * app.build.mass)
+    shape = r.choice(("oval", "round", "square", "triangular"))
+    mix[f"head/head-{shape}.target.gz"] = r.uniform(0.2, 0.6)
+    _pair(mix, "chin/chin-width-decr.target.gz", "chin/chin-width-incr.target.gz", (f.jaw - 1) / 0.16)
+    _pair(mix, "chin/chin-prominent-decr.target.gz", "chin/chin-prominent-incr.target.gz", (f.chin - 1) / 0.2)
+    _pair(mix, "chin/chin-height-decr.target.gz", "chin/chin-height-incr.target.gz", f.chin_forward / 0.008)
+    _pair(mix, "nose/nose-scale-vert-decr.target.gz", "nose/nose-scale-vert-incr.target.gz", (f.nose_length - 1) / 0.16)
+    _pair(mix, "nose/nose-scale-horiz-decr.target.gz", "nose/nose-scale-horiz-incr.target.gz", (f.nose_width - 1) / 0.2)
+    _pair(mix, "nose/nose-hump-decr.target.gz", "nose/nose-hump-incr.target.gz", (f.nose_bridge - 1) / 0.24)
+    _pair(mix, "nose/nose-trans-up.target.gz", "nose/nose-trans-down.target.gz", f.nose_hook / 0.004)
+    _pair(mix, "mouth/mouth-scale-horiz-decr.target.gz", "mouth/mouth-scale-horiz-incr.target.gz",
+          (f.mouth_width - 1) / 0.12)
+    lips = (f.lips - 1) / 0.24 + (0.3 if app.build.female else 0.0)
+    _pair(mix, "mouth/mouth-upperlip-volume-decr.target.gz", "mouth/mouth-upperlip-volume-incr.target.gz", lips)
+    _pair(mix, "mouth/mouth-lowerlip-volume-decr.target.gz", "mouth/mouth-lowerlip-volume-incr.target.gz", lips)
+    for s in ("l", "r"):
+        _pair(mix, f"cheek/{s}-cheek-bones-decr.target.gz", f"cheek/{s}-cheek-bones-incr.target.gz",
+              (f.cheekbones - 1) / 0.24)
+        _pair(mix, f"ears/{s}-ear-scale-decr.target.gz", f"ears/{s}-ear-scale-incr.target.gz", (f.ears - 1) / 0.16)
+        _pair(mix, f"eyes/{s}-eye-scale-decr.target.gz", f"eyes/{s}-eye-scale-incr.target.gz", r.uniform(-0.4, 0.4))
+    _pair(mix, "eyebrows/eyebrows-trans-down.target.gz", "eyebrows/eyebrows-trans-up.target.gz", (1 - f.brow) / 0.3)
+    _pair(mix, "forehead/forehead-trans-forward.target.gz", "forehead/forehead-trans-backward.target.gz",
+          f.forehead_slope / 0.012)
+    _pair(mix, "forehead/forehead-scale-vert-decr.target.gz", "forehead/forehead-scale-vert-incr.target.gz",
+          (f.cranium_length - 1) / 0.08)
+    _pair(mix, "neck/neck-scale-horiz-decr.target.gz", "neck/neck-scale-horiz-incr.target.gz",
+          (f.neck - 1) / 0.12 + 0.3 * app.build.mass)
+    return mix
+
+
+def group_centre(data: Path, verts_game: np.ndarray, name: str) -> np.ndarray | None:
+    base, _, _ = load(str(data))
+    vi = base.group_vertices(name)
+    return verts_game[vi].mean(axis=0) if len(vi) else None
+
+
+def head_region(data: Path, app) -> dict | None:
+    """The shaped head and neck on the game skeleton: vertices, triangles, weights over the
+    game's bones (n, N_BONES), and landmarks in characters/human.py's form (eye centres and
+    radius, the paint centre, the mouth line). None without the fetched files."""
+    if data is None:
+        return None
+    from gameplay import skeleton as sk
+    base, _, _ = load(str(data))
+    v_mh = shaped(data, mix_for(app))
+    W = weight_matrix(data, len(v_mh))
+    v = place_head(data, v_mh, W)
+    names = list(BONE_MAP)
+    head_w = W[:, names.index("head")] + W[:, names.index("neck_01")]
+    tris = base.triangles(("body",))
+    # down to well inside the shirt collar (its top is about 1.50 m)
+    keep = (head_w[tris] >= 0.2).all(axis=1) & (v[tris][:, :, 2] > 1.38).all(axis=1)
+    tris = tris[keep]
+    used = np.unique(tris)
+    remap = np.full(len(v), -1, np.int64)
+    remap[used] = np.arange(len(used))
+    gw = np.zeros((len(used), sk.N_BONES))
+    for k, mh in enumerate(names):
+        col = W[used, k]
+        if col.any():
+            gw[:, sk.INDEX[BONE_MAP[mh]]] += col
+    eyes = sorted((group_centre(data, v, "joint-l-eye"), group_centre(data, v, "joint-r-eye")), key=lambda e: e[0])
+    # the mouth line: the corners are the vertices the mouth-width target moves most
+    # ("joint-mouth" is the jaw's pivot, above the nose)
+    idx, off = target(str(data), "mouth/mouth-scale-horiz-incr.target.gz")
+    corners = idx[np.argsort(-np.abs(off[:, 0]))[:6]]
+    mouth_z = float(v[corners, 2].mean())
+    centre = 0.5 * (eyes[0] + eyes[1]) - np.array([0.0, 0.069, 0.008])     # where human.head's eyes sit
+    lm = {"eyes": eyes, "eye_radius": 0.0118, "centre": centre, "mouth_z": mouth_z}
+    return {"verts": v[used], "tris": remap[tris], "weights": gw, "landmarks": lm}

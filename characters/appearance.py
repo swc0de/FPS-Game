@@ -57,9 +57,17 @@ class Appearance:
     def skin_rgb(self) -> np.ndarray:
         return skin_tone(self.melanin, self.haemoglobin)
 
+    @property
+    def makehuman(self) -> bool:
+        """Whether the face comes from the fetched MakeHuman files (characters/makehuman.py);
+        without them, or with COLD_SECTOR_OFFLINE=1, it is the procedural head."""
+        from characters import makehuman
+        return makehuman.data_dir() is not None
+
     def key(self, style: str) -> str:
-        """A stable cache key for this appearance in one team's kit."""
-        return hashlib.sha1(repr((self.name, self.seed, style, CHARACTER_VERSION)).encode()).hexdigest()[:16]
+        """A stable cache key for this appearance in one team's kit (and the head's source)."""
+        src = "mh" if self.makehuman else "proc"
+        return hashlib.sha1(repr((self.name, self.seed, style, CHARACTER_VERSION, src)).encode()).hexdigest()[:16]
 
 
 @dataclass

@@ -14,7 +14,8 @@ A round removes up to about a fifth of the triangles; a dozen rounds take a
 12k-triangle head to 4k.
 
 A collapse is refused when it would flip a triangle (its normal turning by
-more than about 60 degrees) or when it would join two vertices of different
+more than about 60 degrees; it is not tried again, so it cannot hold up
+its neighbourhood round after round) or when it would join two vertices of different
 ``groups`` (open borders, material regions, the seams between body parts),
 so silhouettes, borders and regions survive.
 
@@ -55,7 +56,7 @@ def _boundary_vertices(f: np.ndarray, n: int) -> np.ndarray:
 
 
 def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarray | None = None,
-             attrs: dict | None = None, max_rounds: int = 60, flip_cos: float = 0.5):
+             attrs: dict | None = None, max_rounds: int = 200, flip_cos: float = 0.5):
     """Simplify to about ``target`` triangles.
 
     groups: (v,) int, collapses only join vertices of the same group; open
@@ -68,6 +69,7 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
     grp = np.zeros(n, np.int64) if groups is None else np.asarray(groups, np.int64).copy()
     locked = _boundary_vertices(f, n)
     q = _quadrics(v, f)
+    refused: set[tuple[int, int]] = set()      # collapses that flipped a face: not tried again
     for _ in range(max_rounds):
         if len(f) <= target:
             break
@@ -105,7 +107,7 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
             x, y = al[i], bl[i]
             if taken[x] or taken[y]:
                 continue
-            if len(nbrs[x] & nbrs[y]) != 2:
+            if len(nbrs[x] & nbrs[y]) != 2 or (x, y) in refused:
                 continue
             chosen.append(i)
             taken[x] = taken[y] = True
@@ -138,9 +140,10 @@ def decimate(verts: np.ndarray, faces: np.ndarray, target: int, groups: np.ndarr
             bad = np.zeros(n, bool)
             bad[bad_verts] = True
             keep = ~(bad[ka] | bad[kb])
+            refused.update(zip(ka[~keep].tolist(), kb[~keep].tolist()))
             ka, kb, kp = ka[keep], kb[keep], kp[keep]
             if len(ka) == 0:
-                break
+                continue
             remap = np.arange(n)
             remap[kb] = ka
         v[ka] = kp

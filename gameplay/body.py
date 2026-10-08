@@ -223,6 +223,8 @@ class CharacterBody:
         self.aim_pitch = 0.0
         self.kick = 0.0
         self.dead_t = -1.0
+        self.ragdoll = None            # gameplay/ragdoll.py, soldiers only
+        self._vel = Vec3(0, 0, 0)
         self.fall_dir = 1.0
         self.flash = 0.0
         self.alive = True
@@ -325,6 +327,7 @@ class CharacterBody:
         self.skin.setShaderInput("u_slotParams", self._slot_params)
         self.skin.setShaderInput("u_detail", detail.shared_texture())
         self.triangles = [len(m.tris) for m in lods]
+        self.mesh_lod0 = lods[0]          # bind-pose arrays, for tools (hit box fitting, areas)
         self._bones = PTA_LVecBase4f.emptyArray(sk.MAX_BONES * 3)
         self._rows = np.zeros((sk.MAX_BONES, 3, 4), np.float32)
         self._rows[:, 0, 0] = self._rows[:, 1, 1] = self._rows[:, 2, 2] = 1.0
@@ -405,6 +408,13 @@ class CharacterBody:
         d = clips().get(name)
         if d is None:
             return
+        if name in ("switch", "throw", "knife", "plant", "defuse"):
+            # the hands are needed: an unfinished reload winds back quickly
+            for other in ("reload", "reload_pistol"):
+                c = self.active_clips.get(other)
+                if c is not None and not c["stop"]:
+                    c["stop"] = True
+                    c["dur"] *= 0.25
         self.active_clips[name] = {"t": 0.0, "dur": max(float(duration or d["duration"]), 0.05),
                                    "loop": bool(d.get("loop", False)), "stop": False}
         self._sig = None
@@ -471,6 +481,7 @@ class CharacterBody:
         self.active_clips = {}
         self.flinch = (0.0, 0.0, 0.0)
         self.dead_t = -1.0
+        self._drop_ragdoll()
         self.alive = True
         self.pose.set_hpr(B["root"], 0, 0, 0)
         self.pose.set_pos(B["root"], 0, 0, 0)
@@ -499,6 +510,38 @@ class CharacterBody:
             self.fall_dir = -1.0           # shot in the back: fall forwards
         if self.weapon_model is not None:
             self.weapon_model.root.hide()
+        if self._bones is not None and getattr(self.game, "physics", None) is not None:
+            from gameplay.ragdoll import Ragdoll
+            world = self.pose.solve().copy()
+            self._death_world = world
+            # each bone's matrix relative to its parent at death: the bones no capsule drives
+            # keep it and ride their parent
+            par = np.maximum(sk.PARENT, 0)
+            self._death_local = np.matmul(world, np.linalg.inv(world[par]))
+            impulse = None
+            if direction is not None and Vec3(direction).length() > 1e-6:
+                impulse = Vec3(direction).normalized() * 9.0
+            self.ragdoll = Ragdoll(self.game.physics, self.root, world, Vec3(self._vel), impulse)
+
+    def _drop_ragdoll(self) -> None:
+        if self.ragdoll is not None:
+            self.ragdoll.remove()
+            self.ragdoll = None
+
+    def _ragdoll_pose(self) -> None:
+        """The skinning palette from the ragdoll's capsules."""
+        rd = self.ragdoll
+        drive = rd._last if rd.frozen else rd.bone_worlds()
+        world = self._death_world.copy()
+        local = self._death_local
+        for i, b in enumerate(sk.BONES):
+            m = drive.get(b.name)
+            if m is not None:
+                world[i] = m
+            elif i > 0:
+                world[i] = local[i] @ world[sk.PARENT[i]]
+        sk.palette_rows(world, self._rows[:sk.N_BONES])
+        memoryview(self._bones).cast("B")[:] = self._rows.tobytes()
 
     def on_hit(self) -> None:
         self.flash = 0.1
@@ -511,10 +554,15 @@ class CharacterBody:
         self.root.setPos(Point3(*pos))
         self.root.setH(yaw)
         if self.dead_t >= 0.0:
-            if self.dead_t < 1.0:
+            if self.ragdoll is not None:
+                if not self.ragdoll.frozen:
+                    self.ragdoll.update(dt)
+                    self._ragdoll_pose()
+            elif self.dead_t < 1.0:
                 self._animate_death(dt)
                 self._apply()
             return
+        self._vel = vel
         # nothing changed (standing still, same view): the pose and hit boxes are current
         speed = math.hypot(vel.x, vel.y)
         sig = (round(pos[0], 3), round(pos[1], 3), round(pos[2], 3), round(yaw, 1), round(pitch, 1),
@@ -638,5 +686,6 @@ class CharacterBody:
         P.set_hpr(B["spine_03"], 0.0, -10.0 * t * self.fall_dir)
 
     def destroy(self) -> None:
+        self._drop_ragdoll()
         self.rig.destroy()
         self.root.removeNode()

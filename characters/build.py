@@ -262,6 +262,129 @@ def eyes(app: Appearance, lm: dict) -> list:
     return parts
 
 
+# ------------------------------------------------------- MakeHuman head
+def _top4(dense: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Joints and weights (n, 4) from dense per-bone weights (n, N_BONES)."""
+    order = np.argsort(-dense, axis=1, kind="stable")[:, :4]
+    w = np.take_along_axis(dense, order, axis=1)
+    w = w / np.maximum(w.sum(axis=1, keepdims=True), 1e-12)
+    return order.astype(np.float32), w.astype(np.float32)
+
+
+def mesh_cavity(v: np.ndarray, n: np.ndarray, radius: float = 0.02) -> np.ndarray:
+    """Occlusion for an explicit mesh (no distance field): how much of the surface within
+    ``radius`` rises above each vertex's tangent plane (eye sockets, nostrils, ears, the
+    mouth's corners)."""
+    occ = np.zeros(len(v))
+    for s in range(0, len(v), 512):
+        d = v[None, :, :] - v[s:s + 512, None, :]
+        dist = np.linalg.norm(d, axis=2)
+        near = np.where((dist > 1e-6) & (dist < radius), 1.0 - dist / radius, 0.0)
+        cos = np.einsum("bnk,bk->bn", d, n[s:s + 512]) / np.maximum(dist, 1e-9)
+        occ[s:s + 512] = (near * np.clip(cos - 0.1, 0.0, None)).sum(axis=1) / np.maximum(near.sum(axis=1), 1e-9)
+    return np.clip(1.0 - 1.1 * occ, 0.35, 1.0).astype(np.float32)
+
+
+def explicit_lods(v: np.ndarray, f: np.ndarray, dense: np.ndarray, share: float, slot: str, paint=None,
+                  ao: np.ndarray | None = None, lods: int = len(LOD_BUDGETS)) -> list:
+    """``mesh_lods`` for a mesh that already exists (the MakeHuman head and the layers grown
+    from it): simplified in a chain, weights and occlusion carried along; LODs past ``lods``
+    are left out."""
+    from characters.mesher import vertex_normals
+    attrs = {"w": dense, "ao": ao if ao is not None else np.ones(len(v), np.float32)}
+    out = []
+    for k, total in enumerate(LOD_BUDGETS):
+        if k >= lods:
+            out.append(None)
+            continue
+        target = max(int(share * total), 16)
+        if len(f) > target:
+            v, f, attrs = decimate(v, f, target, attrs=attrs)
+        n = vertex_normals(v, f)
+        joints, weights = _top4(attrs["w"])
+        col = np.ones((len(v), 4), np.float32)
+        if paint is not None:
+            col[:, :3] = paint(v, n)
+        col[:, 3] = attrs["ao"]
+        out.append(Mesh(v.copy(), n, col, joints, weights, np.full(len(v), SLOT[slot], np.float32), f.copy()))
+    return out
+
+
+def _sub(v: np.ndarray, f: np.ndarray, keep_tri: np.ndarray):
+    """The triangles ``keep_tri`` and their vertices, renumbered; also the old vertex ids."""
+    f = f[keep_tri]
+    used = np.unique(f)
+    remap = np.full(len(v), -1, np.int64)
+    remap[used] = np.arange(len(used))
+    return used, remap[f]
+
+
+def mh_hair(app: Appearance, head: dict, covered: bool) -> list:
+    """Hair as a layer grown off the MakeHuman scalp: the scalp's triangles above the hairline,
+    pushed out along the normals by the style's thickness, thinning to nothing at the hairline
+    (where the scalp paint carries the colour) and under a helmet or cap. None at the far LOD."""
+    if app.hair in ("shaved", "buzz"):
+        return []
+    from characters.mesher import vertex_normals
+    v, f, dense = head["verts"], head["tris"], head["weights"]
+    n = vertex_normals(v, f)
+    r = v - head["landmarks"]["centre"]
+    above = r[:, 2] - _hairline(r)
+    used, tris = _sub(v, f, (above[f] > -0.004).all(axis=1))
+    top, sides = {"crew": (0.011, 0.005), "short": (0.016, 0.009), "bun": (0.008, 0.007)}[app.hair]
+    ru, au = r[used], above[used]
+    up = _soft(ru[:, 2], -0.02, 0.07)
+    taper = _soft(au, -0.002, 0.012)
+    thick = (sides + (top - sides) * up) * taper
+    thick += 0.0015 * C.value_noise(v[used], 0.012, app.seed + 31) * taper
+    if covered:
+        thick *= 1.0 - 0.9 * _soft(ru[:, 2], 0.015, 0.03)
+    pos = v[used] + n[used] * (thick + 0.0006)[:, None]
+    pieces = [explicit_lods(pos, tris, dense[used], SHARE["hair"], "hair", lods=2)]
+    if app.hair == "bun":
+        z = head["landmarks"]["centre"][2] + 0.035
+        band = v[np.abs(v[:, 2] - z) < 0.006]
+        back = band[:, 1].min() if len(band) else head["landmarks"]["centre"][1] - 0.09
+        bun = S.Shape(prims=[S.ell((0.0, back - 0.012, z), (0.032, 0.03, 0.03), "head")])
+        pieces.append(mesh_lods(bun, 0.004, SHARE["hair"] * 0.3, "hair", "head"))
+    return pieces
+
+
+def mh_beard(app: Appearance, head: dict) -> list:
+    """Beard or moustache as a layer grown off the MakeHuman jaw, chin and upper lip."""
+    if app.build.female or app.facial_hair not in ("short_beard", "full_beard", "moustache"):
+        return []
+    from characters.mesher import vertex_normals
+    v, f, dense = head["verts"], head["tris"], head["weights"]
+    lm = head["landmarks"]
+    n = vertex_normals(v, f)
+    r = v - lm["centre"]
+    mz = lm["mouth_z"]
+    if app.facial_hair == "moustache":
+        region = np.maximum(np.abs(v[:, 2] - (mz + 0.012)) - 0.006, np.abs(r[:, 0]) - 0.026)
+        region = np.maximum(region, 0.08 - r[:, 1])
+    else:
+        region = np.maximum(r[:, 2] + 0.03, -0.155 - r[:, 2])
+        region = np.maximum(region, -0.005 - r[:, 1])
+        lips = np.maximum(np.abs(v[:, 2] - mz) - 0.007, np.abs(r[:, 0]) - 0.02)
+        region = np.maximum(region, -lips)
+    used, tris = _sub(v, f, (region[f] < 0.004).all(axis=1))
+    if not len(tris):
+        return []
+    thick = {"short_beard": 0.004, "full_beard": 0.009, "moustache": 0.004}[app.facial_hair]
+    t = thick * (1.0 - _soft(region[used], -0.008, 0.002)) + 0.0012 * C.value_noise(v[used], 0.008, app.seed + 41)
+    pos = v[used] + n[used] * (np.maximum(t, 0.0) + 0.0005)[:, None]
+    return [explicit_lods(pos, tris, dense[used], SHARE["hair"] * 0.6, "hair", lods=2)]
+
+
+def mh_head(app: Appearance, head: dict) -> list:
+    """The MakeHuman skin: painted like the procedural head, with mesh occlusion."""
+    from characters.mesher import vertex_normals
+    v, f = head["verts"], head["tris"]
+    ao = mesh_cavity(v, vertex_normals(v, f))
+    return explicit_lods(v, f, head["weights"], SHARE["head"], "skin", paint=head_paint(app, head["landmarks"]), ao=ao)
+
+
 HAIR_SRGB = None
 EYE_SRGB = None
 
@@ -284,7 +407,16 @@ def assemble(app: Appearance, style: str) -> list[Mesh]:
     head_shape.add(*H.eyelids(lm))
     pieces = []        # lists of per-LOD meshes
     covered = look.headgear in ("helmet", "cap")
-    if look.headgear != "balaclava":
+    mh = None
+    if look.headgear != "balaclava" and app.makehuman:
+        from characters import makehuman
+        mh = makehuman.head_region(makehuman.data_dir(), app)
+    if mh is not None:
+        lm = mh["landmarks"]
+        pieces.append(mh_head(app, mh))
+        pieces.extend(mh_hair(app, mh, covered))
+        pieces.extend(mh_beard(app, mh))
+    elif look.headgear != "balaclava":
         pieces.append(mesh_lods(head_shape, 0.0035, SHARE["head"], "skin", "body", paint=head_paint(app, lm)))
         hs = hair_shape(app, head_shape, covered)
         if hs is not None:
@@ -322,9 +454,15 @@ def assemble(app: Appearance, style: str) -> list[Mesh]:
         gear += G.balaclava(head_shape, lm)
     if look.glasses:
         gear += G.glasses(lm)
-    share = SHARE["gear"] / max(len(gear), 1)
+    # the gear's budget by size (bounding-box area, softened so small pieces stay recognisable)
+    size = []
     for piece in gear:
-        pieces.append(mesh_lods(piece.shape, piece.cell, share, piece.slot, piece.skin,
+        lo, hi = piece.shape.bounds()
+        e = np.asarray(hi) - np.asarray(lo)
+        size.append((2.0 * (e[0] * e[1] + e[1] * e[2] + e[2] * e[0])) ** 0.75)
+    size = np.asarray(size)
+    for piece, sz in zip(gear, size):
+        pieces.append(mesh_lods(piece.shape, piece.cell, SHARE["gear"] * sz / size.sum(), piece.slot, piece.skin,
                                 tag_shape=body if piece.skin == "body" else None))
     return [Mesh.concat([p[k] for p in pieces]) for k in range(len(LOD_BUDGETS))]
 
