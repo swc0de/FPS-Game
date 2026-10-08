@@ -213,6 +213,77 @@ class ClipTests(unittest.TestCase):
         self.assertEqual(flinches[0], flinches[1])
 
 
+
+def _hull_area(p2: np.ndarray) -> float:
+    pts = sorted(set(map(tuple, np.round(p2, 6))))
+    if len(pts) < 3:
+        return 0.0
+
+    def half(ps):
+        out = []
+        for q in ps:
+            while len(out) >= 2 and ((out[-1][0] - out[-2][0]) * (q[1] - out[-2][1])
+                                     - (out[-1][1] - out[-2][1]) * (q[0] - out[-2][0])) <= 0:
+                out.pop()
+            out.append(q)
+        return out
+    h = np.array(half(pts)[:-1] + half(pts[::-1])[:-1])
+    x, y = h[:, 0], h[:, 1]
+    return 0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+
+class TwistTests(unittest.TestCase):
+    """No candy-wrapper (OVERHAUL_PLAN 7): twisting a limb 90 degrees either way, with the twist
+    bone taking half of the roll, every ring of the limb keeps at least 70 % of its area."""
+
+    def _rings(self, start: str, end: str, pose_fn, ts=(0.3, 0.6, 0.85)) -> np.ndarray:
+        from characters import human as H
+        B = sk.INDEX
+        if not hasattr(self, "_mesh"):
+            self._mesh = {}
+        if start not in self._mesh:
+            body = H.body()
+            a, b = sk.REST_WORLD[B[start], 3, :3], sk.REST_WORLD[B[end], 3, :3]
+            v, f, _ = surface_nets(body, np.minimum(a, b) - 0.07, np.maximum(a, b) + 0.07, cell=0.005)
+            _, tag = body.evaluate(v, with_tags=True)
+            self._mesh[start] = (v, *W.compute(v, body.tags(), region_of=tag))
+        v, joints, weights = self._mesh[start]
+        pose = sk.Pose()
+        pose_fn(pose)
+        world = pose.solve()
+        rows = sk.palette_rows(world, np.zeros((sk.N_BONES, 3, 4), np.float32)).astype(np.float64)
+        p = sk.skin_points(v, joints, weights, rows)
+        a, b = world[B[start], 3, :3], world[B[end], 3, :3]
+        ax = (b - a) / np.linalg.norm(b - a)
+        t = (p - a) @ ax / np.linalg.norm(b - a)
+        u = np.cross(ax, [0.0, 0.0, 1.0])
+        u /= np.linalg.norm(u)
+        w = np.cross(ax, u)
+        out = []
+        for t0 in ts:
+            q = p[(t > t0 - 0.04) & (t < t0 + 0.04)] - a
+            out.append(_hull_area(np.stack([q @ u, q @ w], axis=1)))
+        return np.array(out)
+
+    def _roll(self, bone: str, twist: str, roll: float):
+        def fn(P):
+            for name, share in ((bone, 1.0), (twist, 0.5)):
+                h, p, r = P.hpr[sk.INDEX[name]]
+                P.set_hpr(sk.INDEX[name], h, p, r + roll * share)
+        return fn
+
+    def test_forearm_rings_keep_their_area(self):
+        rest = self._rings("lowerarm_r", "hand_r", lambda P: None)
+        for roll in (90.0, -90.0):
+            got = self._rings("lowerarm_r", "hand_r", self._roll("hand_r", "lowerarm_twist_r", roll))
+            self.assertTrue((got / rest >= 0.7).all(), (roll, got / rest))
+
+    def test_upper_arm_rings_keep_their_area(self):
+        rest = self._rings("upperarm_r", "lowerarm_r", lambda P: None)
+        for roll in (90.0, -90.0):
+            got = self._rings("upperarm_r", "lowerarm_r", self._roll("lowerarm_r", "upperarm_twist_r", roll))
+            self.assertTrue((got / rest >= 0.7).all(), (roll, got / rest))
+
 class MakeHumanTests(unittest.TestCase):
     def setUp(self):
         from characters import makehuman as MH
