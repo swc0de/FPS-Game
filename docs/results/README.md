@@ -65,12 +65,14 @@ What it shows:
   one tick, so stacked bots moved apart a quarter as much. The step is now held between checks.
   On the fixed code the head-to-head is back at 42 %, the same as before the pass within its
   interval, and stacking at 1.38 per round.
-* **Two behaviour rows got worse than before the pass** (single 24-round matches are noisy, so
-  this may be partly chance): trades within 3 s 16.1 % → 11.9 % and unseen deaths 8.0 % → 9.2 %,
-  now both on the wrong side of legacy. The pass halved the path search budget (260 → 140 node
-  expansions per team per tick), so a route to a teammate's killer arrives later; that is the
-  most likely cause. Going back to 260 is a decision in ROADMAP "Milestone 8 decisions to
-  confirm", with its measured cost below.
+* **Two behaviour rows are worse than before the pass**: trades within 3 s 16.1 % → 11.9 % and
+  unseen deaths 8.0 % → 9.2 %, both on the wrong side of legacy. The pass halved the path search
+  budget (260 → 140 node expansions per team per tick), the suspected cause, so the same two
+  matches were re-run at 260: trades 15.2 %, unseen deaths 8.4 % (JSON in
+  [`path260/`](path260/)). But the Milestone 9 branch, still at 140 and differing only in the
+  hit boxes, gave 15.0 % and 8.1 % on the same seeds. Single 24-round matches vary by about as
+  much as the gap, so the budget is not shown to cause it; 260 also breaks the spike rule
+  (below). ROADMAP "Milestone 8 decisions to confirm", decision 2.
 * **Fights**: v2 kills 240, deaths 293. It dies less while reloading (22 against legacy's 41) and
   less often to an enemy it never saw (19 / 32), and trades a little less (35 / 41).
 * **Attack is ahead** (58 %): contact won 4 of 5, rushes 3 of 3, defaults 5 of 8, executes and
@@ -129,7 +131,7 @@ Detailed runs (per-subsystem timers; their overhead raises the totals a little):
 | AI decisions, p99 ms | 3.11 | **3.90** | 4.21 |
 | ticks with AI decisions over 4 ms | 282 | 412 | 542 |
 | worst AI tick ms | 41.1 | 62.9 (a 60 ms garbage-collection pause inside a re-think); 15.9 without it | 14.6 |
-| path search budget 260 instead of 140 (decision 2) | | AI mean 1.46 ms, **p99 4.15 ms** (over the rule), 488 ticks over 4 ms | |
+| path search budget 260 instead of 140 (decision 2) | | AI mean 1.46 ms, **p99 4.15 ms** (over the rule), 488 ticks over 4 ms; v2 against v2 seeds 1-2: trades 15.2 %, unseen deaths 8.4 %, stuck 2 + 0 | |
 
 * **The spike rule you chose (AI p99 ≤ 4 ms) is met**, by a small margin (3.51 and 3.90 ms in two
   sessions). The AI's own cost fell 6-13 %.
@@ -159,4 +161,5 @@ Detailed runs (per-subsystem timers; their overhead raises the totals a little):
   `*_earlier.json`: the pair from the earlier session.
 * `v2_normal_seed3_detail.json`: solo run with the per-subsystem breakdown;
   `v2_normal_seed3_detail_lazy_models.json`: before models were built at load (the 264 ms tick).
+* `path260/`: v2 against v2, seeds 1 and 2, with the path search budget at 260 (decision 2).
 * `before_perf/`: the same files from before the performance pass.

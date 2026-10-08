@@ -106,9 +106,10 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
   * deaths while reloading 20 % → 8 %;
   * stacking 3.4 → 1.4 incidents per round (target 0.1);
   * no attack plan above 29 % of rounds;
-  * worse than legacy since the performance pass: trades 13.6 % → 11.9 % of deaths (16.1 %
-    before the pass) and unseen deaths 8.4 % → 9.2 % (8.0 % before the pass). The halved path
-    search budget is the likely cause (decision 2).
+  * on the wrong side of legacy in the final matches: trades 13.6 % → 11.9 % of deaths (16.1 %
+    before the pass) and unseen deaths 8.4 % → 9.2 % (8.0 % before the pass). Re-runs of the same
+    two seeds gave 15.0-15.2 % and 8.1-8.4 %, so single matches vary by about as much as the gap
+    (decision 2).
 * **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 10,000
   times a match.
 * **Performance**:
@@ -133,15 +134,21 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
    behaviour metrics (reloading deaths, deaths to an unseen enemy, exposure, hits per shot,
    utility). It is worse on clumping.
 2. **The path search budget.** The performance pass halved it (260 → 140 node expansions per
-   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. Since
-   the pass, trades and unseen deaths are worse than legacy's (the head-to-head is unchanged at
-   42 %). Options:
-   * a) keep 140 (spike rule met with margin);
-   * b) go back to 260: measured on the final code, the AI p99 rises from 3.90 to 4.15 ms, over
-     the rule you chose (AI mean 1.42 → 1.46 ms); its effect on trades is being measured;
-   * c) keep 140 and make trading cheaper instead (a trade route from the path cache, not a
-     new search), as part of the defence tuning round.
-   I recommend c): b) breaks the spike rule.
+   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. The
+   final v2-against-v2 matches traded less (16.1 % → 11.9 %) and died unseen more (8.0 % →
+   9.2 %) than before the pass; the head-to-head is unchanged at 42 %. Measured since, on the
+   same two seeds:
+   * at 260 on the final code: trades 15.2 %, unseen deaths 8.4 %, stuck 2 + 0, and the AI p99
+     4.15 ms (over the rule you chose; AI mean 1.42 → 1.46 ms);
+   * at 140 with Milestone 9's hit boxes (PR B), the only other change: trades 15.0 %, unseen
+     deaths 8.1 %.
+   So the budget does not explain the drop: one 24-round match differs from the next by about as
+   much. Options:
+   * a) keep 140 (spike rule met);
+   * b) go back to 260 (over the spike rule, no measurable gain);
+   * c) keep 140 and make trading cheaper anyway (a trade route from the path cache, not a new
+     search), as part of the defence tuning round.
+   I recommend a).
 3. **The tick budget.** The spike rule you chose is met, but the whole tick is about 1.32-1.40 ×
    legacy's (budget 1.3 ×). Going further needs a structural change (batching the per-bot
    queries across the team), not more trimming. Options: a) accept about 1.35-1.4 × for v2 (game
@@ -155,7 +162,8 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 ### Milestone 8 known issues
 
 * **Win rate 42 %**, defence 27 % (above).
-* **Trades and unseen deaths** worse than legacy since the performance pass (decision 2).
+* **Trades and unseen deaths** on the wrong side of legacy in the final matches, within the
+  spread between single matches (decision 2).
 * **Stacking**: 1.38 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move
   as a group.
 * **Stuck**: one bot in 48 rounds (target 0; legacy had 2). Path-follower micro-stucks rose from

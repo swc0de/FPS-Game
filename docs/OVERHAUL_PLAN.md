@@ -936,8 +936,12 @@ be added later behind the same event interface if you want.
     head-to-head read 37 %. The step is now held between checks: stacking 1.38, head-to-head 42 %
     (32/77, CI 31-53; 43 % before the pass).
   * Result: AI p99 3.90 ms (rule met), live tick 4.42 / 7.31 ms against a same-session legacy 3.15 / 5.55 (1.40 × / 1.32 ×; budget 1.3 ×). Trades (11.9 %) and unseen deaths
-    (9.2 %) are worse than before the pass; the halved path budget is the likely cause, listed as
+    (9.2 %) are worse than before the pass; the halved path budget was the suspect, listed as
     a decision with its measured cost. `docs/results/`, ROADMAP.
+  * The suspect measured: the same two v2-against-v2 matches at 260 gave trades 15.2 % and
+    unseen deaths 8.4 %, but at 140 with only the hit boxes changed (workstream B) 15.0 % and
+    8.1 %. The spread between single matches is as large as the gap; recommendation now: keep
+    140 (`docs/results/path260/`).
 
 * Workstream B (branch `claude/upbeat-maxwell-p1h773-soldiers`), results in
   [docs/results_m9/](results_m9/README.md):
