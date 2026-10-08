@@ -83,7 +83,7 @@ class TeamLook:
     layout: dict
 
 
-CHARACTER_VERSION = 2         # bump to rebuild every cached body
+CHARACTER_VERSION = 3         # bump to rebuild every cached body
 
 
 def _rng(seed: int, name: str, salt: str = "") -> random.Random:

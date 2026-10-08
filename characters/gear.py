@@ -137,6 +137,12 @@ def _cranium(grow: float) -> S.Shape:
     return _shape(S.ell(c + (0, -0.012, 0.022), (0.08 + grow, 0.103 + grow, 0.094 + grow), "head"))
 
 
+def _blend(x: np.ndarray, x0: float, x1: float, a: float, b: float) -> np.ndarray:
+    """a below x0, b above x1, smoothstep in between."""
+    t = np.clip((x - x0) / (x1 - x0), 0.0, 1.0)
+    return a + (b - a) * t * t * (3.0 - 2.0 * t)
+
+
 def helmet(style: str, cover: bool, ear_pro: bool, goggles: bool) -> list[Piece]:
     c = HEAD_CENTRE
     pieces = []
@@ -147,8 +153,9 @@ def helmet(style: str, cover: bool, ear_pro: bool, goggles: bool) -> list[Piece]
         d = shell(p)
         # brim line: front above the brow, sides above (high cut) or over the ears
         rel = p - c
-        brim_z = np.where(rel[:, 1] > 0.03, 0.035, np.where(high_cut, 0.03, -0.01))
-        brim_z = brim_z + np.where(rel[:, 1] < -0.04, -0.03, 0.0)
+        # brim line, blended (a step would not be a distance field: the mesh would crack)
+        brim_z = _blend(rel[:, 1], 0.015, 0.045, 0.03 if high_cut else -0.01, 0.035)
+        brim_z = brim_z + _blend(rel[:, 1], -0.07, -0.03, -0.03, 0.0)
         d = S.smax(d, brim_z - rel[:, 2], 0.01)
         return d
 
@@ -160,7 +167,7 @@ def helmet(style: str, cover: bool, ear_pro: bool, goggles: bool) -> list[Piece]
         def cover_fn(p):
             rel = p - c
             d = cov(p) - 0.0025 * value_noise(p, 0.03, 7) - 0.0012 * value_noise(p, 0.01, 8)
-            brim_z = np.where(rel[:, 1] > 0.03, 0.03, -0.012) + np.where(rel[:, 1] < -0.04, -0.03, 0.0)
+            brim_z = _blend(rel[:, 1], 0.015, 0.045, -0.012, 0.03) + _blend(rel[:, 1], -0.07, -0.03, -0.03, 0.0)
             return S.smax(d, brim_z - rel[:, 2], 0.01)
 
         pieces.append(Piece("helmet_cover", Field(cover_fn, lo - 0.01, hi + 0.01), "helmet_cover", 0.005, skin="head"))
@@ -180,11 +187,14 @@ def helmet(style: str, cover: bool, ear_pro: bool, goggles: bool) -> list[Piece]
     if goggles:
         gg = [S.box(c + (0, 0.112, 0.062), (0.075, 0.016, 0.022), 0.01, "head")]
         pieces.append(Piece("goggles", _shape(*gg), "lens", 0.003, skin="head"))
-        strap = S.Shape(prims=[S.ell(c + (0, -0.012, 0.06), (0.108, 0.13, 0.03), "head")])
+        # a band round the helmet: an elliptic ring 9 mm thick (two mesh cells, so the mesh stays
+        # manifold and simplifies) and 24 mm tall
+        outer = S.ell(c + (0, -0.012, 0.06), (0.108, 0.13, 0.5), "head")
+        inner = S.ell(c + (0, -0.012, 0.06), (0.099, 0.121, 0.5), "head")
 
         def strap_fn(p):
-            inner = S.ell(c + (0, -0.012, 0.06), (0.102, 0.124, 0.06), "head").distance(p)
-            return S.smax(strap(p), -inner, 0.003)
+            ring = S.smax(outer.distance(p), -inner.distance(p), 0.002)
+            return S.smax(ring, np.abs(p[:, 2] - (c[2] + 0.06)) - 0.012, 0.002)
 
         pieces.append(Piece("goggle_strap", Field(strap_fn, c - 0.15, c + 0.15), "webbing", 0.004, skin="head"))
     return pieces

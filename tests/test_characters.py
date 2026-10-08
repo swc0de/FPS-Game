@@ -94,6 +94,18 @@ class MeshingTests(unittest.TestCase):
         self.assertLessEqual(len(f2), 230)
         self.assertTrue(closed(f2))
 
+    def test_helmet_pieces_mesh_closed_and_manifold(self):
+        # a step in a distance field cracks the mesh, a wall thinner than two cells pinches it;
+        # either one locks the decimation (the goggle strap stayed at 760 triangles at every LOD)
+        from characters import gear as G
+        for style in ("vanguard", "bastion"):
+            for p in G.helmet(style, True, True, True):
+                v, f, _ = surface_nets(p.shape, *p.shape.bounds(), cell=p.cell)
+                e = np.sort(np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]]), axis=1)
+                _, cnt = np.unique(e[:, 0] * len(v) + e[:, 1], return_counts=True)
+                self.assertEqual(int((cnt == 1).sum()), 0, f"{style} {p.name} open edges")
+                self.assertLessEqual(int((cnt > 2).sum()), 4, f"{style} {p.name} non-manifold edges")
+
 class WeightTests(unittest.TestCase):
     def test_weights_are_normalised_and_stay_in_their_region(self):
         from characters import human as H

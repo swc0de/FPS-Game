@@ -266,10 +266,22 @@ class SheetDemo:
 
     # ------------------------------------------------------------- stats
     def _stats(self) -> None:
-        from panda3d.core import Point3, Vec3
+        from panda3d.core import LODNode, Point3, Vec3
         b = self._body("attack")
         self.stats["body"] = _geom_stats(b.skin) if getattr(b, "skin", None) is not None else {}
         self.stats["weapon"] = _geom_stats(b.weapon_model.root) if b.weapon_model is not None else {}
+        # draw calls per pass at the nearest and the farthest level of detail, weapon included
+        lods = b.skin.findAllMatches("**/+LODNode") if getattr(b, "skin", None) is not None else []
+        wlods = []
+        if b.weapon_model is not None:
+            wroot = b.weapon_model.root
+            wlods = [wroot] if wroot.node().isOfType(LODNode.getClassType()) else list(wroot.findAllMatches("**/+LODNode"))
+        if lods:
+            levels = [_geom_stats(c)["geoms"] for c in lods[0].getChildren()]
+            wl = [_geom_stats(c)["geoms"] for c in wlods[0].getChildren()] if wlods else \
+                [self.stats["weapon"].get("geoms", 0)] * 2
+            self.stats["geoms_per_soldier"] = {"lod0": levels[0] + wl[0], "far": levels[-1] + wl[-1],
+                                               "body_per_lod": levels, "weapon_near_far": [wl[0], wl[-1]]}
         pose = getattr(b, "pose", None)
         if pose is not None:                     # Milestone 9: the game skeleton, linear blend skinning
             from gameplay import skeleton as sk
@@ -300,7 +312,9 @@ class SheetDemo:
 
 
 def _geom_stats(root) -> dict:
-    nodes = root.findAllMatches("**/+GeomNode")
+    nodes = list(root.findAllMatches("**/+GeomNode"))
+    if root.node().isGeomNode():
+        nodes.insert(0, root)
     geoms = tris = verts = 0
     per_node = []
     for np_ in nodes:

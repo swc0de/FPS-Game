@@ -443,8 +443,16 @@ class CharacterBody:
             self.muzzle = None
             return
         if self.visible:
-            # third-person guns never animate their parts: one merged copy of a shared prototype
-            self.weapon_model = shared_weapon_model(self.game.materials, model_key, gun)
+            # third-person guns never animate their parts: one merged copy of a shared prototype,
+            # and beyond 40 m (as the body's coarsest LOD) one Geom in one material
+            lod = LODNode("weapon_lod")
+            lod_np = gun.attachNewNode(lod)
+            near = shared_weapon_model(self.game.materials, model_key, lod_np)
+            lod.addSwitch(LOD_SWITCH[2][0], 0.0)
+            shared_weapon_model(self.game.materials, model_key, lod_np, flatten="far")
+            lod.addSwitch(LOD_SWITCH[2][1], LOD_SWITCH[2][0])
+            near.root = lod_np                    # removing the model removes both levels
+            self.weapon_model = near
             anchors = self.weapon_model.anchors
         else:
             from weapons.models import model_defs
