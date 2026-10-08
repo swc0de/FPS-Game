@@ -171,6 +171,21 @@ class BodyTests(unittest.TestCase):
                                            atol=1e-5, err_msg=f"{weapon} {name}")
             np.testing.assert_allclose(node_mat(body.gun, body.root), world[sk.INDEX["weapon"]], atol=1e-5)
 
+    def test_capsules_follow_their_bones(self):
+        from gameplay.hitboxes import CAPSULES, capsule_mount
+        rng = random.Random(9)
+        game, body = make_body()
+        for step in range(40):
+            body.animate(1 / 64, (0.5, -1.0, 0.0), rng.uniform(-180, 180), rng.uniform(-70, 70),
+                         rng.choice((0.0, 1.0)), Vec3(rng.uniform(-4, 4), rng.uniform(-4, 4), 0), True,
+                         lean=rng.uniform(-1, 1))
+        world = body.pose.solve()
+        for c in CAPSULES:
+            m = capsule_mount(c)
+            mount = np.array([[m.getCell(i, j) for j in range(4)] for i in range(4)])
+            np.testing.assert_allclose(node_mat(body.hit_mounts[c.name], body.root), mount @ world[sk.INDEX[c.bone]],
+                                       atol=1e-5, err_msg=c.name)
+
     def test_grip_reached(self):
         """Two-bone IK puts the right hand's grip point on the weapon's grip."""
         game, body = make_body()

@@ -47,7 +47,7 @@ from panda3d.core import (BoundingSphere, LODNode, LVecBase4f, NodePath, Point3,
 from engine.geometry import MeshBuilder, build_skinned
 from gameplay import skeleton as sk
 from gameplay.lean import Lean
-from gameplay.hitboxes import PARTS, HitboxRig
+from gameplay.hitboxes import CAPSULES, PARTS, HitboxRig, capsule_mount
 from weapons.models import shared_weapon_model
 
 UPPER_ARM = sk.UPPER_ARM
@@ -90,7 +90,7 @@ B = sk.INDEX
 def _mirrored() -> list:
     """The bones that carry a hit box or the weapon, and all their ancestors, parents first."""
     keep = set()
-    for name in [m[0] for m in PART_MOUNT.values()] + ["weapon"]:
+    for name in [m[0] for m in PART_MOUNT.values()] + [c.bone for c in CAPSULES] + ["weapon"]:
         i = B[name]
         while i >= 0 and i not in keep:
             keep.add(i)
@@ -210,7 +210,13 @@ class CharacterBody:
                 self._build_character(*character)
             else:
                 self._build_meshes(uniform, helmet_mat)
-        self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.parts)
+        # hit capsules on the bones (gameplay/hitboxes.py CAPSULES): the same for every body
+        self.hit_mounts: dict[str, NodePath] = {}
+        for c in CAPSULES:
+            np_ = self.nodes[B[c.bone]].attachNewNode(f"hit:{c.name}")
+            np_.setMat(capsule_mount(c))
+            self.hit_mounts[c.name] = np_
+        self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.hit_mounts, parts=CAPSULES)
         self.weapon_model = None
         self.weapon_key = ""
         self.hold = "long"
@@ -333,6 +339,38 @@ class CharacterBody:
         self._rows[:, 0, 0] = self._rows[:, 1, 1] = self._rows[:, 2, 2] = 1.0
         self.skin.setShaderInput("u_bones", self._bones)
         self.skin.setShaderInput("u_skinned", 1.0)
+
+    def show_hitboxes(self, on: bool) -> None:
+        """Draw the hit capsules over the body (console ``hitboxes``), coloured by hit group."""
+        old = getattr(self, "_hit_debug", None)
+        if old is not None:
+            for np_ in old:
+                np_.removeNode()
+            self._hit_debug = None
+        if not on:
+            return
+        from gameplay.hitboxes import capsule_length
+        colours = {"head": (1.0, 0.25, 0.2, 0.45), "chest": (1.0, 0.75, 0.2, 0.4), "stomach": (0.3, 0.8, 1.0, 0.4),
+                   "arm": (0.4, 1.0, 0.4, 0.4), "leg": (0.7, 0.5, 1.0, 0.4)}
+        self._hit_debug = []
+        for c in CAPSULES:
+            mb = MeshBuilder()
+            length = capsule_length(c)
+            if length > 0.0:
+                mb.add_cylinder((0, 0, 0), c.radius, length, segments=16, caps=False)
+                for z in (-length * 0.5, length * 0.5):
+                    mb.add_sphere((0, 0, z), c.radius, rings=8, segments=16)
+            else:
+                mb.add_sphere((0, 0, 0), c.radius, rings=10, segments=20)
+            np_ = self.hit_mounts[c.name].attachNewNode(mb.build(f"hitdbg:{c.name}"))
+            np_.setShaderOff(1000)
+            np_.setLightOff(1000)
+            np_.setColor(*colours.get(c.hitgroup, (1, 1, 1, 0.4)), 1000)
+            np_.setTransparency(True, 1000)
+            np_.setDepthWrite(False, 1000)
+            np_.setDepthTest(False, 1000)
+            np_.setBin("fixed", 60, 1000)
+            self._hit_debug.append(np_)
 
     def set_first_person(self, on: bool) -> None:
         """Collapse the head (and helmet, goggles) for a camera at this body's eyes."""

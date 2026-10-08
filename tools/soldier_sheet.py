@@ -102,7 +102,10 @@ class SheetDemo:
         self.out_dir = Path(opts.shots_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self._stats()
-        self._next()
+        if getattr(opts, "stats_only", False):
+            self.queue = []
+        else:
+            self._next()
 
     # ------------------------------------------------------------- setup
     def _ground(self, x: float, y: float) -> float:
@@ -213,7 +216,9 @@ class SheetDemo:
             return True
         self.game.set_zoom(getattr(self, "zoom", 1.0))     # after the weapons' own ADS zoom this frame
         if not self.queue:
-            self._compose()
+            if self.files:
+                self._compose()
+            self._write_stats()
             self.done = True
             return True
         if self.wait > 0:
@@ -247,6 +252,12 @@ class SheetDemo:
         out.parent.mkdir(parents=True, exist_ok=True)
         sheet.write(Filename.fromOsSpecific(str(out)))
         self.game.log(f"[sheet] {len(self.files)} panels -> {out}")
+
+    def _write_stats(self) -> None:
+        if getattr(self.opts, "masks", ""):
+            import numpy as np
+            np.savez_compressed(self.opts.masks, **{f"{a}__{b}": m for (a, b), m in MASKS.items()})
+            self.game.log(f"[sheet] silhouettes and poses -> {self.opts.masks}")
         if self.opts.stats:
             Path(self.opts.stats).parent.mkdir(parents=True, exist_ok=True)
             Path(self.opts.stats).write_text(json.dumps(self.stats, indent=1))
@@ -305,8 +316,12 @@ def _geom_stats(root) -> dict:
     return {"geom_nodes": len(nodes), "geoms": geoms, "triangles": tris, "vertices": verts, "parts": per_node}
 
 
+MASKS: dict = {}          # (what, pose_view) -> (400, 261) bool silhouette on the 5 mm grid
+
+
 def _hitbox_areas(game, make_body, ground: float) -> dict:
     """Projected area per hit group (front and side, standing and crouched)."""
+    import numpy as np
     from panda3d.core import Point3, Vec3
     from engine.physics import GROUP_HITBOX
     out = {}
@@ -317,10 +332,14 @@ def _hitbox_areas(game, make_body, ground: float) -> dict:
         for _ in range(4):
             b.animate(1 / 64, pos, 0.0, 0.0, crouch, Vec3(0, 0, 0), True)
         game.physics.step(1 / 64)               # Bullet picks up the parented hitbox transforms
+        if getattr(b, "pose", None) is not None:
+            MASKS[("pose", "crouch" if crouch else "stand")] = b.pose.solve().copy()
         for view, (ax, ay) in (("front", (0.0, 1.0)), ("side", (1.0, 0.0))):
             step = 0.005
             areas: dict[str, float] = {}
             rx, ry = ay, -ax                    # horizontal axis across the view
+            key = f"{'crouch' if crouch else 'stand'}_{view}"
+            mask = np.zeros((400, 261), bool)
             for i in range(-130, 131):
                 u = i * step
                 for k in range(0, 400):
@@ -331,7 +350,8 @@ def _hitbox_areas(game, make_body, ground: float) -> dict:
                     if hit is not None and hit.node is not None:
                         hg = hit.node.getTag("hitgroup") or "?"
                         areas[hg] = areas.get(hg, 0.0) + step * step
-            key = f"{'crouch' if crouch else 'stand'}_{view}"
+                        mask[k, i + 130] = True
+            MASKS[("hitbox", key)] = mask
             out[key] = {k: round(v * 1e4, 1) for k, v in sorted(areas.items())}
             out[key]["total"] = round(sum(areas.values()) * 1e4, 1)
         b.destroy()
@@ -342,7 +362,8 @@ def _hitbox_areas(game, make_body, ground: float) -> dict:
 _GROUP_PREFIX = (("head", "head"), ("neck", "chest"), ("spine_03", "chest"), ("clavicle", "chest"),
                  ("spine_02", "stomach"), ("spine_01", "stomach"), ("pelvis", "stomach"), ("root", "stomach"),
                  ("upperarm", "arm"), ("lowerarm", "arm"), ("hand", "arm"), ("thumb", "arm"), ("index", "arm"),
-                 ("fingers", "arm"), ("thigh", "leg"), ("calf", "leg"), ("foot", "leg"), ("toe", "leg"))
+                 ("fingers", "arm"), ("thigh", "leg"), ("calf", "leg"), ("foot", "leg"), ("toe", "leg"),
+                 ("pack", "chest"), ("weapon", "arm"))
 
 
 def _mesh_areas(game, make_body, ground: float) -> dict:
@@ -370,22 +391,22 @@ def _mesh_areas(game, make_body, ground: float) -> dict:
         vg = bone_group[strongest]
         tg = vg[mesh.tris[:, 0]]
         b.destroy()
-        for view, (u_ax, d_ax) in (("front", (0, 1)), ("side", (1, 0))):
-            # u across the view, depth towards the viewer (the soldier faces +y; the side view looks from +x)
-            sign = -1.0 if view == "front" else 1.0
-            u = p[:, u_ax] * (sign if view == "front" else -1.0)
+        for view in ("front", "side"):
+            # the rays' grid: u across the view (front: x; side, seen from +x: -y), depth towards
+            # the viewer (front: +y, side: +x); pixel (k, i) is centred at z = k step, u = (i - 130) step
+            u = p[:, 0] if view == "front" else -p[:, 1]
             z = p[:, 2]
-            depth = p[:, d_ax]
-            nu, nz = 260, 400
+            depth = p[:, 1] if view == "front" else p[:, 0]
+            nu, nz = 261, 400
             zbuf = np.full((nz, nu), -np.inf)
             gbuf = np.full((nz, nu), -1)
             for t, g in zip(mesh.tris, tg):
-                tu, tz, td = u[t] / step + nu / 2, z[t] / step, depth[t]
+                tu, tz, td = u[t] / step + 130.0, z[t] / step, depth[t]
                 i0, i1 = max(int(np.floor(tz.min())), 0), min(int(np.ceil(tz.max())), nz - 1)
                 j0, j1 = max(int(np.floor(tu.min())), 0), min(int(np.ceil(tu.max())), nu - 1)
                 if i1 < i0 or j1 < j0:
                     continue
-                jj, ii = np.meshgrid(np.arange(j0, j1 + 1) + 0.5, np.arange(i0, i1 + 1) + 0.5)
+                jj, ii = np.meshgrid(np.arange(j0, j1 + 1, dtype=float), np.arange(i0, i1 + 1, dtype=float))
                 (x0, x1, x2), (y0, y1, y2) = tu, tz
                 den = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
                 if abs(den) < 1e-12:
@@ -405,6 +426,14 @@ def _mesh_areas(game, make_body, ground: float) -> dict:
             key = f"{'crouch' if crouch else 'stand'}_{view}"
             out[key] = {groups[k]: round(float((gbuf == k).sum()) * step * step * 1e4, 1) for k in range(len(groups))}
             out[key]["total"] = round(float((gbuf >= 0).sum()) * step * step * 1e4, 1)
+            MASKS[("mesh", key)] = gbuf >= 0
+            hit = MASKS.get(("hitbox", key))
+            if hit is not None:
+                # what you see is what you hit: the visible soldier with no hit box behind it, and
+                # hit box with no soldier in front of it
+                seen = gbuf >= 0
+                out[key]["visible_not_hittable"] = round(float((seen & ~hit).sum()) * step * step * 1e4, 1)
+                out[key]["hittable_not_visible"] = round(float((hit & ~seen).sum()) * step * step * 1e4, 1)
     return out
 
 
@@ -416,6 +445,8 @@ def main(argv=None) -> int:
     ap.add_argument("--preset", default="high")
     ap.add_argument("--procedural", action="store_true", help="Milestone 9 soldiers instead of the mannequin")
     ap.add_argument("--seed", type=int, default=1, help="appearance seed for --procedural")
+    ap.add_argument("--stats-only", action="store_true", help="write --stats and quit (no shots, no sheet)")
+    ap.add_argument("--masks", default="", help="also save the silhouettes and the poses (.npz, hit box fitting)")
     opts, rest = ap.parse_known_args(argv)
 
     from panda3d.core import loadPrcFileData

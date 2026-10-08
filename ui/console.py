@@ -11,6 +11,8 @@
     ai <spec>                 bot AI: legacy | v2 | team0=v2,team1=legacy (restarts the match)
     botinfo [name]            what every bot is doing / everything about one bot
     overlay                   bot labels: action, scores, task, the fact behind it
+    hitboxes                  draw every soldier's hit capsules (head red, chest orange,
+                              stomach blue, arms green, legs violet)
     belief [attack|defend|off]  radar: a v2 team's picture of where enemies can be
     spectate                  leave the match and watch ten bots play
     give <weapon>             e.g. give sr90 (r7 c9 mx5 s12 p9 frag smoke flash)
@@ -170,6 +172,13 @@ class Console:
                 from ui.bot_overlay import BotOverlay
                 g.bot_overlay = BotOverlay(g)
             return f"bot overlay {'on' if g.bot_overlay.toggle() else 'off'}"
+        if cmd == "hitboxes":
+            g.show_hitboxes = not getattr(g, "show_hitboxes", False)
+            bodies = [b.body for b in d.bots] + [getattr(d, "player_body", None)]
+            for body in bodies:
+                if body is not None and hasattr(body, "show_hitboxes"):
+                    body.show_hitboxes(g.show_hitboxes)
+            return f"hit boxes {'shown' if g.show_hitboxes else 'hidden'}"
         if cmd == "belief":
             if g.match_hud is None:
                 return "no radar"
