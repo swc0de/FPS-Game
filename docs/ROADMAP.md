@@ -30,7 +30,9 @@ sheet: [docs/results_m9/](results_m9/README.md)).
   weapon; reload, switch, throw, knife, plant and defuse clips from the game's own events; a hit flinch
   that does not depend on health; animation LOD; Bullet ragdolls on death (`gameplay/ragdoll.py`).
 * **Hit boxes** (`gameplay/hitboxes.py`): capsules on the bones fitted to the visible soldier (your
-  choice), a sphere on the visible head; console `hitboxes` draws them.
+  choice), a sphere on the visible head; console `hitboxes` draws them. Rays on capsules are
+  re-tested exactly (`engine/physics.py`): Bullet's own capsule test is up to 6 mm generous.
+* **The charge on the carrier's back** (B-8), shown only to attackers and omniscient spectators.
 * **Tools**: `tools/soldier_sheet.py` (sheet, statistics, silhouettes, 40 m team contrast),
   `tools/fit_hitboxes.py`.
 
@@ -43,14 +45,22 @@ Full tables, sheet and statistics: [docs/results_m9/](results_m9/README.md).
 * **Variety**: 20 different faces per match roster, at least five skin tones, three builds, men and
   women, two to three kinds of headgear and several gear layouts per team (tests).
 * **No candy-wrapper**: twisted 90 degrees, forearm and upper-arm rings keep 85-95 % of their area.
-* **Hit boxes**: fitted to the soldier, total exposed area 7-9 % below the mannequin's in every view;
-  by group from -28 % to +47 % (table in the results); head centres within 1 cm.
-* **AI balance with the new hit boxes**: being re-run.
+* **Hit boxes**: fitted to the soldier, total exposed area 8-9 % below the mannequin's in every view;
+  by group from -25 % to +24 % as the game's ray tests see them (table in the results); head
+  centres within 1 cm. The B5 table you chose from projected the capsules and split overlapping
+  groups approximately (up to -28 % / +47 % there); the outline is the same.
+* **Animation CPU**: 1.48 ms per tick for 10 running soldiers near the camera (the mannequin 0.69 ms),
+  before the animation LOD.
+* **AI balance with the new hit boxes**: head-to-head subset 38 % (16/42, CI 25-53) against 50 %
+  (19/38, CI 35-65) for the same seeds with the Milestone 8 hit boxes, within the interval. Hits per
+  shot 50 % → 44 % and deaths while reloading 8.4 % → 12.7 % (legacy 20.3 %): smaller targets,
+  longer fights.
 
 ### Milestone 9 known issues
 
 * The first match builds every soldier once (about 1.5-2 minutes on 4 cores).
 * Shots test the pose of the last physics step (at most one tick behind), as before; kept as you chose.
+* Animation costs about twice the mannequin's per soldier near the camera (above).
 * Hair lines and brows follow the head's vertex spacing (about 1 cm at LOD0): soft up close.
 * In the backlit 40 m shot the teams separate by hue more than by value.
 

@@ -10,7 +10,8 @@ weapons and characters are original. Third-party art is CC0 only.
 > skinned bodies on a 47-bone skeleton with uniforms, plate carriers, pouches, helmets, caps or balaclavas,
 > MakeHuman faces when the CC0 files are fetched (procedural faces otherwise), 20 different people per
 > match, reload / switch / throw / plant / defuse animation, ragdoll deaths, hit capsules fitted to the
-> body, three levels of detail and 5 draw calls per soldier. Results in
+> body (tested exactly), the charge on its carrier's back for attackers, three levels of detail and 5 draw
+> calls per soldier. Results in
 > [docs/results_m9/](docs/results_m9/README.md); see "Milestone 9 - what to test" below.
 >
 > **Status: Milestone 8 - bots that decide like players** (workstream A of the overhaul in
@@ -156,7 +157,9 @@ The soldiers replace the jointed mannequins (`characters/`, `gameplay/body.py`, 
 * **Animation**: reloads (the weapon's own reload time), weapon switches, grenade throws, knife swings,
   planting and defusing, a flinch when hit, ragdoll deaths.
 * **Hit boxes**: console `hitboxes` draws every soldier's capsules (head red, chest orange, stomach blue,
-  arms green, legs violet). They follow the body in every pose.
+  arms green, legs violet). They follow the body in every pose, and shots test them exactly.
+* **The charge**: on attack, or spectating, the carrier wears the charge on the back of the plate carrier;
+  on defence you never see it.
 * **Performance**: run `python main.py --benchmark` on your GPU and compare with the Phase 0 numbers in
   `docs/baseline/`. The soldiers can be switched back to mannequins with `"soldiers": "mannequin"` in the
   video section of `user/settings.json`.

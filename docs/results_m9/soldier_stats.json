@@ -1,0 +1,159 @@
+{
+ "body": {
+  "geom_nodes": 3,
+  "geoms": 3,
+  "triangles": 16674,
+  "vertices": 8532,
+  "parts": [
+   {
+    "node": "character:Rook:lod2",
+    "triangles": 1221
+   },
+   {
+    "node": "character:Rook:lod1",
+    "triangles": 3854
+   },
+   {
+    "node": "character:Rook:lod0",
+    "triangles": 11599
+   }
+  ]
+ },
+ "weapon": {
+  "geom_nodes": 2,
+  "geoms": 5,
+  "triangles": 1768,
+  "vertices": 8900,
+  "parts": [
+   {
+    "node": "bolt",
+    "triangles": 580
+   },
+   {
+    "node": "bolt",
+    "triangles": 88
+   },
+   {
+    "node": "bolt",
+    "triangles": 172
+   },
+   {
+    "node": "bolt",
+    "triangles": 44
+   },
+   {
+    "node": "bolt",
+    "triangles": 884
+   }
+  ]
+ },
+ "geoms_per_soldier": {
+  "lod0": 5,
+  "far": 2,
+  "body_per_lod": [
+   1,
+   1,
+   1
+  ],
+  "weapon_near_far": [
+   4,
+   1
+  ]
+ },
+ "skinning": {
+  "palette_bones": 47,
+  "matrix": "mat3x4 (3 vec4 rows)",
+  "uniform_components": 576,
+  "weights_per_vertex": 4
+ },
+ "draw_calls_note": "one draw call per Geom per pass; a soldier is drawn in the main pass, the depth pre-pass and every shadow cascade it overlaps (2-4 by preset), and in local-light shadow maps when a shadowed lamp is near",
+ "animate_us_per_call_running": 148.2216249999908,
+ "animate_ms_per_tick_10_soldiers": 1.482216249999908,
+ "hitbox_areas_cm2": {
+  "stand_front": {
+   "arm": 888.7,
+   "chest": 857.0,
+   "head": 387.2,
+   "leg": 2308.0,
+   "stomach": 1333.7,
+   "total": 5774.7
+  },
+  "stand_side": {
+   "arm": 831.7,
+   "chest": 509.7,
+   "head": 383.2,
+   "leg": 1211.2,
+   "stomach": 772.5,
+   "total": 3708.5
+  },
+  "crouch_front": {
+   "arm": 926.0,
+   "chest": 835.0,
+   "head": 388.2,
+   "leg": 1380.0,
+   "stomach": 973.7,
+   "total": 4503.0
+  },
+  "crouch_side": {
+   "arm": 834.0,
+   "chest": 510.2,
+   "head": 383.5,
+   "leg": 1143.0,
+   "stomach": 747.2,
+   "total": 3618.0
+  }
+ },
+ "visible_areas_cm2": {
+  "stand_front": {
+   "head": 443.5,
+   "chest": 687.3,
+   "stomach": 1036.8,
+   "arm": 873.2,
+   "leg": 2876.5,
+   "total": 5917.3,
+   "visible_not_hittable": 436.8,
+   "hittable_not_visible": 294.2
+  },
+  "stand_side": {
+   "head": 476.8,
+   "chest": 423.5,
+   "stomach": 601.0,
+   "arm": 883.5,
+   "leg": 1862.0,
+   "total": 4246.8,
+   "visible_not_hittable": 756.2,
+   "hittable_not_visible": 218.0
+  },
+  "crouch_front": {
+   "head": 349.0,
+   "chest": 758.5,
+   "stomach": 845.2,
+   "arm": 914.3,
+   "leg": 1545.0,
+   "total": 4412.0,
+   "visible_not_hittable": 237.2,
+   "hittable_not_visible": 328.2
+  },
+  "crouch_side": {
+   "head": 414.3,
+   "chest": 373.8,
+   "stomach": 690.8,
+   "arm": 897.5,
+   "leg": 1442.8,
+   "total": 3819.0,
+   "visible_not_hittable": 473.2,
+   "hittable_not_visible": 272.2
+  }
+ },
+ "team_contrast_40m": {
+  "attack": {
+   "pixels": 412,
+   "mean_luminance": 0.289
+  },
+  "defend": {
+   "pixels": 426,
+   "mean_luminance": 0.28
+  },
+  "difference": 0.009
+ }
+}

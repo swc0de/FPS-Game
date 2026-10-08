@@ -961,10 +961,19 @@ be added later behind the same event interface if you want.
   * B6: animation LOD for the palette (the hit boxes still every tick), a far LOD for held guns
     (5 draw calls per soldier near, 2 far), faster builds.
   * B7: the after sheet (`docs/images/soldiers_after.jpg`), statistics, docs.
+  * B-8, found missing in the final check: the charge on its carrier's back, for attackers and
+    omniscient spectators only (the radar's rule).
+  * Found while checking the statistics: Bullet's ray test on capsules is up to 6 mm generous and
+    up to 5 mm early (14 mm grazing), enough to give a hit to the capsule behind where two
+    overlap. Rays on capsules are now re-tested exactly, in the pose of the last step (0.003 ms
+    per tick). The B5 table had come from projecting the capsules: same outline, approximate split
+    between overlapping groups.
+  * AI balance re-run on the final code: head-to-head subset 38 % (16/42, CI 25-53; the same seeds
+    with the Milestone 8 hit boxes 50 %, CI 35-65); hits per shot 50 → 44 %, deaths while reloading
+    8.4 → 12.7 % (smaller targets). `docs/results_m9/`.
 
 **In progress**
-* B: the AI balance re-run with the new hit boxes (the A behaviour metrics and a head-to-head
-  subset), then PR B.
+* PR B.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings
