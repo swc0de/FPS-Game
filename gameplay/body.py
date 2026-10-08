@@ -89,9 +89,10 @@ B = sk.INDEX
 
 
 def _mirrored() -> list:
-    """The bones that carry a hit box or the weapon, and all their ancestors, parents first."""
+    """The bones that carry a hit box, the weapon or the charge pack, and all their ancestors,
+    parents first."""
     keep = set()
-    for name in [m[0] for m in PART_MOUNT.values()] + [c.bone for c in CAPSULES] + ["weapon"]:
+    for name in [m[0] for m in PART_MOUNT.values()] + [c.bone for c in CAPSULES] + ["weapon", "pack"]:
         i = B[name]
         while i >= 0 and i not in keep:
             keep.add(i)
@@ -102,6 +103,7 @@ def _mirrored() -> list:
 MIRRORED = _mirrored()
 HEAD_BONES = np.array([B["neck"], B["head"]], np.int64)     # collapsed for a camera at the eyes
 LOD_SWITCH = ((0.0, 14.0), (14.0, 40.0), (40.0, 100000.0))   # metres from the camera, per LOD
+PACK_POS, PACK_HPR = (0.0, -0.045, -0.04), (0.0, 90.0, 0.0)   # the charge on the plate carrier's back, keypad out
 
 
 def _mat(pos=(0, 0, 0), hpr=(0, 0, 0), scale=(1, 1, 1)) -> np.ndarray:
@@ -222,6 +224,8 @@ class CharacterBody:
         self.rig = HitboxRig(game.physics, owner, surface="flesh", parents=self.hit_mounts, parts=CAPSULES)
         self.weapon_model = None
         self.weapon_key = ""
+        self.pack_model = None
+        self._pack_on = False
         self.hold = "long"
         self.muzzle: NodePath | None = None
         self._grips = (Point3(0, 0, 0), Point3(0, 0, 0))
@@ -461,6 +465,24 @@ class CharacterBody:
         if self.muzzle is None or self.muzzle.isEmpty():
             self.muzzle = gun.attachNewNode("muzzle")
         self.muzzle.setPos(anchors.get("muzzle", Point3(0, 0.5, 0)))
+
+    def set_pack(self, on: bool) -> None:
+        """The carried charge on the back (OVERHAUL_PLAN B-8), while ``on`` (the director's rule:
+        attackers and omniscient spectators only) and the charge is not in the hands. Drawing
+        only, one Geom: the carrier stays within the draw-call budget."""
+        on = on and self.visible and self.alive and self.weapon_key != "bomb_charge"
+        if on == self._pack_on:
+            return
+        self._pack_on = on
+        if on and self.pack_model is None:
+            self.pack_model = shared_weapon_model(self.game.materials, "bomb_charge", self.nodes[B["pack"]],
+                                                  "charge_pack", flatten="far")
+            self.pack_model.root.setPosHpr(*PACK_POS, *PACK_HPR)
+        if self.pack_model is not None:
+            if on:
+                self.pack_model.root.show()
+            else:
+                self.pack_model.root.hide()
 
     def muzzle_pos(self) -> Point3:
         if self.muzzle is not None and not self.muzzle.isEmpty():

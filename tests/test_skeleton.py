@@ -212,6 +212,44 @@ class BodyTests(unittest.TestCase):
         grip = body.root.getRelativePoint(body.gun, body._grips[0])
         self.assertLess(np.linalg.norm(palm[:3] - np.array(grip)), 0.01)
 
+    def test_charge_pack_shows_only_to_the_viewers_allowed(self):
+        """OVERHAUL_PLAN B-8: the charge on its carrier's back shows to attackers and omniscient
+        spectators only (the radar's rule), and not while it is in the hands or after death."""
+        from gameplay.director import MatchDirector
+        game, body = make_body()
+        body.visible = True                               # drawn, without building its meshes
+        body.root.show()
+        game.materials = SimpleNamespace(get=lambda key: SimpleNamespace(uv_scale=1.0, apply=lambda np_: None))
+        body.set_pack(True)
+        pack = body.pack_model.root
+        self.assertFalse(pack.isHidden())
+        self.assertEqual(pack.getParent(), body.nodes[sk.INDEX["pack"]])
+        self.assertEqual(len(pack.findAllMatches("**/+GeomNode")), 1)        # one draw call
+        body.set_pack(False)
+        self.assertTrue(pack.isHidden())
+        body.set_weapon("bomb_charge", "bomb")
+        body.set_pack(True)
+        self.assertTrue(pack.isHidden())                  # in the hands instead
+        body.set_weapon("rifle_r7", "rifle")
+        body.set_pack(True)
+        self.assertFalse(pack.isHidden())
+        body.die()
+        body.set_pack(True)
+        self.assertTrue(pack.isHidden())
+
+        sp = SimpleNamespace(active=False, free=False, target=None)
+        attacker, defender = SimpleNamespace(side="attack"), SimpleNamespace(side="defend")
+        d = SimpleNamespace(spectate_only=False, spectator=sp, player_agent=defender)
+        self.assertFalse(MatchDirector.charge_visible(d))     # playing on defence
+        d.player_agent = attacker
+        self.assertTrue(MatchDirector.charge_visible(d))
+        sp.active, sp.target = True, defender             # dead, following a defender
+        self.assertFalse(MatchDirector.charge_visible(d))
+        sp.free = True                                    # free camera: the radar is omniscient too
+        self.assertTrue(MatchDirector.charge_visible(d))
+        sp.active, sp.free, d.spectate_only = False, False, True
+        self.assertTrue(MatchDirector.charge_visible(d))
+
 
 if __name__ == "__main__":
     unittest.main()

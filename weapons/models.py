@@ -84,6 +84,7 @@ def build_weapon_model(materials, key: str, parent: NodePath | None = None, name
 
 
 _PROTOTYPES: dict[tuple, WeaponModel] = {}
+FAR_MATERIAL = {"bomb_charge": "metal_olive"}     # the one material of a "far" model (default gun metal)
 
 
 def _prototype(materials, key: str, flatten: str) -> WeaponModel:
@@ -105,7 +106,7 @@ def _prototype(materials, key: str, flatten: str) -> WeaponModel:
                     gn = np_.node()
                     for i in range(gn.getNumGeoms()):
                         gn.setGeomState(i, RenderState.makeEmpty())
-            materials.get("gun_metal").apply(proto.root)
+            materials.get(FAR_MATERIAL.get(key, "gun_metal")).apply(proto.root)
             proto.root.flattenStrong()
             proto.groups = {"body": proto.root}
         _PROTOTYPES[pkey] = proto

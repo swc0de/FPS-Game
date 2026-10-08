@@ -148,6 +148,7 @@ class MatchDirector:
         keys = [(w.model, "all") for w in db.weapons.values() if w.model]
         keys += [(g.model, "all") for g in db.grenades.values() if g.model]
         keys.append(("bomb_charge", "all"))
+        keys += [(k, "far") for k, _ in keys]     # a distant soldier's gun, the charge on a back
         seen, todo = set(), [gadgets.Deployable]
         while todo:
             cls = todo.pop()
@@ -431,10 +432,27 @@ class MatchDirector:
         for b in self.bots:
             b.frame_update(dt, alpha)
         self.spectator.frame_update(dt)
+        self._show_charge_pack()
         self.tactical.frame_update(dt, alpha)
         now = self.game.loop.time
         self.feed = [f for f in self.feed if now - f["t"] < 7.0]
         self.radio_log = [r for r in self.radio_log if now - r["t"] < 6.0]
+
+    def charge_visible(self) -> bool:
+        """Whether the view may show which attacker carries the charge: attackers and
+        omniscient spectators only (OVERHAUL_PLAN B-8), the radar's rule for its charge mark."""
+        sp = self.spectator
+        if self.spectate_only or (sp.active and (sp.free or sp.target is None)):
+            return True
+        viewed = sp.target if sp.active else self.player_agent
+        return viewed.side == "attack"
+
+    def _show_charge_pack(self) -> None:
+        """The charge on its carrier's back, for the viewers ``charge_visible`` allows; drawing
+        only (bots never read it)."""
+        carrier = self.bomb.carrier if self.bomb.state == "carried" and self.charge_visible() else None
+        for b in self.bots:
+            b.body.set_pack(b is carrier)
 
     # --------------------------------------------------- round reset
     def _round_reset(self, match: Match, swapped: bool) -> None:

@@ -53,7 +53,8 @@ COLS = 4
 SHOTS = [
     ("front_2m", "2 m front", [("attack", -0.45, 0, 180, {}), ("defend", 0.45, 0, 180, {})], (0, -2.0, 1.55, 1.1)),
     ("side_2m", "2 m side", [("attack", -0.45, 0, 90, {}), ("defend", 0.45, 0, 90, {})], (0, -2.0, 1.55, 1.1)),
-    ("back_2m", "2 m back", [("attack", -0.45, 0, 0, {}), ("defend", 0.45, 0, 0, {})], (0, -2.0, 1.55, 1.1)),
+    ("back_2m", "2 m back (the attacker carries the charge)", [("attack", -0.45, 0, 0, {"pack": True}),
+                                                              ("defend", 0.45, 0, 0, {})], (0, -2.0, 1.55, 1.1)),
     ("dist_10m", "10 m", [("attack", -0.7, 0, 200, {}), ("defend", 0.7, 0, 160, {})], (0, -10.0, 1.7, 1.0)),
     ("dist_40m", "40 m (pixel size as on a 1080p screen)", [("attack", -2.4, 0, 180, {}), ("attack", -1.4, 0.5, 150, {"crouch": 1.0}),
                           ("defend", 1.4, 0.5, 210, {}), ("defend", 2.4, 0, 180, {"crouch": 1.0})],
@@ -159,6 +160,8 @@ class SheetDemo:
             return
         for _ in range(30):
             body.animate(dt, pos, yaw, pitch, crouch, Vec3(0, 0, 0), True, False, lean)
+        if pose.get("pack") and hasattr(body, "set_pack"):
+            body.set_pack(True)                        # the charge on the back (Milestone 9)
         if pose.get("die"):
             h = math.radians(yaw)
             body.die(Vec3(math.sin(h), -math.cos(h), 0))   # shot from the front
