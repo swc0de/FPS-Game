@@ -59,6 +59,7 @@ SHOTS = [
                           ("defend", 1.4, 0.5, 210, {}), ("defend", 2.4, 0, 180, {"crouch": 1.0})],
      (0, -40.0, 1.7, 0.9), {"anchor": (15.0, -15.0), "rot": -90.0, "zoom": 1 / 3}),  # a clear line across mid
     ("dist_40m_grey", "40 m, greyscale (value only)", "dist_40m", None),
+    ("dist_40m_empty", "40 m (pixel size as on a 1080p screen)", "empty:dist_40m", None),   # stats only
     ("crouch", "crouching", [("attack", -0.5, 0, 210, {"crouch": 1.0}), ("defend", 0.5, 0, 150, {"crouch": 1.0})],
      (0, -2.6, 1.3, 0.7)),
     ("aim_pitch", "aiming +60 / -60", [("attack", -0.5, 0, 90, {"pitch": 60.0}),
@@ -170,8 +171,9 @@ class SheetDemo:
         shot = self.queue[0]
         name, caption, soldiers, cam = shot[:4]
         if isinstance(soldiers, str):               # same scene as another shot (the greyscale panel)
-            shot = next(s for s in SHOTS if s[0] == soldiers)
-            soldiers, cam = shot[2], shot[3]
+            empty = soldiers.startswith("empty:")
+            shot = next(s for s in SHOTS if s[0] == soldiers.split(":")[-1])
+            soldiers, cam = ([] if empty else shot[2]), shot[3]
         opt = shot[4] if len(shot) > 4 else {}
         self._clear()
         ax, ay = opt.get("anchor", ANCHOR)
@@ -185,6 +187,7 @@ class SheetDemo:
             ox, oy = turn(dx, dy)
             self._pose(b, ax + ox, ay + oy, yaw + rot, pose)
             self.bodies.append(b)
+            b.sheet_side = side
         cx, cy, cz, look_dz = cam
         cx, cy = turn(cx, cy)
         g = self._ground(ax, ay)
@@ -226,6 +229,8 @@ class SheetDemo:
             self.wait -= 1
             return False
         name, caption, *_ = self.queue.pop(0)
+        if name == "dist_40m":
+            self._boxes = self._project_boxes()
         path = self.out_dir / f"sheet_{name}.png"
         self.game.screenshot(str(path))
         self.files.append((name, caption))
@@ -236,10 +241,11 @@ class SheetDemo:
     def _compose(self) -> None:
         from panda3d.core import Filename, PNMImage
         pw, ph = PANEL
-        rows = math.ceil(len(self.files) / COLS)
+        rows = math.ceil(len([f for f in self.files if not f[0].endswith("_empty")]) / COLS)
         sheet = PNMImage(pw * COLS, ph * rows, 3)
         sheet.fill(0.08, 0.08, 0.08)
-        for k, (name, caption) in enumerate(self.files):
+        shown = [(n, c) for n, c in self.files if not n.endswith("_empty")]
+        for k, (name, caption) in enumerate(shown):
             img = PNMImage()
             if not img.read(Filename.fromOsSpecific(str(self.out_dir / f"sheet_{name}.png"))):
                 continue
@@ -254,7 +260,59 @@ class SheetDemo:
         sheet.write(Filename.fromOsSpecific(str(out)))
         self.game.log(f"[sheet] {len(self.files)} panels -> {out}")
 
+    def _project_boxes(self) -> list:
+        """Each soldier's box on screen (side, x0, x1, y0, y1 in pixels), from its feet and the
+        top of its head, a little wider than the body."""
+        from panda3d.core import Point2, Point3
+        cam = self.game.cam if hasattr(self.game, "cam") else self.game.camera
+        lens = cam.node().getLens()
+        w, h = PANEL
+        out = []
+        for b in self.bodies:
+            pts = []
+            for z in (0.0, 1.85):
+                p = cam.getRelativePoint(self.game.render, b.root.getPos(self.game.render) + Point3(0, 0, z))
+                p2 = Point2()
+                if lens.project(p, p2):
+                    pts.append(((p2.x + 1) * 0.5 * w, (1 - p2.y) * 0.5 * h))
+            if len(pts) == 2:
+                (xa, ya), (xb, yb) = pts
+                half = abs(ya - yb) * 0.3
+                out.append((getattr(b, "sheet_side", "attack"), min(xa, xb) - half, max(xa, xb) + half,
+                            min(ya, yb) - 2, max(ya, yb) + 2))
+        return out
+
+    def _team_contrast(self) -> dict | None:
+        """The 40 m shot with and without the soldiers: within each soldier's box on screen, the
+        pixels that differ are the soldier; their mean luminance per team (sRGB values)."""
+        from panda3d.core import Filename, PNMImage
+        imgs = []
+        for name in ("dist_40m", "dist_40m_empty"):
+            img = PNMImage()
+            if not img.read(Filename.fromOsSpecific(str(self.out_dir / f"sheet_{name}.png"))):
+                return None
+            imgs.append(img)
+        a, b = imgs
+        w, h = a.getXSize(), a.getYSize()
+        lum = lambda c: 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+        sums = {"attack": [0.0, 0], "defend": [0.0, 0]}
+        for side, x0, x1, y0, y1 in getattr(self, "_boxes", []):
+            for y in range(max(int(y0), 0), min(int(y1) + 1, h)):
+                for x in range(max(int(x0), 0), min(int(x1) + 1, w)):
+                    ca, cb = a.getXel(x, y), b.getXel(x, y)
+                    if abs(ca[0] - cb[0]) + abs(ca[1] - cb[1]) + abs(ca[2] - cb[2]) > 0.06:
+                        t = sums[side]
+                        t[0] += lum(ca)
+                        t[1] += 1
+        out = {k: {"pixels": n, "mean_luminance": round(v / max(n, 1), 3)} for k, (v, n) in sums.items()}
+        out["difference"] = round(abs(out["attack"]["mean_luminance"] - out["defend"]["mean_luminance"]), 3)
+        return out
+
     def _write_stats(self) -> None:
+        if self.files:
+            contrast = self._team_contrast()
+            if contrast is not None:
+                self.stats["team_contrast_40m"] = contrast
         if getattr(self.opts, "masks", ""):
             import numpy as np
             np.savez_compressed(self.opts.masks, **{f"{a}__{b}": m for (a, b), m in MASKS.items()})
