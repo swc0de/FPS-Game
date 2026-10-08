@@ -20,9 +20,9 @@ The numbers from before the performance pass are kept in [`before_perf/`](before
 | stuck bots (5 s without progress) | 0 | 2 + 0 → **0 + 1** | **no** |
 | no attack plan above 40 % of rounds | ≤ 40 % | largest share **29 %** | yes |
 | fairness audit, v2 | 0 violations | **0** in every run (77 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
-| live tick mean | ≤ 3.97 ms (1.3 × 3.06) | **3.95 ms**; legacy control in the same session 2.91 ms (v2 = 1.36 ×) | yes, against the Phase 0 budget; not against the same-session legacy |
-| live tick p95 | ≤ 6.64 ms (1.3 × 5.11) | **6.52 ms**; legacy control 4.95 ms (1.32 ×) | yes, as above |
-| AI decision spikes (rule as chosen: AI p99 ≤ 4 ms) | p99 ≤ 4 ms | **3.51 ms** (was 4.21; legacy 3.11) | yes |
+| live tick mean | ≤ 3.97 ms (1.3 × 3.06) | **4.42 ms** on the final code, legacy control in the same session 3.15 ms (1.40 ×); an earlier session: 3.95 ms against 2.91 (1.36 ×) | **no** (met in one session out of two; over 1.3 × the same-session legacy in both) |
+| live tick p95 | ≤ 6.64 ms (1.3 × 5.11) | **7.31 ms**, legacy control 5.55 ms (1.32 ×); earlier session 6.52 against 4.95 (1.32 ×) | **no** (as above) |
+| AI decision spikes (rule as chosen: AI p99 ≤ 4 ms) | p99 ≤ 4 ms | **3.90 ms** on the final code (3.51 ms in the earlier session; 4.21 before the pass; legacy 3.11) | yes, by a small margin |
 | new tests | utility, belief, comms, tactical map, roles, audit | 4 new modules (`test_ai_infra`, `test_knowledge`, `test_tactical_map`, `test_v2_brain`); 210 tests in total, all green | yes |
 
 Behaviour rows: averages of the seed 1 and seed 2 matches (24 rounds each, Normal, the whole
@@ -109,20 +109,33 @@ their timing rows are not used.
 
 ## Performance
 
-Solo runs of seed 3, 8 rounds, Normal, rendering on (the baseline's method). The legacy control
-ran right before v2 in the same session, so the ratio is the fair number.
+Solo runs of seed 3, 8 rounds, Normal, rendering on (the baseline's method), each with a legacy
+control run right before it in the same session: the VM's speed drifts by up to about 10 %
+between sessions, so the ratio is the fair number.
 
-| | legacy control | v2 | v2 before the pass | budget |
+| | legacy control | v2 | ratio | budget |
 |---|---|---|---|---|
-| live tick mean ms | 2.91 | **3.95** (1.36 ×) | 4.21 (1.34 × its control, 3.14) | ≤ 3.97 |
-| live tick p95 ms | 4.95 | **6.52** (1.32 ×) | 7.29 (1.28 × its control, 5.71) | ≤ 6.64 |
-| AI decisions, mean ms per tick (detailed run) | 0.61 (Phase 0) | **1.32** | 1.51 | |
-| AI decisions, p99 ms (detailed run) | 3.11 (Phase 0) | **3.51** | 4.21 | ≤ 4 (rule as chosen) |
-| ticks with AI decisions over 4 ms (detailed run) | 282 (Phase 0) | (running) | 542 | |
-| worst AI tick ms (detailed run) | 41.1 (Phase 0) | (running) | 14.6 | |
+| live tick mean ms, final code | 3.15 | **4.42** | 1.40 × | ≤ 3.97 (1.3 × Phase 0) |
+| live tick p95 ms, final code | 5.55 | **7.31** | 1.32 × | ≤ 6.64 |
+| live tick mean ms, earlier session (before the personal-space fix) | 2.91 | 3.95 | 1.36 × | |
+| live tick p95 ms, earlier session | 4.95 | 6.52 | 1.32 × | |
+| before the performance pass | 3.14 / 5.71 | 4.21 / 7.29 | 1.34 × / 1.28 × | |
 
-* **The AI's own cost fell 13 %** (1.51 → 1.32 ms per tick) and its p99 to 3.51 ms, under the 4 ms
-  rule. The cuts, in `ai/v2/`:
+Detailed runs (per-subsystem timers; their overhead raises the totals a little):
+
+| | legacy (Phase 0) | v2 final | v2 before the pass |
+|---|---|---|---|
+| AI decisions, mean ms per tick | 0.61 | **1.42** | 1.51 |
+| AI decisions, p99 ms | 3.11 | **3.90** | 4.21 |
+| ticks with AI decisions over 4 ms | 282 | 412 | 542 |
+| worst AI tick ms | 41.1 | 62.9 (a 60 ms garbage-collection pause inside a re-think); 15.9 without it | 14.6 |
+| path search budget 260 instead of 140 (decision 2) | | being measured | |
+
+* **The spike rule you chose (AI p99 ≤ 4 ms) is met**, by a small margin (3.51 and 3.90 ms in two
+  sessions). The AI's own cost fell 6-13 %.
+* **The whole tick is still about 1.32-1.40 × legacy's** (budget 1.3 ×); against the Phase 0
+  numbers it was within budget in one session (3.95 ms) and over in the other (4.42 ms).
+* **The cuts**, in `ai/v2/`:
   * exact, the match unchanged tick for tick (a seeded 4-round match logs the same state for
     every bot on every tick): the possibility field relaxes into preallocated buffers with
     precomputed travel times; the team's view is tested only on points in line of sight; small
@@ -131,24 +144,19 @@ ran right before v2 in the same session, so the ratio is the fair number.
   * cadence, behaviour nearly the same: at most three re-thinks per team per tick (the others
     wait one tick, inside the 0.11-0.16 s re-think jitter); the team samples a view every third
     tick and steps the field every fourth, the two teams staggered; walking re-decided every
-    0.1 s; spacing every other tick, personal space every fourth; the path search budget 140
-    node expansions per tick (was 260).
-* **The whole tick meets the Phase 0 budget, but v2 is still about 1.32-1.36 × the legacy tick
-  measured in the same session** (budget 1.3 ×). This session's machine was about 7 % faster
-  than the last one (legacy 3.14 → 2.91 ms), which accounts for most of the absolute gain.
+    0.1 s; spacing every other tick, personal space every fourth (the step apart held in
+    between); the path search budget 140 node expansions per tick (was 260).
 * **Model builds inside the tick** (shared code, both brains): the first deploy of a gadget kind
   cost 264 ms in one tick, the first gun of a kind 72 ms. All 19 gun, grenade, gadget and charge
   models are now built at match load (about 1 s). Decision-neutral: the seeded match logs the
   same state with and without it.
-* This cloud VM varies by about ±10 % between sessions; every subsystem, physics included, moves
-  together.
 
 ## Files
 
 * `h2h/s201.json` ... `h2h/s204.json`: the four head-to-head matches.
 * `v2_normal_seed1.json`, `v2_normal_seed2.json`: v2 against v2, 24 rounds, Normal, `--audit`.
-* `v2_normal_seed3_timing.json`: solo run, whole ticks only (the performance reference);
-  `legacy_normal_seed3_timing_control.json`: the legacy control run just before it.
-* `v2_normal_seed3_detail.json`: solo run with the per-subsystem breakdown, models built at load;
-  `v2_normal_seed3_detail_lazy_models.json`: the same before that fix (where the 264 ms tick is).
+* `v2_normal_seed3_timing.json`, `legacy_normal_seed3_timing_control.json`: the final timing pair;
+  `*_earlier.json`: the pair from the earlier session.
+* `v2_normal_seed3_detail.json`: solo run with the per-subsystem breakdown;
+  `v2_normal_seed3_detail_lazy_models.json`: before models were built at load (the 264 ms tick).
 * `before_perf/`: the same files from before the performance pass.
