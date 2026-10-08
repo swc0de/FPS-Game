@@ -2,8 +2,9 @@
 
 Measured on the finished v2 brain (`ai/v2/`), against the Phase 0 baseline in
 [`docs/baseline/`](../baseline/README.md) and the acceptance criteria in
-[OVERHAUL_PLAN.md](../OVERHAUL_PLAN.md) section 7. Same container, same CPU, same
-software OpenGL as the baseline.
+[OVERHAUL_PLAN.md](../OVERHAUL_PLAN.md) section 7. Same kind of cloud container, CPU model
+and software OpenGL as the baseline. The container was restarted in between, so the legacy timing
+was repeated on this machine too.
 
 ## Summary
 
