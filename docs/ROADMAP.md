@@ -57,13 +57,17 @@ brain is unchanged and still the default until you confirm). Plan, measurements 
 Full tables and files: [docs/results/](results/README.md). Measured after the performance pass
 you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 
-* **Against legacy: 37 % of rounds** (30 of 82, 95 % CI 27-47; four full matches with sides
+* **Against legacy: 42 % of rounds** (32 of 77, 95 % CI 31-53; four full matches with sides
   swapped, same aim and reaction numbers). The target was 70 %. Before the performance pass the
-  same four seeds gave 43 % (CI 33-54); the intervals overlap, so the pass may or may not have
-  cost a few points (the halved path search budget is the likely suspect). Attack 16 of 38,
-  defence 14 of 44.
-* **Behaviour** (v2 against v2, same seeds as the baseline): being re-measured on the final code; before the pass deaths while reloading fell from 20 % to 10 %, trades rose from 13.6 % to 16.1 % of deaths, and no attack plan took more than 25 % of rounds.
-* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 13,000
+  same four seeds gave 43 % (CI 33-54). Attack 21 of 36, defence 11 of 41.
+* **Behaviour** (v2 against v2, same seeds as the baseline):
+  * deaths while reloading 20 % → 8 %;
+  * stacking 3.4 → 1.4 incidents per round (target 0.1);
+  * no attack plan above 29 % of rounds;
+  * worse than legacy since the performance pass: trades 13.6 % → 11.9 % of deaths (16.1 %
+    before the pass) and unseen deaths 8.4 % → 9.2 % (8.0 % before the pass). The halved path
+    search budget is the likely cause (decision 2).
+* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 10,000
   times a match.
 * **Performance**:
   * live tick mean 3.95 ms and p95 6.52 ms against a budget of 3.97 / 6.64 ms (1.3 × Phase 0):
@@ -86,8 +90,9 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
    behaviour metrics (reloading deaths, deaths to an unseen enemy, exposure, hits per shot,
    utility). It is worse on clumping.
 2. **The path search budget.** The performance pass halved it (260 → 140 node expansions per
-   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. The
-   head-to-head went from 43 % to 37 % across the pass (not significant). Options:
+   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. Since
+   the pass, trades and unseen deaths are worse than legacy's (the head-to-head is unchanged at
+   42 %). Options:
    * a) keep 140 (spike rule met with margin);
    * b) go back to 260 and measure the AI p99 and the head-to-head again (not measured with the
      other cuts in place; before the pass the p99 was 4.21 ms);
@@ -99,9 +104,12 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 
 ### Milestone 8 known issues
 
-* **Win rate 37 %**, defence 32 % (above).
-* **Stacking**: 1.08 incidents per round before the pass (target ≤ 0.1; legacy 3.4); being re-measured.
-* **Stuck**: one defuser at B site in 48 rounds before the pass (target 0; legacy had 2); being re-measured.
+* **Win rate 42 %**, defence 27 % (above).
+* **Trades and unseen deaths** worse than legacy since the performance pass (decision 2).
+* **Stacking**: 1.38 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move
+  as a group.
+* **Stuck**: one bot in 48 rounds (target 0; legacy had 2). Path-follower micro-stucks rose from
+  about 80 to 290-350 a match: bots in groups block each other for under a second.
 * **Performance**: within the Phase 0 budget, but about 1.32-1.36 × legacy's tick measured in the
   same session (budget 1.3 ×). Timings on this VM vary by about ±10 % between sessions.
 

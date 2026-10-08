@@ -12,18 +12,18 @@ The numbers from before the performance pass are kept in [`before_perf/`](before
 
 | criterion | target | result | met |
 |---|---|---|---|
-| v2 beats legacy (same aim and reaction numbers) | ≥ 70 % of rounds, ≥ 60 rounds, sides swapped | **37 %** (30 of 82, Wilson 95 % CI 27-47): attack 16/38 (42 %), defence 14/44 (32 %). Before the performance pass: 43 % (38/88, CI 33-54) | **no** |
-| deaths while reloading | lower | re-measuring on the final code; before the pass: 20.3 % → 10.1 % | yes (before the pass) |
-| unseen deaths (killer not seen in the last 5 s) | lower | re-measuring on the final code; before the pass: 8.4 % → 8.0 % | barely (before the pass) |
-| deaths traded within 3 s | higher | re-measuring on the final code; before the pass: 13.6 % → 16.1 % | yes (before the pass) |
-| stacking (teammates within 0.8 m for 1 s) | ≤ 0.1 per round | re-measuring on the final code; before the pass: 3.38 → 1.08 per round | **no** |
-| stuck bots (5 s without progress) | 0 | re-measuring on the final code; before the pass: 2 + 0 → 0 + 1 | **no** (before the pass) |
-| no attack plan above 40 % of rounds | ≤ 40 % | re-measuring on the final code; before the pass: largest share 25 % | yes (before the pass) |
-| fairness audit, v2 | 0 violations | **0** in every run (82 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
+| v2 beats legacy (same aim and reaction numbers) | ≥ 70 % of rounds, ≥ 60 rounds, sides swapped | **42 %** (32 of 77, Wilson 95 % CI 31-53): attack 21/36 (58 %), defence 11/41 (27 %). Before the performance pass: 43 % (38/88, CI 33-54) | **no** |
+| deaths while reloading | lower | 20.3 % → **8.4 %** | yes |
+| unseen deaths (killer not seen in the last 5 s) | lower | 8.4 % → **9.2 %** (seed 1: 13.9 → 6.7; seed 2: 3.0 → 11.6). Before the pass: 8.0 % | **no** |
+| deaths traded within 3 s | higher | 13.6 % → **11.9 %** (of tradeable deaths 22.3 → 22.8 %). Before the pass: 16.1 % | **no** |
+| stacking (teammates within 0.8 m for 1 s) | ≤ 0.1 per round | 3.38 → **1.38** per round (before the pass 1.08) | **no** |
+| stuck bots (5 s without progress) | 0 | 2 + 0 → **0 + 1** | **no** |
+| no attack plan above 40 % of rounds | ≤ 40 % | largest share **29 %** | yes |
+| fairness audit, v2 | 0 violations | **0** in every run (77 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
 | live tick mean | ≤ 3.97 ms (1.3 × 3.06) | **3.95 ms**; legacy control in the same session 2.91 ms (v2 = 1.36 ×) | yes, against the Phase 0 budget; not against the same-session legacy |
 | live tick p95 | ≤ 6.64 ms (1.3 × 5.11) | **6.52 ms**; legacy control 4.95 ms (1.32 ×) | yes, as above |
 | AI decision spikes (rule as chosen: AI p99 ≤ 4 ms) | p99 ≤ 4 ms | **3.51 ms** (was 4.21; legacy 3.11) | yes |
-| new tests | utility, belief, comms, tactical map, roles, audit | 4 new modules (`test_ai_infra`, `test_knowledge`, `test_tactical_map`, `test_v2_brain`); 209+ tests in total, all green | yes |
+| new tests | utility, belief, comms, tactical map, roles, audit | 4 new modules (`test_ai_infra`, `test_knowledge`, `test_tactical_map`, `test_v2_brain`); 210 tests in total, all green | yes |
 
 Behaviour rows: averages of the seed 1 and seed 2 matches (24 rounds each, Normal, the whole
 match v2 against v2), legacy numbers from the baseline runs with the same seeds and definitions
@@ -50,34 +50,62 @@ match is in [`h2h/`](h2h/).
 
 | seed | v2 won | on attack | on defence |
 |---|---|---|---|
-| 201 | 9 / 22 | 4 / 12 | 5 / 10 |
-| 202 | 3 / 16 | 0 / 4 | 3 / 12 |
-| 203 | 9 / 22 | 8 / 12 | 1 / 10 |
-| 204 | 9 / 22 | 4 / 10 | 5 / 12 |
-| **all** | **30 / 82 (37 %, CI 27-47)** | 16 / 38 | 14 / 44 |
+| 201 | 13 / 19 | 10 / 12 | 3 / 7 |
+| 202 | 6 / 19 | 2 / 7 | 4 / 12 |
+| 203 | 9 / 22 | 7 / 12 | 2 / 10 |
+| 204 | 4 / 17 | 2 / 5 | 2 / 12 |
+| **all** | **32 / 77 (42 %, CI 31-53)** | 21 / 36 | 11 / 41 |
 | before the performance pass | 38 / 88 (43 %, CI 33-54) | 25 / 48 | 13 / 40 |
 
 What it shows:
 
-* **The performance pass may have cost a few points; the data cannot tell.** The two intervals
-  overlap widely, and any change re-rolls every seeded match (seed 202 went from 13/24 to 3/16).
-  The pass halved the path search budget (260 → 140 node expansions per team per tick), so a
-  new route takes about twice as long to arrive; that is the change most likely to matter. It
-  is listed as an option in ROADMAP "Milestone 8 decisions to confirm".
-* **Fights**: v2 kills 236, deaths 307. It dies less while reloading (33 against legacy's 51) and
-  less often to an enemy it never saw (14 / 29), and trades about as often (39 / 40).
-* **Attack**: splits won 4 of 7, executes 4 of 10, rushes 3 of 5; contact and default 2 each.
-* **Defence is the gap.** The 2-1-2 setup won 7 of 15, retake 4 of 15, stack 3 of 7, the
-  aggressive setup 0 of 7. Of legacy's attack wins, 27 of 30 were eliminations.
-* **Utility**: v2 threw 122 flashes (32 % blinded an enemy), 10 smokes and 26 frags. The legacy
+* **The performance pass at first cost real behaviour**, then the cause was found and fixed. The
+  first measurement after the pass gave 37 % (30/82) and v2 against v2 stacking of 2.98 per round
+  (1.08 before): personal space was checked every fourth tick, but the step apart it sets lasts
+  one tick, so stacked bots moved apart a quarter as much. The step is now held between checks.
+  On the fixed code the head-to-head is back at 42 %, the same as before the pass within its
+  interval, and stacking at 1.38 per round.
+* **Two behaviour rows got worse than before the pass** (single 24-round matches are noisy, so
+  this may be partly chance): trades within 3 s 16.1 % → 11.9 % and unseen deaths 8.0 % → 9.2 %,
+  now both on the wrong side of legacy. The pass halved the path search budget (260 → 140 node
+  expansions per team per tick), so a route to a teammate's killer arrives later; that is the
+  most likely cause. Going back to 260 is a decision in ROADMAP "Milestone 8 decisions to
+  confirm", with its measured cost below.
+* **Fights**: v2 kills 240, deaths 293. It dies less while reloading (22 against legacy's 41) and
+  less often to an enemy it never saw (19 / 32), and trades a little less (35 / 41).
+* **Attack is ahead** (58 %): contact won 4 of 5, rushes 3 of 3, defaults 5 of 8, executes and
+  splits 4 of 8 each, fakes 1 of 4.
+* **Defence is the gap** (27 %). The 2-1-2 setup won 4 of 15, retake 3 of 13, stack 2 of 9,
+  aggressive 2 of 4. Of legacy's attack wins, 28 of 30 were eliminations.
+* **Utility**: v2 threw 113 flashes (44 % blinded an enemy), 9 smokes and 21 frags. The legacy
   brain throws almost none.
-* **Fairness**: legacy reads hidden state 51,048 times in the four matches (the leaks listed in
+* **Fairness**: legacy reads hidden state 41,323 times in the four matches (the leaks listed in
   the baseline); v2 0.
 
 ## Behaviour: v2 against v2
 
-Being re-run on the final code (seeds 1 and 2, 24 rounds each). The table from before the
-performance pass is in [`before_perf/`](before_perf/) and in git history.
+| metric | legacy seed 1 | v2 seed 1 | legacy seed 2 | v2 seed 2 |
+|---|---|---|---|---|
+| attack round wins % | 62 | 54 | 62 | 67 |
+| deaths while reloading % | 22.0 | 9.7 | 18.6 | 7.0 |
+| unseen deaths % | 13.9 | 6.7 | 3.0 | 11.6 |
+| killer never seen that round % | 12.1 | 3.0 | 1.8 | 6.4 |
+| deaths traded within 3 s % | 12.1 | 13.3 | 15.0 | 10.5 |
+| traded, of tradeable deaths % | 19.3 | 23.8 | 25.3 | 21.7 |
+| killer's sight of victim before the kill s | 3.15 | 2.15 | 3.45 | 1.79 |
+| live time seen by an enemy % | 29.7 | 22.8 | 27.0 | 20.5 |
+| stacking incidents per round | 3.58 | 1.25 | 3.17 | 1.50 |
+| clumps (3+ within 2.5 m for 2 s) | 22 | 29 | 23 | 33 |
+| stuck bots | 2 | 0 | 0 | 1 |
+| path-follower micro-stucks | 83 | 291 | 80 | 346 |
+| bullet hits / shots % | 38 | 50 | 41 | 50 |
+| flashes that blinded an enemy % | 0 | 34 | 0 | 40 |
+| smokes that blocked an enemy sighting % | 0 | 45 | 0 | 62 |
+| frags that hurt an enemy % | 0 | 26 | 0 | 23 |
+| largest attack plan share % | 50 (execute) | 25 | 42 (execute) | 29 |
+
+These matches ran without drawing (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`, the same game logic);
+their timing rows are not used.
 
 ## Performance
 
