@@ -148,6 +148,7 @@ class MatchDirector:
         keys = [(w.model, "all") for w in db.weapons.values() if w.model]
         keys += [(g.model, "all") for g in db.grenades.values() if g.model]
         keys.append(("bomb_charge", "all"))
+        keys += [(k, "far") for k, _ in keys]     # a distant soldier's gun, the charge on a back
         seen, todo = set(), [gadgets.Deployable]
         while todo:
             cls = todo.pop()
@@ -166,11 +167,28 @@ class MatchDirector:
         names = {s: list(self.bot_config["names"][s]) for s in SIDES}
         for s in names.values():
             self.rng.shuffle(s)
+        enemy = other_side(side)
+        roster = [names[side][i % len(names[side])] for i in range(self.n_teammates)] + \
+                 [names[enemy][i % len(names[enemy])] for i in range(self.n_opponents)]
+        if self.use_bots and self.procedural_soldiers():
+            # every bot in both kits (they swap at halftime), built in parallel once and cached
+            from characters import library
+            library.prebuild(roster, self.appearance_seed, log=self.game.log)
         for i in range(self.n_teammates):
             self._add_agent(names[side][i % len(names[side])], side, 0)
-        enemy = other_side(side)
         for i in range(self.n_opponents):
             self._add_agent(names[enemy][i % len(names[enemy])], enemy, 1)
+
+    @property
+    def appearance_seed(self) -> int:
+        """Who looks like what: the match seed (0 without one), never the side."""
+        return int(self.seed) if self.seed is not None else 0
+
+    def procedural_soldiers(self) -> bool:
+        """The Milestone 9 soldiers (video setting ``soldiers``: "procedural" or "mannequin")."""
+        settings = getattr(self.game, "settings", None)
+        video = getattr(settings, "video", {}) if settings is not None else {}
+        return video.get("soldiers", "procedural") != "mannequin"
 
     def _assign_team_brains(self) -> None:
         """side -> the team brain of the AI that the team now on that side runs."""
@@ -214,7 +232,9 @@ class MatchDirector:
     def _add_agent(self, name: str, side: str, team_index: int) -> None:
         if self.use_bots:
             from ai.bot import BotAgent
-            a = BotAgent(self.game, name, side, self.difficulty, self.nav, seed=self.rng.randrange(1 << 30))
+            look = self.appearance_seed if self.procedural_soldiers() else None
+            a = BotAgent(self.game, name, side, self.difficulty, self.nav, seed=self.rng.randrange(1 << 30),
+                         appearance_seed=look)
             self.match.add(a, team_index)
             if self.team_ai.get(team_index, "legacy") == "v2":
                 from ai.v2.brain import BrainV2
@@ -412,10 +432,27 @@ class MatchDirector:
         for b in self.bots:
             b.frame_update(dt, alpha)
         self.spectator.frame_update(dt)
+        self._show_charge_pack()
         self.tactical.frame_update(dt, alpha)
         now = self.game.loop.time
         self.feed = [f for f in self.feed if now - f["t"] < 7.0]
         self.radio_log = [r for r in self.radio_log if now - r["t"] < 6.0]
+
+    def charge_visible(self) -> bool:
+        """Whether the view may show which attacker carries the charge: attackers and
+        omniscient spectators only (OVERHAUL_PLAN B-8), the radar's rule for its charge mark."""
+        sp = self.spectator
+        if self.spectate_only or (sp.active and (sp.free or sp.target is None)):
+            return True
+        viewed = sp.target if sp.active else self.player_agent
+        return viewed.side == "attack"
+
+    def _show_charge_pack(self) -> None:
+        """The charge on its carrier's back, for the viewers ``charge_visible`` allows; drawing
+        only (bots never read it)."""
+        carrier = self.bomb.carrier if self.bomb.state == "carried" and self.charge_visible() else None
+        for b in self.bots:
+            b.body.set_pack(b is carrier)
 
     # --------------------------------------------------- round reset
     def _round_reset(self, match: Match, swapped: bool) -> None:

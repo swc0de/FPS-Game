@@ -6,6 +6,14 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
+> **Status: Milestone 9 - realistic soldiers** (workstream B of the overhaul). The bots are soldiers now:
+> skinned bodies on a 47-bone skeleton with uniforms, plate carriers, pouches, helmets, caps or balaclavas,
+> MakeHuman faces when the CC0 files are fetched (procedural faces otherwise), 20 different people per
+> match, reload / switch / throw / plant / defuse animation, ragdoll deaths, hit capsules fitted to the
+> body (tested exactly), the charge on its carrier's back for attackers, three levels of detail and 5 draw
+> calls per soldier. Results in
+> [docs/results_m9/](docs/results_m9/README.md); see "Milestone 9 - what to test" below.
+>
 > **Status: Milestone 8 - bots that decide like players** (workstream A of the overhaul in
 > [docs/OVERHAUL_PLAN.md](docs/OVERHAUL_PLAN.md)). A new bot brain (`--ai v2`) that knows only what a player
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
@@ -134,6 +142,28 @@ Useful options (`python main.py --help` lists them all):
 Every key except Esc, F1, F3, F10, F12, V and the console key can be rebound in **Settings > Controls**: click
 a row, press a key or mouse button. A key that is already used swaps over to the old key of the action you
 changed. Bindings are saved in `user/settings.json` (`input.binds`).
+
+## Milestone 9 - what to test
+
+The soldiers replace the jointed mannequins (`characters/`, `gameplay/body.py`, `gameplay/ragdoll.py`).
+
+* **Faces**: `python tools/download_assets.py --only characters` fetches the CC0 MakeHuman / MPFB2 files
+  (about 7 MB, pinned commit, licence checked, recorded in `assets/CREDITS.md`). Without them, or with
+  `COLD_SECTOR_OFFLINE=1`, the faces are procedural. The first match builds each soldier once (about 1.5-2
+  minutes on 4 cores, cached in `assets/cache/characters/`).
+* **Look**: watch a bot match (`python main.py --demo bots`) or spectate; walk up to bots in a match. Each
+  bot keeps its face and build for the whole match, at halftime too; the kit follows the side (Vanguard tan,
+  Bastion slate). `--seed` picks a different roster of faces.
+* **Animation**: reloads (the weapon's own reload time), weapon switches, grenade throws, knife swings,
+  planting and defusing, a flinch when hit, ragdoll deaths.
+* **Hit boxes**: console `hitboxes` draws every soldier's capsules (head red, chest orange, stomach blue,
+  arms green, legs violet). They follow the body in every pose, and shots test them exactly.
+* **The charge**: on attack, or spectating, the carrier wears the charge on the back of the plate carrier;
+  on defence you never see it.
+* **Performance**: run `python main.py --benchmark` on your GPU and compare with the Phase 0 numbers in
+  `docs/baseline/`. The soldiers can be switched back to mannequins with `"soldiers": "mannequin"` in the
+  video section of `user/settings.json`.
+* `python tools/soldier_sheet.py --procedural` renders the sheet in `docs/images/soldiers_after.jpg`.
 
 ## Milestone 8 - what to test
 

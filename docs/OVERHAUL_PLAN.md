@@ -943,16 +943,37 @@ be added later behind the same event interface if you want.
     8.1 %. The spread between single matches is as large as the gap; recommendation now: keep
     140 (`docs/results/path260/`).
 
-**In progress** (branch `claude/upbeat-maxwell-p1h773-soldiers`)
-* B1 done: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4`
-  palette in every pass.
-* B2-B4: the procedural soldier (body, clothing, gear, materials, three LODs within 12k / 4k /
-  1.2k triangles), MakeHuman faces when fetched (procedural offline), animation events from the
-  bots' weapons and the bomb, ragdoll deaths.
-* B5: hit capsules fitted to the visible soldier; areas reported, waiting for your decision.
+* Workstream B (branch `claude/upbeat-maxwell-p1h773-soldiers`), results in
+  [docs/results_m9/](results_m9/README.md):
+  * B1: the 47-bone game skeleton, linear blend skinning with 4 weights and a `mat3x4` palette in
+    every pass.
+  * B2-B3: the procedural soldier (body, clothing, gear from distance fields, surface nets,
+    quadric decimation to three LODs), the palette and character shader; MakeHuman / MPFB2 faces
+    when fetched (head placed on the game skeleton, hair, beards and brows as paint plus layers
+    grown from the skin), procedural faces offline. Fixed on the way: decimation that retried
+    refused collapses forever (meshes 2-25 × over budget), helmet meshes that cracked or pinched
+    and locked the decimation, MakeHuman skulls poking through caps.
+  * B4: animation events from the bots' weapons and the bomb (reload, switch, throw, knife, plant,
+    defuse, hit flinch), Bullet ragdolls on death.
+  * B5: hit capsules on the bones fitted to the visible soldier, as you chose; the plan's sync of
+    the hit boxes right after posing is not possible with Panda's Bullet (kinematic bodies move
+    only in the step), kept as before as you chose; head centres within 1 cm.
+  * B6: animation LOD for the palette (the hit boxes still every tick), a far LOD for held guns
+    (5 draw calls per soldier near, 2 far), faster builds.
+  * B7: the after sheet (`docs/images/soldiers_after.jpg`), statistics, docs.
+  * B-8, found missing in the final check: the charge on its carrier's back, for attackers and
+    omniscient spectators only (the radar's rule).
+  * Found while checking the statistics: Bullet's ray test on capsules is up to 6 mm generous and
+    up to 5 mm early (14 mm grazing), enough to give a hit to the capsule behind where two
+    overlap. Rays on capsules are now re-tested exactly, in the pose of the last step (0.003 ms
+    per tick). The B5 table had come from projecting the capsules: same outline, approximate split
+    between overlapping groups.
+  * AI balance re-run on the final code: head-to-head subset 38 % (16/42, CI 25-53; the same seeds
+    with the Milestone 8 hit boxes 50 %, CI 35-65); hits per shot 50 → 44 %, deaths while reloading
+    8.4 → 12.7 % (smaller targets). `docs/results_m9/`.
 
-**Next**
-* B6-B7: integration, animation LOD and performance, the after sheet, PR B.
+**In progress**
+* PR B.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

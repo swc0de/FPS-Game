@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from panda3d.bullet import BulletBoxShape, BulletRigidBodyNode, BulletSphereShape
+from panda3d.bullet import BulletBoxShape, BulletCapsuleShape, BulletRigidBodyNode, BulletSphereShape, ZUp
 from panda3d.core import NodePath, Point3, TransformState, Vec3
 
 from engine.geometry import MeshBuilder
@@ -56,6 +56,74 @@ PARTS: tuple[Part, ...] = (
 )
 
 
+@dataclass(frozen=True)
+class Capsule:
+    """A hit capsule on a bone of the game skeleton (gameplay/skeleton.py): its axis from ``a``
+    to ``b`` (model space, rest pose; ``b`` None = a sphere at ``a``), ``radius`` around it."""
+    name: str
+    hitgroup: str
+    bone: str
+    a: tuple
+    b: tuple | None
+    radius: float
+
+    @property
+    def shape(self) -> str:
+        return "sphere" if self.b is None else "capsule"
+
+
+def _capsules() -> tuple:
+    """The soldiers' hit boxes (Milestone 9, OVERHAUL_PLAN 4.1 and B5): capsules along the
+    bones, a sphere for the head. One set for every appearance. Sizes fitted to the visible
+    soldier (tools/soldier_sheet.py --masks, tools/fit_hitboxes.py): the torso as three
+    wide capsules across the body (chest, stomach, pelvis), the limbs along their bones; no hit
+    boxes on the hands and feet (as before)."""
+    from gameplay import skeleton as sk
+    P = lambda n: tuple(float(x) for x in sk.REST_WORLD[sk.INDEX[n], 3, :3])
+    out = [
+        # centred on the visible head (crown to chin, back to brow), MakeHuman and procedural alike
+        Capsule("head", "head", "head", (0.0, 0.011, 1.625), None, 0.112),
+        Capsule("neck", "chest", "neck", P("neck"), (0.0, 0.005, P("neck")[2] + 0.085), 0.06),
+        Capsule("chest", "chest", "spine_03", (-0.045, 0.0, 1.33), (0.045, 0.0, 1.33), 0.17),
+        Capsule("stomach", "stomach", "spine_01", (-0.025, 0.0, 1.06), (0.025, 0.0, 1.06), 0.125),
+        Capsule("pelvis", "stomach", "pelvis", (-0.09, 0.0, 0.89), (0.09, 0.0, 0.89), 0.13),
+    ]
+    for s in ("l", "r"):
+        out += [
+            Capsule(f"upper_arm_{s}", "arm", f"upperarm_{s}", P(f"upperarm_{s}"), P(f"lowerarm_{s}"), 0.055),
+            Capsule(f"forearm_{s}", "arm", f"lowerarm_{s}", P(f"lowerarm_{s}"), P(f"hand_{s}"), 0.045),
+            Capsule(f"thigh_{s}", "leg", f"thigh_{s}", P(f"thigh_{s}"), P(f"calf_{s}"), 0.085),
+            Capsule(f"calf_{s}", "leg", f"calf_{s}", P(f"calf_{s}"), P(f"foot_{s}"), 0.065),
+        ]
+    return tuple(out)
+
+
+CAPSULES: tuple = _capsules()
+
+
+def capsule_mount(c: Capsule):
+    """The capsule's frame relative to its bone (an LMatrix4f): centred on the axis, local z
+    along it (Bullet's capsules run along z)."""
+    import numpy as np
+    from panda3d.core import LMatrix4f
+    from gameplay import skeleton as sk
+    inv = np.linalg.inv(sk.REST_WORLD[sk.INDEX[c.bone]])
+    a = (np.append(c.a, 1.0) @ inv)[:3]
+    b = (np.append(c.b, 1.0) @ inv)[:3] if c.b is not None else a + np.array([0.0, 0.0, 1e-3])
+    z = (b - a) / max(np.linalg.norm(b - a), 1e-9)
+    hint = np.array([1.0, 0.0, 0.0]) if abs(z[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    y = np.cross(z, hint)
+    y /= np.linalg.norm(y)
+    x = np.cross(y, z)
+    c0 = (a + b) * 0.5 if c.b is not None else a
+    return LMatrix4f(*x, 0.0, *y, 0.0, *z, 0.0, *c0, 1.0)
+
+
+def capsule_length(c: Capsule) -> float:
+    import numpy as np
+    return 0.0 if c.b is None else float(np.linalg.norm(np.subtract(c.b, c.a)))
+
+
 def part_transform(part: Part, crouch: float) -> TransformState:
     a, b = part.stand, part.crouch
     v = [a[i] + (b[i] - a[i]) * crouch for i in range(6)]
@@ -68,15 +136,21 @@ class HitboxRig:
     integration then moves the kinematic boxes with the scene graph during
     the physics step (no per-tick Python work)."""
 
-    def __init__(self, physics: PhysicsWorld, owner, surface: str = "flesh", parents: dict | None = None):
+    def __init__(self, physics: PhysicsWorld, owner, surface: str = "flesh", parents: dict | None = None,
+                 parts: tuple | None = None):
         self.physics = physics
         self.owner = owner
         self.parts: list[tuple[Part, NodePath]] = []
         self.enabled = False
         self.parented = parents is not None
-        for part in PARTS:
+        for part in parts or PARTS:
             node = BulletRigidBodyNode(f"hitbox:{part.name}")
-            if part.shape == "sphere":
+            if isinstance(part, Capsule):
+                if part.b is None:
+                    node.addShape(BulletSphereShape(part.radius))
+                else:
+                    node.addShape(BulletCapsuleShape(part.radius, capsule_length(part), ZUp))
+            elif part.shape == "sphere":
                 node.addShape(BulletSphereShape(part.size[0]))
             else:
                 node.addShape(BulletBoxShape(Vec3(*part.size) * 0.5))

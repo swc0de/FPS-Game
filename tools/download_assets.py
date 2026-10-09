@@ -12,12 +12,19 @@ converted into the game's texture layout:
 
 HDRIs named by the maps (environment.hdri / environment.hdri_candidates)
 are saved to assets/hdri/<id>.hdr. Everything is CC0 (public domain).
+
+``--only characters`` fetches the MakeHuman base human from MPFB2 (CC0 1.0,
+pinned commit, licence text checked first) into assets/characters/mpfb2/: the
+base mesh, the game-engine rig and weights, and the shape targets the soldier
+bake uses (characters/makehuman.py). Without them the soldiers are fully
+procedural (characters/human.py).
 If you are offline nothing breaks: the game generates procedural textures
 and a procedural sky instead.
 
     python tools/download_assets.py               # 2K textures + HDRIs
     python tools/download_assets.py --res 4k      # higher resolution
     python tools/download_assets.py --only hdri   # just the skies
+    python tools/download_assets.py --only characters   # MakeHuman base human (CC0)
     python tools/download_assets.py --list        # show what would be fetched
 """
 from __future__ import annotations
@@ -305,6 +312,85 @@ def download_hdris(res: str, force: bool, log=print) -> None:
             log(f"  {hid} failed ({exc.__class__.__name__}: {exc})")
 
 
+# ------------------------------------------------------------ characters
+MPFB2_REPO = "makehumancommunity/mpfb2"
+MPFB2_COMMIT = "d0a32e57a7f915cb2f2b95410e2117648c7bbb7e"
+MPFB2_RAW = "https://raw.githubusercontent.com/{repo}/{commit}/{path}"
+# the licence must still say this about the assets (LICENSE.md section C) before anything is used
+MPFB2_LICENCE_MARKERS = ("The license for the bundled assets", "The base mesh", "Targets and modifiers",
+                         "Rigs, poses and expressions", "released under CC0 1.0 Universal")
+_T = "src/mpfb/data/targets/"
+MPFB2_FILES = (
+    ["LICENSE.md", "LICENSE.ASSETS.md", "src/mpfb/data/3dobjs/base.obj",
+     "src/mpfb/data/rigs/standard/rig.game_engine.json", "src/mpfb/data/rigs/standard/weights.game_engine.json"]
+    + [f"{_T}macrodetails/{e}-{g}-young.target.gz" for e in ("african", "asian", "caucasian") for g in ("male", "female")]
+    + [f"{_T}macrodetails/universal-{g}-young-{m}muscle-{w}weight.target.gz"
+       for g in ("male", "female") for m in ("min", "average", "max") for w in ("min", "average", "max")]
+    + [f"{_T}head/head-{n}.target.gz" for n in ("oval", "round", "square", "triangular", "fat-decr", "fat-incr",
+                                                 "scale-horiz-decr", "scale-horiz-incr", "scale-vert-decr",
+                                                 "scale-vert-incr", "age-incr")]
+    + [f"{_T}nose/nose-{n}-{d}.target.gz" for n in ("scale-horiz", "scale-vert", "hump", "point-width",
+                                                    "nostrils-width", "volume") for d in ("decr", "incr")]
+    + [f"{_T}nose/nose-trans-{d}.target.gz" for d in ("up", "down")]
+    + [f"{_T}mouth/mouth-{n}-{d}.target.gz" for n in ("scale-horiz", "upperlip-volume", "lowerlip-volume")
+       for d in ("decr", "incr")]
+    + [f"{_T}chin/chin-{n}-{d}.target.gz" for n in ("prominent", "width", "height") for d in ("decr", "incr")]
+    + [f"{_T}cheek/{s}-cheek-bones-{d}.target.gz" for s in ("l", "r") for d in ("decr", "incr")]
+    + [f"{_T}eyebrows/eyebrows-trans-{d}.target.gz" for d in ("up", "down")]
+    + [f"{_T}forehead/forehead-{n}.target.gz" for n in ("scale-vert-decr", "scale-vert-incr", "trans-backward",
+                                                         "trans-forward")]
+    + [f"{_T}ears/{s}-ear-scale-{d}.target.gz" for s in ("l", "r") for d in ("decr", "incr")]
+    + [f"{_T}eyes/{s}-eye-{n}.target.gz" for s in ("l", "r") for n in ("scale-decr", "scale-incr", "trans-up",
+                                                                          "trans-down")]
+    + [f"{_T}neck/neck-scale-horiz-{d}.target.gz" for d in ("decr", "incr")]
+)
+
+
+def characters_dir() -> Path:
+    return paths.ASSETS_DIR / "characters" / "mpfb2"
+
+
+def download_characters(force: bool, log=print) -> bool:
+    """The MPFB2 files the soldier bake needs, at a pinned commit, after checking the licence."""
+    dest = characters_dir()
+    manifest = dest / "manifest.json"
+    if manifest.exists() and not force:
+        m = json.loads(manifest.read_text())
+        if m.get("commit") == MPFB2_COMMIT and len(m.get("files", [])) == len(MPFB2_FILES):
+            log(f"  MPFB2 {MPFB2_COMMIT[:7]} already present ({len(MPFB2_FILES)} files)")
+            return True
+    url = lambda path: MPFB2_RAW.format(repo=MPFB2_REPO, commit=MPFB2_COMMIT, path=path)
+    try:
+        licence = http_get(url("LICENSE.md")).decode("utf-8", "replace")
+    except Exception as exc:
+        log(f"  MPFB2 unreachable ({exc.__class__.__name__}: {exc}); the soldiers stay procedural")
+        return False
+    missing = [k for k in MPFB2_LICENCE_MARKERS if k not in licence]
+    if missing:
+        log(f"  MPFB2 licence text changed (missing {missing}); not downloading anything")
+        return False
+    tmp = dest.with_name("mpfb2.partial")
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    total = 0
+    for i, path in enumerate(MPFB2_FILES):
+        data = licence.encode() if path == "LICENSE.md" else http_get(url(path))
+        out = tmp / path
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(data)
+        total += len(data)
+        if i % 20 == 0:
+            log(f"  MPFB2 {i + 1}/{len(MPFB2_FILES)} ({total / 1e6:.1f} MB)")
+    (tmp / "manifest.json").write_text(json.dumps({
+        "source": f"https://github.com/{MPFB2_REPO}", "commit": MPFB2_COMMIT, "licence": "CC0 1.0 (assets)",
+        "licence_check": list(MPFB2_LICENCE_MARKERS), "files": list(MPFB2_FILES), "bytes": total}, indent=1))
+    if dest.exists():
+        shutil.rmtree(dest)
+    tmp.rename(dest)
+    log(f"  MPFB2 {MPFB2_COMMIT[:7]}: {len(MPFB2_FILES)} files, {total / 1e6:.1f} MB -> {dest}")
+    return True
+
+
 def write_credits() -> None:
     lines = ["# Third-party assets", "", "All downloaded assets are CC0 (public domain).", ""]
     for folder in sorted(paths.TEXTURE_DIR.iterdir()) if paths.TEXTURE_DIR.exists() else []:
@@ -317,6 +403,12 @@ def write_credits() -> None:
             lines.append(f"- `{folder.name}`: {m['source']} `{m['id']}` ({m.get('url', '')}) - {authors} - CC0")
     for hdr in sorted(paths.HDRI_DIR.glob("*.hdr")) if paths.HDRI_DIR.exists() else []:
         lines.append(f"- HDRI `{hdr.stem}`: Poly Haven (https://polyhaven.com/a/{hdr.stem}) - CC0")
+    manifest = characters_dir() / "manifest.json"
+    if manifest.exists():
+        m = json.loads(manifest.read_text())
+        lines.append(f"- Character base mesh, rig, weights and {len(m['files']) - 5} shape targets: MakeHuman / MPFB2 "
+                     f"({m['source']}, commit {m['commit']}) - CC0 1.0 per its LICENSE.md section C "
+                     f"(files listed in assets/characters/mpfb2/manifest.json)")
     (paths.ASSETS_DIR / "CREDITS.md").write_text("\n".join(lines) + "\n")
 
 
@@ -324,7 +416,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--res", default="2k", choices=["1k", "2k", "4k"])
     ap.add_argument("--hdri-res", default="2k", choices=["1k", "2k", "4k"])
-    ap.add_argument("--only", choices=["materials", "hdri"])
+    ap.add_argument("--only", choices=["materials", "hdri", "characters"])
     ap.add_argument("--material", action="append", help="only this material (repeatable)")
     ap.add_argument("--force", action="store_true", help="re-download existing assets")
     ap.add_argument("--list", action="store_true", help="list candidates and exit")
@@ -353,6 +445,9 @@ def main(argv=None) -> int:
     if args.only in (None, "hdri"):
         print("Downloading HDRIs...")
         download_hdris(args.hdri_res, args.force)
+    if args.only in (None, "characters"):
+        print("Downloading the MakeHuman base human (MPFB2, CC0)...")
+        download_characters(args.force)
     write_credits()
     print("Done. Cached lighting data in assets/cache is rebuilt automatically on next start.")
     return 0

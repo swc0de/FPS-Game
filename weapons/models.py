@@ -84,6 +84,7 @@ def build_weapon_model(materials, key: str, parent: NodePath | None = None, name
 
 
 _PROTOTYPES: dict[tuple, WeaponModel] = {}
+FAR_MATERIAL = {"bomb_charge": "metal_olive"}     # the one material of a "far" model (default gun metal)
 
 
 def _prototype(materials, key: str, flatten: str) -> WeaponModel:
@@ -96,6 +97,18 @@ def _prototype(materials, key: str, flatten: str) -> WeaponModel:
             proto.groups = {"body": proto.root}
         elif flatten == "body" and proto.groups.get("body") is not None:
             proto.groups["body"].flattenStrong()
+        elif flatten == "far":
+            # the far LOD (soldiers beyond 40 m and the shadow passes): one material, one Geom
+            from panda3d.core import RenderState
+            for np_ in [proto.root] + list(proto.root.findAllMatches("**")):
+                np_.setState(RenderState.makeEmpty())
+                if np_.node().isGeomNode():
+                    gn = np_.node()
+                    for i in range(gn.getNumGeoms()):
+                        gn.setGeomState(i, RenderState.makeEmpty())
+            materials.get(FAR_MATERIAL.get(key, "gun_metal")).apply(proto.root)
+            proto.root.flattenStrong()
+            proto.groups = {"body": proto.root}
         _PROTOTYPES[pkey] = proto
     return proto
 
@@ -123,11 +136,12 @@ def shared_weapon_model(materials, key: str, parent: NodePath, name: str | None 
 
     ``flatten``: "all" merges everything per material (third-person guns,
     pickups); "body" merges only the static body group and keeps the other
-    groups (an LED) as separate nodes; "none" keeps the hierarchy."""
+    groups (an LED) as separate nodes; "none" keeps the hierarchy; "far" is one Geom in one
+    material (a distant soldier's gun)."""
     proto = _prototype(materials, key, flatten)
     root = proto.root.copyTo(parent)
     root.setName(name or f"weapon:{key}")
-    if flatten == "all":
+    if flatten in ("all", "far"):
         groups = {"body": root}
     else:
         groups = {g: root.find(g) for g in proto.groups}
