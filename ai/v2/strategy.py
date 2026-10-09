@@ -1113,6 +1113,17 @@ class TeamStrategy(TeamBrain):
     def _update_defend(self, bots, now: float) -> None:
         d = self.director
         bomb = d.bomb
+        if now > self.live_t + 3.0:
+            # set-up running late: a wire or a sensor still to place at an entry means standing in
+            # the attackers' doorway once they come (13 of 67 opening deaths); go to the hold
+            for b in bots:
+                t = b.brain.task
+                if t.tag == "gadget":
+                    nxt = t.then
+                    while isinstance(nxt, Task) and nxt.tag == "gadget":
+                        nxt = nxt.then
+                    if isinstance(nxt, Task):
+                        b.brain.set_task(nxt)
         if bomb.state == "planted":
             if not self.planted_handled and bomb.site:
                 self.attacked[bomb.site] = self.attacked.get(bomb.site, 0) + 1
