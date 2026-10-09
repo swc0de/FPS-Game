@@ -50,14 +50,42 @@ selects the new one. Full tables: [docs/results/](results/README.md).
   * largest attack plan share 33 % (limit 40 %).
 * **Fairness audit**: 0 v2 violations in every run (85 head-to-head rounds, 48 v2-against-v2
   rounds); legacy read hidden state 36,856 times in the four head-to-head matches.
-* **Performance**: being measured on the final code.
+* **Performance** (seed 3, 8 rounds, no drawing, legacy control in the same session):
+  * live tick 8.21 ms against 6.59 (**1.25 ×**, budget 1.3 ×), p95 13.17 against 11.41
+    (**1.15 ×**); Milestone 8 as merged measured 1.40 × / 1.32 ×. Milestone 9's soldiers made
+    every tick dearer for both brains, and v2's own extra cost fell (2.5 → 1.4-1.6 ms a tick in
+    same-session controls);
+  * AI p99 **5.57 ms** against the 4 ms rule: **not met** in this measurement, by either brain
+    (legacy 5.97 ms). The same session measured the Milestone 8 code, which met the rule at
+    3.90 ms, at 5.63 ms, and `main` before the follow-up at 6.21 ms: the follow-up added no AI
+    cost. Milestone 9 made a bot's shot dearer for both brains (p99 about 4 → 11-13 ms), and
+    shots count as AI time (decision below).
+
+### Follow-up decision to confirm
+
+**The AI spike rule** ("AI p99 ≤ 4 ms", your choice in Milestone 8) is not met in this session by
+either brain: v2 5.57 ms, legacy 5.97 ms. It is an absolute number, and this session measures
+the same Milestone 8 code that met it (3.90 ms) at 5.63 ms. On top of that, Milestone 9 made a
+bot's shot dearer for both brains (hit tests, what a kill sets off), and a shot counts as AI time.
+Options:
+* a) re-base the rule on the same session's legacy: v2's AI p99 at most legacy's (met: 5.57
+  against 5.97);
+* b) keep 4 ms and count shots as game time rather than AI time (as model builds and drones
+  already are), then re-measure;
+* c) keep 4 ms as is and make the shot path cheaper (a Milestone 9 follow-up).
+
+I recommend a): the rule was meant to keep v2's decisions from spiking, and v2 now spikes less
+than legacy at p99 and in its worst tick (32.6 against 59.7 ms), though more of its ticks pass
+4 ms (2,156 against 950 in 8 rounds).
 
 ### Follow-up known issues
 
-* **Win rate 46 %**, defence 23 %: legacy gets the first kill in about three of four rounds v2
-  defends, and v2 rarely wins one back without the defuse.
+* **Win rate 46 %**, defence 23 %: legacy gets the first kill in 32 of the 43 rounds v2 defends,
+  and v2 wins 6 of those.
 * **Stacking** 0.15 per round against the 0.1 target (7 incidents in 48 rounds; 0 at an
   earlier step of the same matches).
+* **AI p99 5.57 ms** against the 4 ms rule in this measurement (legacy 5.97 ms); see the
+  decision above.
 * Path-follower micro-stucks (216 a match, legacy 82) include the intentional waits at corners
   and doors; bots in groups still block each other for under a second.
 
@@ -188,7 +216,8 @@ How they were settled after the merge, with the follow-up above:
 * **1. Win rate**: kept as it is ("keep it as is, don't try to get to 70 %"), after one tuning
   round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
 * **2. Path search budget**: 140 kept (a).
-* **3. Tick budget**: being measured on the final code.
+* **3. Tick budget**: met on the final code (1.25 × legacy's mean, 1.15 × p95, same session), with
+  no structural change needed.
 * **4. Head-to-head method**: as run (full matches, four seeds, sides swapped).
 * **5. The radar**: a legitimate channel, as agreed.
 * **Human errors** (asked during the follow-up): equal mechanics (no second-enemy reaction

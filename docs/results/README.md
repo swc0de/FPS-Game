@@ -26,6 +26,9 @@ the Milestone 8 hit boxes). Legacy is the Phase 0 baseline.
 | stuck bots (5 s without progress) | 0 | 2 + 0 | 0 + 0 | **0 + 0** | yes |
 | no attack plan above 40 % of rounds | ≤ 40 % | 50 % | 29 % (as merged) | **33 %** (execute) | yes |
 | fairness audit, v2 | 0 violations | | 0 | **0** in every run (85 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
+| live tick mean | ≤ 1.3 × legacy | | 1.40 × (Milestone 8 as merged) | **1.25 ×** (8.21 against 6.59 ms, same session, no drawing) | yes |
+| live tick p95 | ≤ 1.3 × legacy | | 1.32 × | **1.15 ×** (13.17 against 11.41 ms) | yes |
+| AI decision spikes (rule as chosen: AI p99 ≤ 4 ms) | p99 ≤ 4 ms | 5.97 ms in this session (3.11 at Phase 0) | 6.21 ms in this session (Milestone 8 as merged: 3.90 ms in its own session, 5.63 ms in this one) | **5.57 ms** | **no** in this measurement, by either brain; v2 below legacy and `main` in the same session (Performance below) |
 | tests | utility, belief, comms, tactical map, roles, audit | | 253 | **254**, all green (3 skipped); new or rewritten: no aim or reaction error beyond the profile, a hole blocked by a crate | yes |
 
 Behaviour rows: means of the seed 1 and seed 2 matches (24 rounds each, Normal, v2 against v2
@@ -154,8 +157,8 @@ docs/results/final/v2_normal_seed1.json` prints the rows for one seed.
   1.79 in `main` and 3.38 for legacy. Seed 1 is under the target (0.08), seed 2 over (0.21). The
   same two matches measured 0 incidents at the equal-mechanics step (`b633099`), with the same
   spacing code: the changes since (lighter mistakes, defence) play the matches differently, and
-  a count this small moves between 0 and 7 with them. Four of the 7 were two bots on their team task (holds, staging), two alert, one in a fight;
-  all at different places.
+  a count this small moves between 0 and 7 with them. Four of the 7 were two bots on their team
+  task (holds, staging), two alert, one in a fight; all at different places.
 * **Stuck: 0 + 0**, path-follower micro-stucks halved (407 → 216 a match; they include the
   intentional waits at corners and doors).
 * **Fights**: deaths while reloading halved again (12.7 → 6.5 %, legacy 20.3 %), more deaths
@@ -167,13 +170,68 @@ docs/results/final/v2_normal_seed1.json` prints the rows for one seed.
 
 ### Performance, final code
 
-Being measured (a legacy control and v2, seed 3, 8 rounds, back to back).
+Seed 3, 8 rounds, Normal, the same method for every row: `--full-match`, no drawing
+(`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`, the same 64 Hz game logic), alone on the machine, one
+run after the other in one session. Rendering on, as for the Milestone 8 numbers, took about 4
+minutes a round with the soldiers on this software-GL VM.
+
+| | legacy control | v2 | ratio | budget |
+|---|---|---|---|---|
+| live tick mean ms | 6.59 | **8.21** | **1.25 ×** | ≤ 1.3 × |
+| live tick p95 ms | 11.41 | **13.17** | **1.15 ×** | ≤ 1.3 × |
+| live tick p99 ms | 15.31 | 16.27 | 1.06 × | |
+| with the per-subsystem timers: mean / p95 ms | 7.03 / 12.32 | 8.42 / 13.27 | 1.20 × / 1.08 × | |
+
+| AI per tick (detail runs) | legacy | v2 |
+|---|---|---|
+| AI decisions mean ms | 1.20 | 2.13 |
+| **AI decisions p99 ms** (rule: ≤ 4 ms) | **5.97** | **5.57** |
+| ticks with AI decisions over 4 ms | 950 | 2,156 |
+| worst AI tick ms | 59.7 (a path search) | 32.6 (one re-think) |
+| a bot's shot (`fire`: the bullet, hits, deaths, ragdolls, effects), p99 / max ms | 11.3 / 23.8 | 13.2 / 24.2 |
+| shared: animation / physics step / movement, mean ms | 1.87 / 2.12 / 1.15 | 2.22 / 2.17 / 1.20 |
+
+Controls, the same session and method, with the per-subsystem timers (so the tick is a little
+higher than in the plain runs above):
+
+| code | brain | tick mean / p95 ms | ratio to legacy (same code) | AI decisions mean / p99 ms | ticks with AI over 4 ms |
+|---|---|---|---|---|---|
+| Milestone 8 as merged (mannequins, `5877274`) | legacy | 5.34 / 10.14 | | 0.94 / 4.18 | 401 |
+| | v2 | 7.80 / 14.10 | 1.46 × / 1.39 × | 2.08 / **5.63** | 2,092 |
+| `main` before the follow-up (`ecd07bd`) | v2 | 9.24 / 14.59 | 1.31 × / 1.18 × against the final legacy | 2.37 / **6.21** | 3,411 |
+| final (`1ccd8f8`) | legacy | 7.03 / 12.32 | | 1.20 / 5.97 | 950 |
+| | v2 | 8.42 / 13.27 | 1.20 × / 1.08 × | 2.13 / **5.57** | 2,156 |
+
+There is no legacy run on `main`: its legacy differs from the final one only by the navmesh fix,
+so the final legacy run stands in.
+
+* **The tick budget is met**: v2's tick is 1.25 × legacy's at the mean and 1.15 × at p95.
+  Milestone 8 as merged was 1.40 × / 1.32 × in its own measurement and 1.46 × / 1.39 × in this
+  session. Part of the gain is a larger denominator (Milestone 9's soldiers made every tick
+  dearer for both brains), part is v2 itself: its extra cost over legacy is 1.4-1.6 ms a tick,
+  2.5 ms for the Milestone 8 code in this session.
+* **The AI spike rule (p99 ≤ 4 ms) is not met by either brain** in this measurement: v2 5.57 ms,
+  legacy 5.97 ms. This session and method measure higher than the ones before: the same
+  Milestone 8 code that met the rule at 3.90 ms (its own session, rendering on) measures 5.63 ms
+  here, and its legacy 4.18 ms (3.11 at Phase 0). Against the same-session controls the final v2
+  is at the Milestone 8 level (5.57 against 5.63), below `main` before the follow-up (6.21) and
+  below legacy (5.97): the follow-up added no AI cost (mean 2.37 → 2.13 ms). Milestone 9 made a
+  bot's shot dearer for both brains (`fire` p99 3.9-4.1 → 11-13 ms; it covers the hit tests and
+  what a kill sets off, both changed by Milestone 9), and that counts as AI time because bots
+  shoot from their brain update. The rule as an absolute 4 ms is not met in this measurement;
+  scaled by the Milestone 8 control, the final v2 would be about 3.9 ms in the session where the
+  rule was set.
+* The longest ticks of the detail runs (135 ms legacy, 142 ms v2) are garbage-collection pauses
+  (130 and 131 ms).
 
 ### Files
 
 * `final/h2h/s201.json` ... `s204.json`: the four head-to-head matches on the final code.
 * `final/v2_normal_seed1.json`, `final/v2_normal_seed2.json`: v2 against v2, 24 rounds, Normal,
   `--audit`.
+* `final/timing/`: the timing pair (`*_timing*.json`, whole ticks only), the detail pair
+  (`*_detail*.json`, per subsystem) and the three same-session controls (`control_*.json`:
+  `main` before the follow-up, Milestone 8 v2 and legacy).
 
 ## Milestone 8 as merged
 

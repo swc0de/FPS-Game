@@ -998,7 +998,10 @@ be added later behind the same event interface if you want.
     placing 3 s into the live phase. Head-to-head 46-48 % across these steps.
   * Final: head-to-head 46 % (39/85, CI 36-56; attack 69 %, defence 23 %), kept as is by your
     decision. Deaths while reloading 6.5 %, unseen deaths 5.2 %, trades 17.7 %, stuck 0, largest
-    plan 33 %, audit 0. Tick timing being measured.
+    plan 33 %, audit 0.
+    Tick 1.25 × legacy's (p95 1.15 ×; budget met); AI p99 5.57 ms against the 4 ms rule, not met
+    by either brain in this session (legacy 5.97, the Milestone 8 code 5.63, `main` before the
+    follow-up 6.21): a decision in the ROADMAP.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings
