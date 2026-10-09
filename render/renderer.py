@@ -6,6 +6,7 @@ from panda3d.core import (
     ColorWriteAttrib,
     CullFaceAttrib,
     LVecBase4f,
+    PTA_LVecBase4f,
     RenderState,
     ShaderAttrib,
     Vec3,
@@ -74,10 +75,20 @@ class Renderer:
         self.sky: Sky | None = None
 
         self.scene_shader = shader_loader.load("pbr.vert", "pbr.frag", self.defines)
+        # soldier bodies (render/shaders/character.frag); compiled on first use
+        self._character_shader = None
+        self.character_nodes: list = []
         root = base.render
         root.setShader(self.scene_shader)
         root.setShaderInput("u_camPos", Vec3(0, 0, 0))
         root.setShaderInput("u_emission", LVecBase4f(0, 0, 0, 0))
+        # skinning (render/shaders/skinning.glsl) is off for everything but soldier bodies;
+        # the palette is 48 bones x 3 rows, identity here
+        bones = PTA_LVecBase4f.emptyArray(48 * 3)
+        for k in range(48 * 3):
+            bones[k] = LVecBase4f(*((1.0 if c == k % 3 else 0.0) for c in range(4)))
+        root.setShaderInput("u_bones", bones)
+        root.setShaderInput("u_skinned", 0.0)
         root.setShaderInput("u_matParams", LVecBase4f(0, 1, 1, 1))
         self.csm.apply_inputs(root)
         self.lights.apply_inputs(root)
@@ -112,6 +123,18 @@ class Renderer:
         self.overlays.append((cam_np, sort))
         self.post.attach_overlay(cam_np, sort)
 
+    @property
+    def character_shader(self):
+        if self._character_shader is None:
+            self._character_shader = shader_loader.load("character.vert", "character.frag", self.defines)
+        return self._character_shader
+
+    def use_character_shader(self, np_) -> None:
+        """Draw a soldier body with the character shader, kept current with the quality defines."""
+        np_.setShader(self.character_shader)
+        self.character_nodes = [n for n in self.character_nodes if not n.isEmpty()]
+        self.character_nodes.append(np_)
+
     def register_shader_user(self, callback) -> None:
         """callback(defines) is called when the quality defines change."""
         self.shader_users.append(callback)
@@ -135,6 +158,11 @@ class Renderer:
         self.defines = defines
         self.scene_shader = shader_loader.load("pbr.vert", "pbr.frag", defines)
         self.base.render.setShader(self.scene_shader)
+        self._character_shader = None
+        live = [n for n in self.character_nodes if not n.isEmpty()]
+        self.character_nodes = []
+        for n in live:
+            self.use_character_shader(n)
         for cb in self.shader_users:
             cb(defines)
         return True

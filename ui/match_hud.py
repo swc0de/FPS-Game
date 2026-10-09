@@ -1,12 +1,11 @@
 """Match HUD: score bar with round clock and alive pips, money with reward
 pop-ups, kill feed, round banners, plant/defuse progress, hints, the buy
-indicator and the scoreboard (Tab)."""
+indicator, the radar and compass (ui/radar.py) and the scoreboard (Tab)."""
 from __future__ import annotations
 
 import math
 
 from direct.gui.DirectGui import DirectFrame
-from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import TextNode
 
 from ui import widgets as W
@@ -40,18 +39,18 @@ class MatchHUD:
         # --- score bar
         self.bar = DirectFrame(parent=a2.a2dTopCenter, frameColor=(0.02, 0.025, 0.03, 0.62),
                                frameSize=(-0.42, 0.42, -0.2, 0.0), pos=(0, 0, -0.01))
-        self.clock = OnscreenText(text="", parent=a2.a2dTopCenter, pos=(0, -0.1), scale=0.072, fg=W.TEXT,
+        self.clock = W.Text(text="", parent=a2.a2dTopCenter, pos=(0, -0.1), scale=0.072, fg=W.TEXT,
                                   shadow=SHADOW, mayChange=True)
-        self.phase = OnscreenText(text="", parent=a2.a2dTopCenter, pos=(0, -0.17), scale=0.032, fg=W.ACCENT,
+        self.phase = W.Text(text="", parent=a2.a2dTopCenter, pos=(0, -0.17), scale=0.032, fg=W.ACCENT,
                                   shadow=SHADOW, mayChange=True)
         self.score = {}
         self.name = {}
         self.pips = {}
         for side, x in (("attack", -0.27), ("defend", 0.27)):
             c = self.colors[side]
-            self.name[side] = OnscreenText(text=self.rules["teams"][side]["short"], parent=a2.a2dTopCenter,
+            self.name[side] = W.Text(text=self.rules["teams"][side]["short"], parent=a2.a2dTopCenter,
                                            pos=(x, -0.06), scale=0.032, fg=c, shadow=SHADOW, mayChange=True)
-            self.score[side] = OnscreenText(text="0", parent=a2.a2dTopCenter, pos=(x, -0.13), scale=0.07, fg=c,
+            self.score[side] = W.Text(text="0", parent=a2.a2dTopCenter, pos=(x, -0.13), scale=0.07, fg=c,
                                             shadow=SHADOW, mayChange=True)
             row = []
             for i in range(5):
@@ -61,21 +60,21 @@ class MatchHUD:
                 row.append(f)
             self.pips[side] = row
         # --- money
-        self.money = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.3), scale=0.055, fg=GREEN,
+        self.money = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.3), scale=0.055, fg=GREEN,
                                   shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
         self.popups: list[list] = []          # [text node, time left]
         # --- feed
-        self.feed_lines = [OnscreenText(text="", parent=a2.a2dTopRight, pos=(-0.05, -0.08 - i * 0.055), scale=0.036,
+        self.feed_lines = [W.Text(text="", parent=a2.a2dTopRight, pos=(-0.05, -0.08 - i * 0.055), scale=0.036,
                                         fg=W.TEXT, shadow=SHADOW, align=TextNode.ARight, mayChange=True)
                            for i in range(6)]
         # --- team radio (bot callouts)
-        self.radio_lines = [OnscreenText(text="", parent=a2.a2dLeftCenter, pos=(0.06, 0.16 - i * 0.048), scale=0.033,
+        self.radio_lines = [W.Text(text="", parent=a2.a2dLeftCenter, pos=(0.06, 0.16 - i * 0.048), scale=0.033,
                                          fg=W.TEXT, shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
                             for i in range(5)]
         # --- banners and progress
-        self.banner = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.48), scale=0.085, fg=W.TEXT,
+        self.banner = W.Text(text="", parent=a2.aspect2d, pos=(0, 0.48), scale=0.085, fg=W.TEXT,
                                    shadow=SHADOW, mayChange=True)
-        self.sub = OnscreenText(text="", parent=a2.aspect2d, pos=(0, 0.4), scale=0.042, fg=W.TEXT, shadow=SHADOW,
+        self.sub = W.Text(text="", parent=a2.aspect2d, pos=(0, 0.4), scale=0.042, fg=W.TEXT, shadow=SHADOW,
                                 mayChange=True)
         self._banner_t = 0.0
         from ui.tactical_hud import TacticalHUD
@@ -84,16 +83,19 @@ class MatchHUD:
                                    pos=(0, 0, -0.42))
         self.prog_fill = DirectFrame(parent=self.prog_bg, frameColor=W.ACCENT, frameSize=(0, 0.62, -0.011, 0.011),
                                      pos=(-0.31, 0, 0))
-        self.prog_label = OnscreenText(text="", parent=a2.aspect2d, pos=(0, -0.38), scale=0.036, fg=W.TEXT,
+        self.prog_label = W.Text(text="", parent=a2.aspect2d, pos=(0, -0.38), scale=0.036, fg=W.TEXT,
                                        shadow=SHADOW, mayChange=True)
         self.prog_bg.hide()
-        self.hint = OnscreenText(text="", parent=a2.aspect2d, pos=(0, -0.5), scale=0.036, fg=W.ACCENT,
+        self.hint = W.Text(text="", parent=a2.aspect2d, pos=(0, -0.5), scale=0.036, fg=W.ACCENT,
                                  shadow=SHADOW, mayChange=True)
-        self.buy = OnscreenText(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.38), scale=0.036, fg=W.ACCENT,
+        self.buy = W.Text(text="", parent=a2.a2dBottomLeft, pos=(0.08, 0.38), scale=0.036, fg=W.ACCENT,
                                 shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
-        self.bomb_icon = OnscreenText(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.28), scale=0.038,
+        self.bomb_icon = W.Text(text="", parent=a2.a2dBottomRight, pos=(-0.06, 0.28), scale=0.038,
                                       fg=(1.0, 0.45, 0.25, 1), shadow=SHADOW, align=TextNode.ARight, mayChange=True)
         self.scoreboard = Scoreboard(game, director)
+        from ui.radar import Compass, Radar
+        self.radar = Radar(game, director)
+        self.compass = Compass(game, director)
         self.visible = True
         director.listeners.append(self._on_event)
 
@@ -135,7 +137,7 @@ class MatchHUD:
         elif kind == "money" and data["who"] is d.player_agent:
             amount = data["amount"]
             sign = "+" if amount >= 0 else "-"
-            t = OnscreenText(text=f"{sign}${abs(amount)}  {data['reason']}", parent=self.game.a2dBottomLeft,
+            t = W.Text(text=f"{sign}${abs(amount)}  {data['reason']}", parent=self.game.a2dBottomLeft,
                              pos=(0.08, 0.36), scale=0.03, fg=GREEN if amount >= 0 else (1, 0.4, 0.3, 1),
                              shadow=SHADOW, align=TextNode.ALeft, mayChange=True)
             self.popups.append([t, 3.0])
@@ -149,6 +151,8 @@ class MatchHUD:
         for n in nodes:
             n.show() if v else n.hide()
         self.tactical.set_visible(v)
+        self.radar.set_visible(v)
+        self.compass.set_visible(v)
         if not v:
             self.prog_bg.hide()
             self.prog_label.setText("")
@@ -161,6 +165,8 @@ class MatchHUD:
         self.tactical.update(dt)
         if not self.visible:
             return
+        self.radar.update(dt)
+        self.compass.update(dt, self.radar.viewer())
         # clock / phase
         clock = m.clock()
         self.clock.setText(_fmt_clock(clock) if m.phase not in ("waiting", "match_end") else "")
@@ -307,7 +313,7 @@ class Scoreboard:
         self.title = W.label(self.root, "", (0, 0.58), scale=0.05, fg=W.ACCENT, align=TextNode.ACenter)
         for name, x, align in COLS:
             W.label(self.root, name, (x, 0.48), scale=0.03, fg=W.DIM, align=align)
-        self.cells = [[OnscreenText(text="", parent=self.root, pos=(x, 0.42 - r * 0.052), scale=0.034, fg=W.TEXT,
+        self.cells = [[W.Text(text="", parent=self.root, pos=(x, 0.42 - r * 0.052), scale=0.034, fg=W.TEXT,
                                     align=align, mayChange=True) for _, x, align in COLS] for r in range(self.ROWS)]
         self.history = W.label(self.root, "", (0, -0.56), scale=0.03, fg=W.DIM, align=TextNode.ACenter)
         self.root.hide()

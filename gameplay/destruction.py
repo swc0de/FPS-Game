@@ -132,6 +132,7 @@ class Panel:
         self.reinforcing = None          # (agent, progress) while plates go up
         self.root = mgr.root.attachNewNode(f"panel:{spec.name or index}")
         self.mesh_np = None
+        self.intact = True               # drawn by the manager's shared batch until damaged
         self.plates = None
         self.body_np = None
         self.dirty = True
@@ -214,6 +215,9 @@ class Panel:
         self.alive[dead] = False
         self.hp[dead] = 0.0
         self.dirty = True
+        if self.intact:
+            self.intact = False
+            self.mgr.batch_dirty = True
         self.version += 1
         self.mgr.on_chunks_destroyed(self, dead, point, kind, direction)
 
@@ -223,8 +227,23 @@ class Panel:
         if self.mesh_np is not None:
             self.mesh_np.removeNode()
             self.mesh_np = None
-        self._build_mesh()
+        if not self.intact:
+            self._build_mesh()
         self._build_body()
+
+    def add_intact_box(self, builders: dict) -> None:
+        """The whole panel as one box into per-material builders (the shared batch).
+        World-planar UVs make it look exactly like the chunked mesh."""
+        spec = self.spec
+        mats = self.mgr.materials
+        half = self.size / 2
+        centers = np.zeros((1, 3))
+        for face in range(6):
+            mat = spec.mat2 if face == self.thin * 2 + 1 else spec.mat
+            mb = builders.get(mat)
+            if mb is None:
+                mb = builders[mat] = MeshBuilder()
+            _faces(mb, self.R, self.center, centers, half, face, mats.get(mat).uv_scale)
 
     def _cell_arrays(self, mask: np.ndarray):
         ii, jj = np.nonzero(mask)
@@ -306,6 +325,9 @@ class Panel:
         self.alive[:] = True
         self.hp[:] = self.max_hp
         self.version += 1
+        if not self.intact:
+            self.intact = True
+            self.mgr.batch_dirty = True
         mats = self.mgr.materials
         plate_mat = self.mgr.cfg["reinforce"].get("plate_mat", "steel_painted")
         mb = MeshBuilder()
@@ -348,8 +370,9 @@ def _box_mesh(mb, R, c, center, half, uv) -> None:
 class Debris:
     """A few physical chunks that tumble out of destroyed walls."""
 
-    def __init__(self, game, cfg: dict):
+    def __init__(self, game, cfg: dict, rng: random.Random | None = None):
         self.game = game
+        self.rng = rng or random.Random()
         self.max = int(cfg.get("max_bodies", 48))
         self.life = float(cfg.get("lifetime", 8.0))
         self.items: list[list] = []          # [body_np, visual, time left, size]
@@ -370,7 +393,8 @@ class Debris:
         if len(self.items) >= self.max:
             self._remove(0)
         node = BulletRigidBodyNode("debris")
-        dims = Vec3(size, size * random.uniform(0.4, 1.0), size * random.uniform(0.15, 0.4))
+        rng = self.rng
+        dims = Vec3(size, size * rng.uniform(0.4, 1.0), size * rng.uniform(0.15, 0.4))
         node.addShape(BulletBoxShape(dims * 0.5))
         node.setMass(0.4)
         node.setFriction(0.8)
@@ -378,9 +402,9 @@ class Debris:
         node.setIntoCollideMask(GROUP_DEBRIS)
         body = self.game.physics.root.attachNewNode(node)
         body.setPos(Point3(*pos))
-        body.setHpr(random.uniform(0, 360), random.uniform(0, 360), 0)
+        body.setHpr(rng.uniform(0, 360), rng.uniform(0, 360), 0)
         node.setLinearVelocity(vel)
-        node.setAngularVelocity(Vec3(random.uniform(-8, 8), random.uniform(-8, 8), random.uniform(-8, 8)))
+        node.setAngularVelocity(Vec3(rng.uniform(-8, 8), rng.uniform(-8, 8), rng.uniform(-8, 8)))
         self.game.physics.world.attachRigidBody(node)
         vis = self._mesh(mat).copyTo(self.game.render)
         vis.setTransform(body.getTransform(self.game.render))
@@ -411,17 +435,23 @@ class Debris:
 
 
 class DestructionManager:
-    def __init__(self, game, specs: list[PanelSpec]):
+    def __init__(self, game, specs: list[PanelSpec], seed: int | None = None):
         self.game = game
+        # debris is physical (it can deflect a grenade and reshapes Bullet's broadphase), so it
+        # draws from its own generator seeded with the match seed, never the global one, which
+        # the visual effects share: --seed must reproduce a match
+        self.rng = random.Random(f"destruction:{seed}") if seed is not None else random.Random()
         self.cfg = load_config()
         self.chunk = float(self.cfg.get("chunk_size", 0.25))
         self.materials = game.materials
         self.root = game.render.attachNewNode("destructible")
         self.specs = list(specs)
         self.panels: list[Panel] = []
-        self.debris = Debris(game, self.cfg.get("debris", {}))
+        self.debris = Debris(game, self.cfg.get("debris", {}), self.rng)
         self.listeners: list = []            # callback(panel) when a panel changes shape
         self.version = 0
+        self.batch_np = None                 # every intact panel, one mesh per material
+        self.batch_dirty = True
         self.build()
 
     def surface_props(self, surface: str) -> dict:
@@ -434,6 +464,24 @@ class DestructionManager:
         self.panels = [Panel(self, spec, i) for i, spec in enumerate(self.specs)]
         for p in self.panels:
             p.rebuild()
+        self._rebuild_batch()
+
+    def _rebuild_batch(self) -> None:
+        """Intact panels are drawn together: a few draw calls for all of them
+        instead of two per panel. A panel gets its own chunked mesh once it
+        is damaged (and comes back here when the round resets)."""
+        self.batch_dirty = False
+        if self.batch_np is not None:
+            self.batch_np.removeNode()
+        self.batch_np = self.root.attachNewNode("intact_panels")
+        builders: dict = {}
+        for p in self.panels:
+            if p.intact:
+                p.add_intact_box(builders)
+        for mat, mb in builders.items():
+            node = mb.build(f"panels:{mat}")
+            if node is not None:
+                self.materials.get(mat).apply(self.batch_np.attachNewNode(node))
 
     def reset(self) -> None:
         """New round: every wall is whole again, plates come off."""
@@ -441,6 +489,9 @@ class DestructionManager:
         for p in changed:
             p.alive[:] = True
             p.hp[:] = p.max_hp
+            if not p.intact:
+                p.intact = True
+                self.batch_dirty = True
             p.reinforced = False
             p.reinforcing = None
             if p.plates is not None:
@@ -449,6 +500,8 @@ class DestructionManager:
             p.version = 0
             p.rebuild()
         self.debris.clear()
+        if self.batch_dirty:
+            self._rebuild_batch()
         if changed:
             self.version += 1
             for cb in list(self.listeners):
@@ -515,17 +568,18 @@ class DestructionManager:
             d = n
         d.normalize()
         out = n if n.dot(d) > 0 else -n
-        picks = random.sample(range(count), min(count, 10))
+        picks = self.rng.sample(range(count), min(count, 10))
         for k in picks:
             w = panel.to_world(panel.cell_center_local(ii[k], jj[k]))
             g.effects.debris_burst(w, out, color, props.get("effect", "dust_grey"), strong=kind != "bullet")
         if kind in ("explosion", "charge", "thermal", "melee") or count >= 3:
-            for k in random.sample(range(count), min(count, 4 if kind != "bullet" else 1)):
+            rng = self.rng
+            for k in rng.sample(range(count), min(count, 4 if kind != "bullet" else 1)):
                 w = panel.to_world(panel.cell_center_local(ii[k], jj[k]))
                 speed = 6.0 if kind in ("explosion", "charge", "thermal") else 2.5
-                vel = out * random.uniform(0.5, 1.0) * speed + Vec3(random.uniform(-1, 1), random.uniform(-1, 1),
-                                                                     random.uniform(0.5, 2.0))
-                self.debris.spawn(w, vel, self.chunk * random.uniform(0.5, 0.9), panel.spec.mat)
+                vel = out * rng.uniform(0.5, 1.0) * speed + Vec3(rng.uniform(-1, 1), rng.uniform(-1, 1),
+                                                                 rng.uniform(0.5, 2.0))
+                self.debris.spawn(w, vel, self.chunk * rng.uniform(0.5, 0.9), panel.spec.mat)
         if count >= 2 or kind != "bullet":
             snd = "wall_break" if panel.spec.surface != "wood" else "wood_break"
             g.audio.play_at(snd, Point3(*point), volume=min(0.4 + 0.08 * count, 1.0))
@@ -537,6 +591,8 @@ class DestructionManager:
         changed = [p for p in self.panels if p.dirty]
         for p in changed:
             p.rebuild()
+        if self.batch_dirty:
+            self._rebuild_batch()
         if changed:
             self.version += 1
             for cb in list(self.listeners):

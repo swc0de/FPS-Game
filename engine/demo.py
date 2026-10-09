@@ -19,6 +19,7 @@ Each script is a list of steps executed on fixed ticks:
 
     python main.py --map compound --demo routes   # walk every lane of the map
     python main.py --demo m6                       # milestone 6 tour (destruction, gadgets, drones)
+    python main.py --demo m7                       # milestone 7 tour (menus, HUD, audio, spectating)
 """
 from __future__ import annotations
 
@@ -311,18 +312,245 @@ def m6_script(game) -> list:
     return s
 
 
+def _m7_menu(game, page: str | None = None, tab: str | None = None) -> None:
+    mm = game.main_menu
+    if page is not None:
+        mm._menu(page)
+    if tab is not None:
+        mm.settings.select_tab(tab)
+
+
+def _m7_rebind(game) -> None:
+    """Rebind 'reload' to E in the CONTROLS tab: lean right (E) swaps to R."""
+    from ui.menus import TABS
+    sm = game.main_menu.settings
+    opt = next(o for o in TABS["CONTROLS"] if o.key == "reload")
+    sm._capture(opt)
+    sm._captured("e")
+    game.log(f"[demo]   rebind: {sm.status['text']}")
+
+
+def _m7_hold_health(game) -> None:
+    """Keep the player alive (damage still lands and shows on the HUD)."""
+    d = game.player.damageable
+    orig = d.damage_filter
+
+    def keep(dmg, info):
+        if orig is not None and not orig(dmg, info):
+            return False
+        dmg.health = 100.0
+        return True
+    d.damage_filter = keep
+
+
+def _m7_hit_from(game, dx: float, dy: float, kind: str = "bullet") -> None:
+    from gameplay.damage import DamageInfo
+    d = game.director
+    p = game.player.char.pos
+    enemy = next(b for b in d.bots if b.side != d.player_agent.side and b.alive)
+    if kind == "bullet":
+        # a bot standing at the offset fires at us
+        enemy.char.pos = Point3(p.x + dx, p.y + dy, p.z)
+        info = DamageInfo(26, 1.0, "chest", "bullet", enemy, "r7", tuple(p), (0, 0, 0))
+    else:
+        v = Vec3(-dx, -dy, 0)
+        v.normalize()
+        info = DamageInfo(30, 0.5, "chest", "explosion", None, "frag", tuple(p), tuple(v))
+    res = game.player.damageable.take_damage(info)
+    if res is not None:
+        game.player.on_hit(res, p, info.direction)
+    from ui.hud import arc_angle
+    arcs = [round(arc_angle(a[1].x - p.x, a[1].y - p.y, game.player.yaw)) for a in game.hud.arcs]
+    game.log(f"[demo]   {kind} from ({dx:+.0f}, {dy:+.0f}) m: "
+             f"{f'hit, arcs at {arcs} degrees' if res else 'filtered'}")
+
+
+def _m7_ping_enemies(game) -> None:
+    d = game.director
+    side = d.player_agent.side
+    n = 0
+    for b in d.bots:
+        if b.side != side and b.alive:
+            game.tactical.ping(side, b.position(), "spot", 6.0, agent=b)
+            n += 1
+    game.log(f"[demo]   pinged {n} enemies for the radar and compass")
+
+
+def _m7_hud(game, **opts) -> None:
+    game.settings.data["gameplay"]["hud"].update(opts)
+
+
+def _m7_audio_report(game) -> None:
+    a = game.audio
+    lv = game.level
+    nav = game.navmesh()
+    import numpy as np
+    spots = {"attack spawn": lv.spawn_point("attack")["pos"], "defend spawn": lv.spawn_point("defend")["pos"]}
+    under = np.flatnonzero(nav.node_z < -1.0)
+    if len(under):
+        spots["tunnel"] = nav.node_pos(int(under[len(under) // 2]))
+    for z in lv.zones:
+        if z["kind"] == "bombsite":
+            spots[f"site {z['name']}"] = [(z["min"][0] + z["max"][0]) / 2, (z["min"][1] + z["max"][1]) / 2,
+                                          z["min"][2] + 0.6]
+    for name, p in spots.items():
+        p = Point3(*p) + Vec3(0, 0, 1.0)
+        roof = a.roof_height(p)
+        game.log(f"[demo]   audio: {name:13s} -> {a.environment_at(p):8s} "
+                 f"(roof {'none' if roof is None else f'{roof:.1f} m'})")
+    lp = a.listener_pos()
+    for name, p in spots.items():
+        p = Point3(*p)
+        dist = (p - lp).length()
+        from audio.system import shot_variant
+        game.log(f"[demo]   audio: a shot at {name:13s} {dist:5.1f} m away plays "
+                 f"'shot_rifle_heavy{shot_variant(dist, a.occluded(p, lp))}'")
+    loops = ", ".join(f"{k} {v:.2f}" for k, v in a.loop_gain.items())
+    game.log(f"[demo]   audio: listener {a.env}, ambience gains {loops}, {len(a.lib)} sound names "
+             f"({'device' if a.enabled else 'no device: muted'})")
+
+
+def _m7_kill(game) -> None:
+    from gameplay.damage import DamageInfo
+    game.player.damageable.damage_filter = None
+    game.player.damageable.take_damage(DamageInfo(500, 1.0, "head", "fall", None, "world"))
+
+
+def m7_script(game) -> list:
+    """Milestone 7 tour: the main menu and its pages, rebinding in the
+    settings, the HUD (radar, compass, health / armour bars, damage arcs,
+    enemy intel), the ambience report, first- and third-person spectating
+    and quitting back to the menu."""
+    def short_timers(g):
+        # the tour doesn't buy or set up: shorter freeze and preparation
+        g.director.rules["timers"].update(freeze_time=4.0, prep_time=3.0)
+    s = [("call", short_timers), ("call", lambda g: g.open_main_menu()), ("wait", 90), ("shot", "m7_menu"),
+         ("call", lambda g: _m7_menu(g, "play")), ("wait", 6), ("shot", "m7_menu_play"),
+         ("call", lambda g: _m7_menu(g, "settings", "CONTROLS")), ("wait", 4), ("call", _m7_rebind), ("wait", 4),
+         ("shot", "m7_settings_controls"),
+         ("call", lambda g: _m7_menu(g, None, "GAMEPLAY")), ("wait", 4), ("shot", "m7_settings_gameplay"),
+         ("call", lambda g: g.main_menu.settings.close()), ("wait", 2),
+         ("call", lambda g: g._play_from_menu("attack", "normal", 5, 4)), ("wait", 30), ("shot", "m7_freeze_hud"),
+         ("call", _m7_audio_report)]
+    # live: damage arcs from a rifle on the right and a blast behind, health and armour bars
+    s += [("wait_phase", "live", 3000), ("call", _m7_hold_health), ("wait", 10),
+          ("call", lambda g: setattr(g.player.damageable, "armor", 70.0)),
+          ("call", lambda g: _m7_hit_from(g, 14.0, 2.0)), ("call", lambda g: _m7_hit_from(g, -3.0, -6.0, "blast")),
+          ("wait", 6), ("shot", "m7_damage"),
+          ("call", _m7_ping_enemies), ("call", lambda g: _m7_hud(g, minimap_zoom=0.45)), ("wait", 6),
+          ("shot", "m7_intel"),
+          ("call", lambda g: _m7_hud(g, minimap_rotate=False)), ("pose", -2.0, -40.0, EYE, 90, 0), ("wait", 6),
+          ("shot", "m7_radar_north"),
+          ("call", lambda g: _m7_hud(g, minimap_rotate=True, minimap_zoom=1.0))]
+    # spectating: third person, then the first-person option
+    # (spectating starts 2.5 s = 160 ticks after the death)
+    s += [("call", _m7_kill), ("wait", 230), ("shot", "m7_spectate"),
+          ("call", lambda g: g.log(f"[demo]   spectating {getattr(g.director.spectator.target, 'name', None)}")),
+          ("call", lambda g: _m7_hud(g, first_person_spectate=True)), ("wait", 30), ("shot", "m7_spectate_fp"),
+          ("call", lambda g: _m7_hud(g, first_person_spectate=False)), ("wait", 4)]
+    # pause menu -> quit to the main menu
+    s += [("call", lambda g: g.menu.open()), ("wait", 4), ("shot", "m7_pause"),
+          ("call", lambda g: g.menu.to_main_menu()), ("wait", 40), ("shot", "m7_back_to_menu"),
+          ("call", lambda g: g.log(f"[demo]   back at the menu: phase {g.director.match.phase}, "
+                                   f"menu {'open' if g.menu_open else 'closed'}"))]
+    return s
+
+
 SCRIPTS = {"weapons": weapons_script, "viewmodels": viewmodel_script, "impacts": impacts_script,
-           "flash": flash_script, "routes": routes_script, "round": round_script, "m6": m6_script, "bots": None}
+           "flash": flash_script, "routes": routes_script, "round": round_script, "m6": m6_script, "m7": m7_script,
+           "bots": None}
 
 
 def make_demo(game, name: str):
     if name == "bots":
         return BotDemo(game)
+    if name == "benchmark":
+        return Benchmark(game, float(getattr(game.args, "benchmark", None) or 60.0))
     return DemoRunner(game, name)
 
 
+class Benchmark:
+    """``--benchmark [seconds]``: a spectated 5v5 bot match at real speed.
+
+    The spectator camera follows the action (fights, smoke, explosions,
+    destruction), which is the heaviest normal view. After a 6 s warm-up it
+    records every frame's time and the game-logic share of it, then prints
+    average FPS, 1% / 0.1% lows and frame-time percentiles and writes
+    user/benchmark.json. Freeze and preparation are shortened so the bots
+    fight right away."""
+
+    WARMUP = 6.0
+
+    def __init__(self, game, seconds: float):
+        import time
+        self.game = game
+        self.name = "benchmark"
+        self.seconds = seconds
+        self.frame_dt = None                 # real time, unlike the scripted demos
+        self.done = False
+        self.frames: list[float] = []
+        self.logic: list[float] = []
+        self._t0 = time.perf_counter()
+        self._last = self._t0
+        timers = game.director.rules["timers"]
+        timers["freeze_time"], timers["prep_time"] = 2.0, 4.0
+        game.debug_hud.set_mode(True)
+        game.log(f"[bench] {seconds:.0f} s bot match at {game.win.getXSize()}x{game.win.getYSize()}, preset "
+                 f"{game.settings.video['preset']} - {game.win.getGsg().getDriverRenderer()}")
+
+    def tick(self, dt: float) -> None:
+        pass
+
+    def frame(self) -> bool:
+        import time
+        now = time.perf_counter()
+        dt = now - self._last
+        self._last = now
+        if now - self._t0 < self.WARMUP:
+            return False
+        self.frames.append(dt)
+        self.logic.append(getattr(self.game, "logic_ms", 0.0) / 1000.0)
+        if now - self._t0 >= self.WARMUP + self.seconds and not self.done:
+            self.done = True
+            self.report()
+        return self.done
+
+    def report(self) -> None:
+        import json
+        import numpy as np
+        g = self.game
+        ft = np.array(self.frames) * 1000.0
+        lg = np.array(self.logic) * 1000.0
+        if len(ft) == 0:
+            return
+        worst = np.sort(ft)[::-1]
+        low1 = 1000.0 / worst[:max(1, len(ft) // 100)].mean()
+        low01 = 1000.0 / worst[:max(1, len(ft) // 1000)].mean()
+        geoms = len(g.render.findAllMatches("**/+GeomNode"))
+        res = {"frames": int(len(ft)), "seconds": float(ft.sum() / 1000.0), "avg_fps": float(len(ft) / (ft.sum() / 1000.0)),
+               "low_1pct_fps": float(low1), "low_01pct_fps": float(low01),
+               "frame_ms": {"p50": float(np.percentile(ft, 50)), "p95": float(np.percentile(ft, 95)),
+                            "p99": float(np.percentile(ft, 99)), "max": float(ft.max())},
+               "logic_ms_avg": float(lg.mean()), "logic_ms_p95": float(np.percentile(lg, 95)),
+               "resolution": [g.win.getXSize(), g.win.getYSize()], "preset": g.settings.video["preset"],
+               "renderer": g.win.getGsg().getDriverRenderer(), "geom_nodes": geoms,
+               "bots": len(g.director.bots)}
+        g.log(f"[bench] {res['frames']} frames in {res['seconds']:.1f} s: average {res['avg_fps']:.1f} fps, "
+              f"1% low {low1:.1f}, 0.1% low {low01:.1f}")
+        g.log(f"[bench] frame time p50 {res['frame_ms']['p50']:.1f} ms, p95 {res['frame_ms']['p95']:.1f} ms, "
+              f"p99 {res['frame_ms']['p99']:.1f} ms; game logic {res['logic_ms_avg']:.1f} ms average "
+              f"({res['logic_ms_p95']:.1f} ms p95), the rest is culling/drawing and the GPU")
+        g.log(f"[bench] {geoms} geometry nodes in the scene, {res['bots']} bots")
+        try:
+            with open(paths.USER_DIR / "benchmark.json", "w", encoding="utf-8") as f:
+                json.dump(res, f, indent=2)
+            g.log(f"[bench] written to {paths.USER_DIR / 'benchmark.json'}")
+        except OSError:
+            pass
+
+
 class BotDemo:
-    """Milestone 5: watch a 5v5 bot match at high speed and report how it went.
+    """Watch a 5v5 bot match at high speed and report how it went (Milestones 5 and 8).
 
     Runs ``BOT_DEMO_ROUNDS`` rounds (env, default 8) with 32 fixed ticks per
     rendered frame (``BOT_DEMO_DT``; ``BOT_DEMO_TRACE=1`` logs every bot's
@@ -330,39 +558,63 @@ class BotDemo:
     defusing, carrying the charge) and saves user/screenshots/demo_bots_*.png
     around kills, plants and defuses. Prints every round's events, then a
     summary: round results, kills by weapon, headshot rate, accuracy, plants,
-    defuses and any bot that got stuck (a move task without progress)."""
+    defuses, the behaviour metrics of ai/metrics.py (per AI in a
+    head-to-head, with the round-win rate and its confidence interval), any
+    bot that got stuck, and the fairness audit (``--audit``).
+    ``BOT_DEMO_JSON=path`` also writes every number to a JSON file;
+    ``BOT_DEMO_TICKS=n`` renders a frame every n ticks instead of 8 (faster
+    tuning runs); ``BOT_DEMO_NORENDER=1`` draws nothing at all (statistics
+    runs); ``BOT_DEMO_CONSOLE="overlay;belief attack"`` runs console commands
+    at the start."""
 
     def __init__(self, game):
         import os
+        from ai.metrics import MetricsCollector
         self.game = game
         self.name = "bots"
         self.rounds = int(os.environ.get("BOT_DEMO_ROUNDS", "8"))
         self.trace = os.environ.get("BOT_DEMO_TRACE", "") == "1"
         self.frame_dt = float(os.environ.get("BOT_DEMO_DT", "0.5"))
+        ticks = int(os.environ.get("BOT_DEMO_TICKS", "0"))
+        if ticks > 0:
+            # fewer rendered frames per simulated second: faster for tuning runs (the hit boxes
+            # are interpolated per frame, so results differ slightly from the default of 8)
+            game.loop.max_ticks_per_frame = ticks
+            self.frame_dt = ticks * game.loop.dt
+        self.json_path = os.environ.get("BOT_DEMO_JSON", "")
         self.done = False
         self.ticks = 0
         self.results = []
         self.kills = []
-        self.events = []
         self.shot_queue: list[tuple[int, str]] = []
         self.shots_this_round = 0
-        self.stuck: dict[int, list] = {}
-        self.stuck_reports = []
-        self.hits = 0
-        self.plants = 0
-        self.defuses = 0
         self.round_t0 = 0.0
-        game.debug_hud.toggle()
+        game.debug_hud.set_mode(False)
         d = game.director
         d.listeners.append(self._event)
-        for b in d.bots:
-            b.damageable.on_damage.append(lambda res, b=b: self._hit(res))
-        game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds")
+        self.metrics = MetricsCollector(game, d)
+        game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds, "
+                 f"AI {d.describe_ai()}")
         d.tactical.verbose = self.trace or os.environ.get("BOT_DEMO_GADGETS", "") == "1"
+        self.render = os.environ.get("BOT_DEMO_NORENDER", "") != "1"
+        for cmd in filter(None, (c.strip() for c in os.environ.get("BOT_DEMO_CONSOLE", "").split(";"))):
+            game.log(f"[demo] console: {cmd} -> {game.console.run(cmd)}")
 
-    def _hit(self, res) -> None:
-        if res.info.kind == "bullet":
-            self.hits += 1
+    @property
+    def stuck_reports(self) -> list[str]:
+        return self.metrics.stuck_reports
+
+    @property
+    def plants(self) -> int:
+        return self.metrics.plants
+
+    @property
+    def defuses(self) -> int:
+        return self.metrics.defuses
+
+    @property
+    def hits(self) -> int:
+        return sum(self.metrics.hits.values())
 
     def _event(self, kind: str, data: dict) -> None:
         g = self.game
@@ -371,7 +623,6 @@ class BotDemo:
         t = now - self.round_t0
         if kind == "round_start":
             self.shots_this_round = 0
-            self.stuck = {}
         elif kind == "live":
             self.round_t0 = now
         elif kind == "kill":
@@ -393,11 +644,9 @@ class BotDemo:
                 self.shot_queue.append((3, f"bots_r{d.match.round}_kill{self.shots_this_round}"))
                 self.shots_this_round += 1
         elif kind == "bomb_planted":
-            self.plants += 1
             g.log(f"[bots] {t:5.1f}s  charge planted at {d.bomb.site} by {data['planter'].name}")
             self.shot_queue.append((2, f"bots_r{d.match.round}_planted"))
         elif kind == "bomb_defused":
-            self.defuses += 1
             g.log(f"[bots] {t:5.1f}s  charge defused by {data['defuser'].name}")
             self.shot_queue.append((2, f"bots_r{d.match.round}_defused"))
         elif kind == "round_end":
@@ -405,42 +654,28 @@ class BotDemo:
             m = d.match
             self.results.append((r.winner_side, r.reason, t))
             a, b = m.scoreline()
-            g.log(f"[bots] round {m.round}: {r.winner_side} win ({r.reason}) after {t:.0f}s  -  "
+            team = next((tm for tm in m.teams if tm.side == r.winner_side), None)
+            who = f" [{d.team_ai.get(team.index, '?')}]" if team is not None and len(set(d.team_ai.values())) > 1 else ""
+            g.log(f"[bots] round {m.round}: {r.winner_side}{who} win ({r.reason}) after {t:.0f}s  -  "
                   f"attack {a} : {b} defend")
 
     def tick(self, dt: float) -> None:
         self.ticks += 1
+        self.metrics.tick(dt)
         d = self.game.director
         if self.ticks % 16:
             return
         now = self.game.loop.time
         if self.trace and self.ticks % (64 * 5) == 0 and d.match.phase in ("live", "planted"):
+            for side, tb in d.team_brains.items():
+                self.game.log(f"[trace] {now - self.round_t0:5.1f}s team {side} [{getattr(tb, 'ai', 'legacy')}] "
+                              f"plan {tb.plan or getattr(tb, 'setup', '') or '-'} site {tb.site or '-'} "
+                              f"phase {tb.phase}")
             for b in d.bots:
                 if b.active and b.alive:
                     p = b.position()
                     self.game.log(f"[trace] {now - self.round_t0:5.1f}s {b.describe()} @ "
                                   f"{self.game.level.callout_at(p.x, p.y)} ({p.x:.1f}, {p.y:.1f}, {p.z:.1f})")
-        # stuck detection: a bot with a move task that has not moved 0.6 m in 5 s
-        if d.match.phase in ("live", "planted"):
-            for b in d.bots:
-                if not (b.active and b.alive):
-                    continue
-                br = b.brain
-                moving = (br.follower.active and br.mode in ("task", "alert", "seek", "retreat")
-                          and b.intent.wish.lengthSquared() > 0.25)
-                rec = self.stuck.get(id(b))
-                p = b.position()
-                if not moving or rec is None:
-                    self.stuck[id(b)] = [p, now, False]
-                    continue
-                if (p - rec[0]).length() > 0.6:
-                    self.stuck[id(b)] = [p, now, False]
-                elif now - rec[1] > 5.0 and not rec[2]:
-                    rec[2] = True
-                    msg = (f"{b.name} stuck at ({p.x:.1f}, {p.y:.1f}, {p.z:.2f}) "
-                           f"{self.game.level.callout_at(p.x, p.y)} - {br.describe()}")
-                    self.stuck_reports.append(msg)
-                    self.game.log(f"[bots] STUCK {msg}")
         # follow the action
         sp = d.spectator
         if sp.active and not sp.free:
@@ -453,6 +688,12 @@ class BotDemo:
     def frame(self) -> bool:
         g = self.game
         d = g.director
+        if not self.render:
+            # statistics runs: simulate only (no frames drawn, no screenshots)
+            self.shot_queue.clear()
+            ge = g.graphicsEngine
+            for i in range(ge.getNumWindows()):
+                ge.getWindow(i).setActive(False)
         if self.shot_queue:
             n, name = self.shot_queue[0]
             if n <= 0:
@@ -473,6 +714,7 @@ class BotDemo:
         log = g.log
         d = g.director
         log("[bots] ===== summary =====")
+        log(f"[bots] AI: {d.describe_ai()}")
         by_reason = {}
         for side, reason, t in self.results:
             by_reason[(side, reason)] = by_reason.get((side, reason), 0) + 1
@@ -491,12 +733,26 @@ class BotDemo:
             f"({100.0 * self.hits / max(fired, 1):.0f}%)")
         for b in sorted(d.bots, key=lambda b: -b.stats.kills):
             st = b.stats
-            log(f"[bots]   {b.name:9s} {b.side:7s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}  ${b.money}")
+            log(f"[bots]   {b.name:9s} {b.side:7s} {d.ai_of(b):6s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}"
+                f"  ${b.money}")
         tac = d.tactical
         log("[bots] gadgets: " + ", ".join(f"{k} {v}" for k, v in sorted(tac.stats.items())))
+        for line in self.metrics.report_lines():
+            log(line)
         log(f"[bots] stuck reports: {len(self.stuck_reports)}")
         for msg in self.stuck_reports[:20]:
             log(f"[bots]   {msg}")
+        if d.audit is not None:
+            for line in d.audit.report():
+                log(line)
+        if self.json_path:
+            import json
+            from pathlib import Path
+            out = Path(self.json_path)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps({"ai": d.describe_ai(), "seed": d.seed, "difficulty": d.difficulty,
+                                       "behaviour": self.metrics.summary()}, indent=1, default=str))
+            log(f"[bots] metrics written to {out}")
 
 
 class DemoRunner:
@@ -512,7 +768,7 @@ class DemoRunner:
         self.shots: list[str] = []
         self.done = False
         # routes fast-forward: 8 fixed ticks per rendered frame
-        self.frame_dt = 0.125 if name in ("routes", "round") else 1.0 / 30.0
+        self.frame_dt = 0.125 if name in ("routes", "round") else (1.0 / 16.0 if name == "m7" else 1.0 / 30.0)
         self.wait_for = None        # (phase, ticks left)
         self.shooting = None        # (stand-in, ticks, shots)
         self.goto = None            # (x, y, ticks, best_dist, best_tick)
@@ -521,7 +777,7 @@ class DemoRunner:
         self.ticks = 0
         game.input.virtual_mode = True
         game.input.captured = True
-        game.debug_hud.toggle()
+        game.debug_hud.set_mode(False)
         game.log(f"[demo] running '{name}' ({len(self.steps)} steps)")
 
     def _eye(self) -> Point3:

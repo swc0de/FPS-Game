@@ -1,0 +1,2276 @@
+{
+ "seed": 3,
+ "difficulty": "normal",
+ "rounds_requested": 8,
+ "wall_seconds": 928.7007915973663,
+ "python": "3.11.15",
+ "timing": {
+  "live": {
+   "ticks": 43921,
+   "total_ms": {
+    "mean": 3.169844653060666,
+    "p50": 2.837801000168838,
+    "p95": 5.207699000493449,
+    "p99": 7.621639200442606,
+    "max": 330.5758289998266
+   },
+   "ai_ms": {
+    "mean": 0.6564899383742877,
+    "p50": 0.45217600109026534,
+    "p95": 1.3737709996348713,
+    "p99": 3.191696000430988,
+    "max": 325.60183300029166
+   },
+   "ai_ticks_over_4ms": 306,
+   "ai_decisions_ms": {
+    "mean": 0.6059667517207561,
+    "p50": 0.4520530010267976,
+    "p95": 1.367565000691684,
+    "p99": 3.111504000662537,
+    "max": 41.13516200050071
+   },
+   "ai_decision_ticks_over_4ms": 282,
+   "subsystems_mean_ms": {
+    "ai_decisions": 0.6059667517207561,
+    "animation": 0.6228116381438175,
+    "brains": 0.6448857277463641,
+    "bullet": 0.8178504640419366,
+    "destruction": 0.006058800777913634,
+    "gadget_ai": 0.006144128116773078,
+    "gc": 0.00023232904532583776,
+    "gc_in_ai": 0.0001459298968309431,
+    "movement": 0.6195699456984328,
+    "perception": 0.1879274603038915,
+    "tactical": 0.241819092619196,
+    "team": 0.005460082511150517
+   },
+   "subsystems_p99_ms": {
+    "ai_decisions": 3.111504000662537,
+    "animation": 1.5478189992791163,
+    "brains": 3.154801998789486,
+    "bullet": 1.716723600111437,
+    "destruction": 0.012160799815319655,
+    "gadget_ai": 0.16225999988819267,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 1.3750737996815596,
+    "perception": 1.1121495994302684,
+    "tactical": 0.5685839996658615,
+    "team": 0.12378879946481912
+   }
+  },
+  "all": {
+   "ticks": 60952,
+   "total_ms": {
+    "mean": 3.304129107560658,
+    "p50": 2.8323070005171758,
+    "p95": 5.104769800300346,
+    "p99": 7.3468083802708835,
+    "max": 1741.5353099995627
+   },
+   "ai_ms": {
+    "mean": 0.5951658742842943,
+    "p50": 0.3949804995500017,
+    "p95": 1.2460700504107074,
+    "p99": 2.776961440022204,
+    "max": 325.60183300029166
+   },
+   "ai_ticks_over_4ms": 353,
+   "ai_decisions_ms": {
+    "mean": 0.5288151598367097,
+    "p50": 0.39475149924328434,
+    "p95": 1.2384683997879613,
+    "p99": 2.622927950287693,
+    "max": 41.13516200050071
+   },
+   "ai_decision_ticks_over_4ms": 305,
+   "subsystems_mean_ms": {
+    "ai_decisions": 0.5288151598367097,
+    "animation": 0.6493023433201504,
+    "brains": 0.5718895544916931,
+    "bullet": 0.8303770295511643,
+    "destruction": 0.006046387683172234,
+    "gadget_ai": 0.01931214344113255,
+    "gc": 0.0018951303648847633,
+    "gc_in_ai": 0.00012240093839895405,
+    "movement": 0.6348910054703603,
+    "perception": 0.16768091072150978,
+    "tactical": 0.22483970891529217,
+    "team": 0.003964176351468712
+   },
+   "subsystems_p99_ms": {
+    "ai_decisions": 2.622927950287693,
+    "animation": 1.713861010775872,
+    "brains": 2.6886745810042885,
+    "bullet": 1.744009180019929,
+    "destruction": 0.012652329669435823,
+    "gadget_ai": 0.14982261944169287,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 1.4261100497060375,
+    "perception": 1.0534359519624557,
+    "tactical": 0.556998299825863,
+    "team": 0.10709657971347034
+   }
+  },
+  "slowest_single_brain_update_ms": 322.9212109999935,
+  "gc_pauses": {
+   "count": 256,
+   "mean": 0.48832044923230455,
+   "p50": 0.0767364999774145,
+   "p95": 0.5592137504208949,
+   "p99": 0.8946149000621507,
+   "max": 59.4341109999732,
+   "over_4ms": 2
+  },
+  "queries": {
+   "q:bomb_plant": {
+    "calls": 3,
+    "mean": 0.09813833366933977,
+    "p50": 0.09836500066739973,
+    "p95": 0.1006528002108098,
+    "p99": 0.10085616017022403,
+    "max": 0.10090700016007759,
+    "over_4ms": 0
+   },
+   "q:breach": {
+    "calls": 1375,
+    "mean": 0.003993336752252865,
+    "p50": 0.0019339995560585521,
+    "p95": 0.004656300006899983,
+    "p99": 0.00971188010225887,
+    "max": 0.38780799968662905,
+    "over_4ms": 0
+   },
+   "q:defend_setup": {
+    "calls": 8,
+    "mean": 1.2099559999114717,
+    "p50": 1.2786145002792182,
+    "p95": 1.3120647494361037,
+    "p99": 1.3131217493355507,
+    "max": 1.3133859993104124,
+    "over_4ms": 0
+   },
+   "q:deploy_gadget": {
+    "calls": 27,
+    "mean": 67.04823166661232,
+    "p50": 38.673809000101755,
+    "p95": 246.44059099955484,
+    "p99": 303.6939543401421,
+    "max": 322.7978550003172,
+    "over_4ms": 27
+   },
+   "q:find_cover": {
+    "calls": 131,
+    "mean": 0.21202785495124563,
+    "p50": 0.19694499951583566,
+    "p95": 0.3387554997971165,
+    "p99": 0.49033710001822123,
+    "max": 0.6447319992730627,
+    "over_4ms": 0
+   },
+   "q:find_path": {
+    "calls": 2311,
+    "mean": 1.3061339234056704,
+    "p50": 0.839665000057721,
+    "p95": 3.8093885000307637,
+    "p99": 7.370050100144013,
+    "max": 16.11200099978305,
+    "over_4ms": 101
+   },
+   "q:fire": {
+    "calls": 607,
+    "mean": 9.487277151558818,
+    "p50": 1.5644739996787393,
+    "p95": 89.25081090028468,
+    "p99": 115.60957526015044,
+    "max": 141.83989700086386,
+    "over_4ms": 54
+   },
+   "q:flee": {
+    "calls": 3,
+    "mean": 2.5449156667794646,
+    "p50": 2.0392300002640695,
+    "p95": 3.462777099957748,
+    "p99": 3.5893146199305193,
+    "max": 3.620948999923712,
+    "over_4ms": 0
+   },
+   "q:hearing": {
+    "calls": 480176,
+    "mean": 0.00278917287782871,
+    "p50": 0.0007999997251317836,
+    "p95": 0.013779000255453866,
+    "p99": 0.03703299989865627,
+    "max": 2.320145999874512,
+    "over_4ms": 0
+   },
+   "q:lane_path": {
+    "calls": 551,
+    "mean": 2.1010330816590197,
+    "p50": 1.3767549999101902,
+    "p95": 6.839476000095601,
+    "p99": 12.696742000116501,
+    "max": 16.132895999362518,
+    "over_4ms": 81
+   },
+   "q:lean": {
+    "calls": 387996,
+    "mean": 0.002654229084953894,
+    "p50": 0.001424999936716631,
+    "p95": 0.003294250291219214,
+    "p99": 0.042095150001841795,
+    "max": 2.460734000123921,
+    "over_4ms": 0
+   },
+   "q:post_plant_spots": {
+    "calls": 3,
+    "mean": 0.20235300022856487,
+    "p50": 0.18980900040332926,
+    "p95": 0.2585726000688737,
+    "p99": 0.26468492003914434,
+    "max": 0.266213000031712,
+    "over_4ms": 0
+   },
+   "q:preaim": {
+    "calls": 62840,
+    "mean": 0.03317781613228197,
+    "p50": 0.001811000402085483,
+    "p95": 0.005122099537402383,
+    "p99": 1.21511455997279,
+    "max": 8.139626999764005,
+    "over_4ms": 28
+   },
+   "q:radio_hud": {
+    "calls": 635,
+    "mean": 0.01219233229167862,
+    "p50": 0.011316999916743953,
+    "p95": 0.017112499699578617,
+    "p99": 0.03594244006308138,
+    "max": 0.10089900024468079,
+    "over_4ms": 0
+   },
+   "q:set_weapon_model": {
+    "calls": 188,
+    "mean": 53.889175893665254,
+    "p50": 63.08066800011147,
+    "p95": 127.68382900021608,
+    "p99": 156.61249393003342,
+    "max": 168.30537000078039,
+    "over_4ms": 114
+   },
+   "q:think": {
+    "calls": 42622,
+    "mean": 0.007378753082185021,
+    "p50": 0.005677999979525339,
+    "p95": 0.012460000107239466,
+    "p99": 0.030442529923675472,
+    "max": 1.1127419993499643,
+    "over_4ms": 0
+   },
+   "q:throw": {
+    "calls": 37,
+    "mean": 3.6810139999943203,
+    "p50": 0.012565999895741697,
+    "p95": 1.631477399860126,
+    "p99": 84.59218748037536,
+    "max": 127.727777000473,
+    "over_4ms": 2
+   },
+   "q:throw_drone": {
+    "calls": 31,
+    "mean": 28.524096064463645,
+    "p50": 28.455977999328752,
+    "p95": 30.350902499776566,
+    "p99": 35.310142799517045,
+    "max": 37.41769199950795,
+    "over_4ms": 31
+   },
+   "q:use_gadget": {
+    "calls": 12,
+    "mean": 0.03655466669745996,
+    "p50": 0.03117500000371365,
+    "p95": 0.06066645009923375,
+    "p99": 0.07218609012852541,
+    "max": 0.0750660001358483,
+    "over_4ms": 0
+   },
+   "q:vision": {
+    "calls": 80046,
+    "mean": 0.08541768746587221,
+    "p50": 0.07243649952215492,
+    "p95": 0.1946600002611376,
+    "p99": 0.26893804965766355,
+    "max": 28.491282999311807,
+    "over_4ms": 2
+   }
+  },
+  "spikes": {
+   "count": 353,
+   "worst": [
+    {
+     "t": 547.59375,
+     "round": 5,
+     "phase": "live",
+     "ai_ms": 325.60183300029166,
+     "tick_ms": 330.5758289998266,
+     "parts": {
+      "brains": 325.6,
+      "q:deploy_gadget": 322.8,
+      "bullet": 1.52,
+      "movement": 1.49,
+      "animation": 1.48,
+      "perception": 1.37,
+      "q:vision": 1.28,
+      "gc": 0.94,
+      "gc_in_ai": 0.94
+     },
+     "slowest_bot": "Anvil [defend] hp 100 mx5 task/hold:hold "
+    },
+    {
+     "t": 313.296875,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 250.14761100101168,
+     "tick_ms": 254.26812400019116,
+     "parts": {
+      "brains": 250.15,
+      "q:deploy_gadget": 249.32,
+      "bullet": 1.4,
+      "animation": 1.23,
+      "movement": 1.05,
+      "perception": 0.32
+     },
+     "slowest_bot": "Anvil [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 685.953125,
+     "round": 6,
+     "phase": "prep",
+     "ai_ms": 240.49001400089765,
+     "tick_ms": 244.28126299972064,
+     "parts": {
+      "brains": 240.49,
+      "q:deploy_gadget": 239.72,
+      "movement": 1.32,
+      "animation": 1.17,
+      "bullet": 0.85,
+      "perception": 0.38,
+      "tactical": 0.32,
+      "q:vision": 0.31
+     },
+     "slowest_bot": "Anvil [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 27.578125,
+     "round": 1,
+     "phase": "prep",
+     "ai_ms": 237.1962880015417,
+     "tick_ms": 239.353447999747,
+     "parts": {
+      "brains": 237.2,
+      "q:deploy_gadget": 236.81,
+      "movement": 0.71,
+      "bullet": 0.63,
+      "animation": 0.35,
+      "tactical": 0.32
+     },
+     "slowest_bot": "Anvil [defend] hp 100 p9 task/hold:hold "
+    },
+    {
+     "t": 179.0,
+     "round": 2,
+     "phase": "prep",
+     "ai_ms": 150.75336699919717,
+     "tick_ms": 155.8282390005843,
+     "parts": {
+      "gadget_ai": 149.91,
+      "q:throw_drone": 148.42,
+      "bullet": 1.92,
+      "animation": 1.37,
+      "q:defend_setup": 1.31,
+      "movement": 1.2,
+      "brains": 0.84
+     },
+     "slowest_bot": "Grail [defend] hp 100 p9 task/hold:hold "
+    },
+    {
+     "t": 679.75,
+     "round": 6,
+     "phase": "prep",
+     "ai_ms": 143.81871499972476,
+     "tick_ms": 147.14764499967714,
+     "parts": {
+      "gadget_ai": 143.44,
+      "q:throw_drone": 142.5,
+      "bullet": 1.32,
+      "q:defend_setup": 0.81,
+      "animation": 0.81,
+      "movement": 0.71,
+      "brains": 0.38
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 8.0,
+     "round": 1,
+     "phase": "prep",
+     "ai_ms": 136.99080500009586,
+     "tick_ms": 140.01641399954678,
+     "parts": {
+      "gadget_ai": 136.45,
+      "q:throw_drone": 135.03,
+      "q:defend_setup": 1.28,
+      "bullet": 1.09,
+      "animation": 0.8,
+      "movement": 0.73,
+      "brains": 0.53
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 p9 task/hold:control "
+    },
+    {
+     "t": 389.96875,
+     "round": 3,
+     "phase": "live",
+     "ai_ms": 128.2102550003401,
+     "tick_ms": 130.7239939997089,
+     "parts": {
+      "brains": 128.21,
+      "q:throw": 127.73,
+      "q:set_weapon_model": 118.45,
+      "animation": 0.92,
+      "movement": 0.71,
+      "bullet": 0.42
+     },
+     "slowest_bot": "Kestrel [attack] hp 61 r7 task/use:breach d38 off0.5/0.6"
+    },
+    {
+     "t": 228.625,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 118.39032099942415,
+     "tick_ms": 122.48260300020775,
+     "parts": {
+      "brains": 118.39,
+      "q:set_weapon_model": 117.47,
+      "bullet": 1.34,
+      "animation": 1.12,
+      "movement": 1.07,
+      "tactical": 0.39,
+      "perception": 0.31
+     },
+     "slowest_bot": "Dagger [attack] hp 35 r7 engage/plant:plant d15 off35.5/0.6"
+    },
+    {
+     "t": 235.46875,
+     "round": 2,
+     "phase": "planted",
+     "ai_ms": 116.62301199794456,
+     "tick_ms": 118.52034700041258,
+     "parts": {
+      "brains": 116.62,
+      "q:set_weapon_model": 115.92,
+      "movement": 0.55,
+      "bullet": 0.52,
+      "animation": 0.47
+     },
+     "slowest_bot": "Kestrel [attack] hp 83 r7 task/plant:plant d14 off2.9/1.3"
+    },
+    {
+     "t": 798.25,
+     "round": 7,
+     "phase": "prep",
+     "ai_ms": 115.04981899906852,
+     "tick_ms": 119.53230899962364,
+     "parts": {
+      "gadget_ai": 114.38,
+      "q:throw_drone": 112.96,
+      "bullet": 1.56,
+      "animation": 1.51,
+      "q:defend_setup": 1.31,
+      "movement": 0.92,
+      "brains": 0.67,
+      "perception": 0.37
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 sr90 task/move:stage "
+    },
+    {
+     "t": 418.75,
+     "round": 4,
+     "phase": "prep",
+     "ai_ms": 112.63780300214421,
+     "tick_ms": 116.71308499990118,
+     "parts": {
+      "gadget_ai": 112.08,
+      "q:throw_drone": 110.68,
+      "animation": 1.32,
+      "bullet": 1.29,
+      "q:defend_setup": 1.28,
+      "movement": 1.05,
+      "brains": 0.55
+     },
+     "slowest_bot": "Thorn [defend] hp 100 mx5 task/hold:hold "
+    },
+    {
+     "t": 227.59375,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 110.69006400066428,
+     "tick_ms": 114.36871500063717,
+     "parts": {
+      "brains": 110.69,
+      "q:set_weapon_model": 109.87,
+      "animation": 1.19,
+      "bullet": 1.19,
+      "movement": 0.87,
+      "tactical": 0.31
+     },
+     "slowest_bot": "Dagger [attack] hp 100 r7 engage/plant:plant d5 off66.8/3.5"
+    },
+    {
+     "t": 625.609375,
+     "round": 5,
+     "phase": "planted",
+     "ai_ms": 104.3075029983811,
+     "tick_ms": 107.18406500018318,
+     "parts": {
+      "brains": 104.31,
+      "q:set_weapon_model": 103.62,
+      "animation": 1.09,
+      "movement": 0.73,
+      "bullet": 0.64
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 r7 alert/plant:plant "
+    },
+    {
+     "t": 232.28125,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 102.10719100086862,
+     "tick_ms": 105.75179399984336,
+     "parts": {
+      "brains": 102.11,
+      "q:set_weapon_model": 101.32,
+      "animation": 1.2,
+      "movement": 0.98,
+      "bullet": 0.93,
+      "tactical": 0.37
+     },
+     "slowest_bot": "Kestrel [attack] hp 83 bomb alert/plant:plant d14 off2.9/1.3"
+    },
+    {
+     "t": 124.953125,
+     "round": 1,
+     "phase": "planted",
+     "ai_ms": 95.52386999985174,
+     "tick_ms": 97.69895400040696,
+     "parts": {
+      "brains": 95.52,
+      "q:set_weapon_model": 94.69,
+      "bullet": 0.77,
+      "movement": 0.57,
+      "animation": 0.41
+     },
+     "slowest_bot": "Cinder [attack] hp 11 p9 alert/plant:plant d65 off1.0/0.6"
+    },
+    {
+     "t": 289.5,
+     "round": 3,
+     "phase": "prep",
+     "ai_ms": 91.59753099902446,
+     "tick_ms": 95.13140499984729,
+     "parts": {
+      "gadget_ai": 91.19,
+      "q:throw_drone": 89.81,
+      "bullet": 1.39,
+      "q:defend_setup": 1.3,
+      "animation": 0.88,
+      "movement": 0.85,
+      "brains": 0.41
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 227.390625,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 90.77730500030157,
+     "tick_ms": 94.30595799949515,
+     "parts": {
+      "brains": 90.78,
+      "q:set_weapon_model": 87.65,
+      "q:lane_path": 1.6,
+      "q:find_path": 1.58,
+      "animation": 1.19,
+      "bullet": 1.09,
+      "perception": 0.82,
+      "movement": 0.78,
+      "q:vision": 0.74,
+      "tactical": 0.35
+     },
+     "slowest_bot": "Dagger [attack] hp 100 bomb task/plant:plant d31 off0.6/0.6"
+    },
+    {
+     "t": 526.5,
+     "round": 5,
+     "phase": "prep",
+     "ai_ms": 88.64992700091534,
+     "tick_ms": 92.85531699970306,
+     "parts": {
+      "gadget_ai": 88.0,
+      "q:throw_drone": 86.79,
+      "bullet": 1.44,
+      "animation": 1.33,
+      "q:defend_setup": 1.13,
+      "movement": 0.95,
+      "brains": 0.65,
+      "perception": 0.32
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 121.765625,
+     "round": 1,
+     "phase": "live",
+     "ai_ms": 86.38233400142781,
+     "tick_ms": 88.98764699915773,
+     "parts": {
+      "brains": 86.38,
+      "q:set_weapon_model": 85.64,
+      "animation": 0.91,
+      "bullet": 0.68,
+      "movement": 0.59,
+      "perception": 0.34
+     },
+     "slowest_bot": "Cinder [attack] hp 11 bomb alert/plant:plant d65 off1.0/0.6"
+    },
+    {
+     "t": 622.421875,
+     "round": 5,
+     "phase": "live",
+     "ai_ms": 83.61831900037942,
+     "tick_ms": 86.03167899946129,
+     "parts": {
+      "brains": 83.62,
+      "q:set_weapon_model": 82.95,
+      "movement": 0.83,
+      "bullet": 0.63,
+      "animation": 0.59
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 bomb alert/plant:plant "
+    },
+    {
+     "t": 867.15625,
+     "round": 7,
+     "phase": "live",
+     "ai_ms": 79.3137390000993,
+     "tick_ms": 82.39697000044544,
+     "parts": {
+      "brains": 79.31,
+      "q:set_weapon_model": 78.33,
+      "bullet": 1.16,
+      "movement": 0.84,
+      "animation": 0.72,
+      "perception": 0.67,
+      "q:vision": 0.62
+     },
+     "slowest_bot": "Kestrel [attack] hp 100 bomb alert/plant:plant "
+    },
+    {
+     "t": 228.578125,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 78.00613400195289,
+     "tick_ms": 81.61329799986561,
+     "parts": {
+      "brains": 78.01,
+      "q:set_weapon_model": 77.34,
+      "animation": 1.22,
+      "bullet": 1.0,
+      "movement": 0.98
+     },
+     "slowest_bot": "Dagger [attack] hp 35 bomb task/plant:plant d5 off1.0/3.5"
+    },
+    {
+     "t": 509.359375,
+     "round": 4,
+     "phase": "live",
+     "ai_ms": 76.41826799863338,
+     "tick_ms": 79.12799099995027,
+     "parts": {
+      "brains": 76.42,
+      "q:set_weapon_model": 75.85,
+      "animation": 0.99,
+      "movement": 0.74,
+      "bullet": 0.59,
+      "tactical": 0.33
+     },
+     "slowest_bot": "Cinder [attack] hp 100 bomb alert/plant:plant d49 off0.4/0.6"
+    },
+    {
+     "t": 897.5,
+     "round": 8,
+     "phase": "prep",
+     "ai_ms": 66.75453999923775,
+     "tick_ms": 70.68985499972769,
+     "parts": {
+      "gadget_ai": 59.38,
+      "q:throw_drone": 58.06,
+      "brains": 7.37,
+      "q:lane_path": 6.5,
+      "q:find_path": 6.42,
+      "animation": 1.34,
+      "q:defend_setup": 1.26,
+      "bullet": 1.14,
+      "movement": 0.94
+     },
+     "slowest_bot": "Thorn [defend] hp 100 c9 task/hold:hold "
+    }
+   ]
+  }
+ },
+ "behaviour": {
+  "rounds": 8,
+  "wins_by_side": {
+   "attack": 5,
+   "defend": 3
+  },
+  "attack_win_pct": 62.5,
+  "results": {
+   "attack/bomb_detonated": 3,
+   "attack/elimination": 2,
+   "defend/elimination": 3
+  },
+  "avg_round_s": 85.783203125,
+  "kills": 49,
+  "deaths_total": 54,
+  "headshot_pct": 26.53061224489796,
+  "plants": 3,
+  "defuses": 0,
+  "shots": 607,
+  "bullet_hits": 225,
+  "accuracy_pct": 37.067545304777596,
+  "deaths_while_reloading": 6,
+  "deaths_while_reloading_pct": 12.244897959183673,
+  "deaths_with_empty_mag": 0,
+  "unseen_deaths": 4,
+  "unseen_deaths_pct": 8.16326530612245,
+  "never_saw_killer_this_round_pct": 6.122448979591836,
+  "traded_pct": 16.3265306122449,
+  "traded_of_tradeable_pct": 23.076923076923077,
+  "tradeable_deaths": 26,
+  "exposure_before_death_s": {
+   "mean": 2.5849609375,
+   "n": 48
+  },
+  "exposed_share_pct": 27.063433153648653,
+  "exposed_s_per_death": 25.74189814814815,
+  "stacking_incidents": 14,
+  "stacking_per_round": 1.75,
+  "stacking_where": {
+   "T Spawn": 4,
+   "A Site": 3,
+   "West Yard": 2,
+   "B Connector": 1,
+   "B Long": 1,
+   "Main Gate": 1,
+   "B Site": 1,
+   "A Connector": 1
+  },
+  "clumps": 5,
+  "stuck_bots": 1,
+  "stuck_reports": [
+   "Kestrel stuck at (50.0, 38.1, 0.03)  - task/move:clear d38 off0.5/0.6"
+  ],
+  "micro_stuck_events": 25,
+  "grenades_thrown": {
+   "attack:flash": 1
+  },
+  "utility": {
+   "flash": {
+    "detonated": 1,
+    "effective": 0,
+    "effective_pct": 0.0,
+    "team_flashes": 0
+   },
+   "smoke": {
+    "detonated": 0,
+    "effective": 0,
+    "effective_pct": 0.0,
+    "enemy_sightings_blocked": 0
+   },
+   "frag": {
+    "detonated": 0,
+    "effective": 0,
+    "effective_pct": 0.0
+   }
+  },
+  "attack_plans": {
+   "default": 5,
+   "execute": 3
+  },
+  "attack_plans_pct": {
+   "default": 62.5,
+   "execute": 37.5
+  },
+  "attack_plan_sites": {
+   "default A": 4,
+   "execute A": 1,
+   "default B": 1,
+   "execute B": 2
+  },
+  "defender_hold_spots": {
+   "distinct": 11,
+   "samples": 38,
+   "top": [
+    [
+     [
+      29.0,
+      25.6
+     ],
+     6
+    ],
+    [
+     [
+      -5.0,
+      45.3
+     ],
+     5
+    ],
+    [
+     [
+      -33.8,
+      18.1
+     ],
+     5
+    ],
+    [
+     [
+      37.5,
+      39.0
+     ],
+     5
+    ],
+    [
+     [
+      -36.2,
+      26.0
+     ],
+     4
+    ],
+    [
+     [
+      39.2,
+      23.2
+     ],
+     4
+    ],
+    [
+     [
+      -35.5,
+      34.2
+     ],
+     3
+    ],
+    [
+     [
+      47.0,
+      29.0
+     ],
+     2
+    ]
+   ]
+  },
+  "team_reports": 3339,
+  "info_leaks": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 11,
+   "exact_killer_position_broadcast_after_unseen_kill": 4
+  },
+  "info_leaks_per_round": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 1.375,
+   "exact_killer_position_broadcast_after_unseen_kill": 0.5
+  },
+  "deaths": [
+   {
+    "t": 51.578125,
+    "round": 1,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 7.828125,
+    "distance": 27.40597152709961,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 78.75,
+    "round": 1,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.4375,
+    "distance": 14.75403881072998,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 105.46875,
+    "round": 1,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.171875,
+    "distance": 32.22893524169922,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 117.390625,
+    "round": 1,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.921875,
+    "distance": 22.91576385498047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 130.75,
+    "round": 1,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.4375,
+    "distance": 33.69468307495117,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 164.953125,
+    "round": 1,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 220.078125,
+    "round": 2,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 3.546875,
+    "distance": 30.43929100036621,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 228.546875,
+    "round": 2,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.34375,
+    "distance": 5.164506912231445,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 229.4375,
+    "round": 2,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": "Anvil",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.140625,
+    "distance": 15.156355857849121,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 229.859375,
+    "round": 2,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.1875,
+    "distance": 15.970194816589355,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 238.09375,
+    "round": 2,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.15625,
+    "distance": 33.29246520996094,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 275.46875,
+    "round": 2,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 326.09375,
+    "round": 3,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.15625,
+    "distance": 30.330400466918945,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 361.515625,
+    "round": 3,
+    "victim": "Cinder",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.921875,
+    "distance": 17.223424911499023,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 369.609375,
+    "round": 3,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.140625,
+    "distance": 10.622084617614746,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 372.140625,
+    "round": 3,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Anvil",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.265625,
+    "distance": 28.1678466796875,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 374.671875,
+    "round": 3,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.3125,
+    "distance": 16.74979019165039,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 386.5625,
+    "round": 3,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.265625,
+    "distance": 38.12770080566406,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 402.53125,
+    "round": 3,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.5,
+    "distance": 15.708283424377441,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 404.625,
+    "round": 3,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.34375,
+    "distance": 8.127030372619629,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 458.015625,
+    "round": 4,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Jager",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.671875,
+    "distance": 25.67812728881836,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 465.109375,
+    "round": 4,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.953125,
+    "distance": 12.672660827636719,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 497.875,
+    "round": 4,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 15.8125,
+    "distance": 48.62834167480469,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 502.328125,
+    "round": 4,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.921875,
+    "distance": 22.00101089477539,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 510.03125,
+    "round": 4,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.6875,
+    "distance": 4.7269697189331055,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 512.34375,
+    "round": 4,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.09375,
+    "distance": 7.675003528594971,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 565.234375,
+    "round": 5,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.203125,
+    "distance": 72.9762954711914,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 567.890625,
+    "round": 5,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.421875,
+    "distance": 25.99521255493164,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 625.3125,
+    "round": 5,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.4375,
+    "distance": 27.954574584960938,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 629.4375,
+    "round": 5,
+    "victim": "Osprey",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.34375,
+    "distance": 28.401641845703125,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 638.15625,
+    "round": 5,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.21875,
+    "distance": 32.43861389160156,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 646.015625,
+    "round": 5,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Dagger",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.671875,
+    "distance": 30.46634292602539,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 665.609375,
+    "round": 5,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 665.609375,
+    "round": 5,
+    "victim": "Cinder",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 665.609375,
+    "round": 5,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 718.375,
+    "round": 6,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.265625,
+    "distance": 58.39676284790039,
+    "victim_mode": "seek",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 723.8125,
+    "round": 6,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.109375,
+    "distance": 7.679654598236084,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 733.65625,
+    "round": 6,
+    "victim": "Thorn",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": null,
+    "distance": 6.062826156616211,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 734.65625,
+    "round": 6,
+    "victim": "Cinder",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.5,
+    "distance": 15.29975700378418,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 735.28125,
+    "round": 6,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.046875,
+    "distance": 16.410415649414062,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 735.421875,
+    "round": 6,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.0,
+    "distance": 23.2379093170166,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 756.15625,
+    "round": 6,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Anvil",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.546875,
+    "distance": 15.821824073791504,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 784.09375,
+    "round": 6,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Anvil",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.390625,
+    "distance": 20.029603958129883,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 863.5,
+    "round": 7,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.71875,
+    "distance": 19.451398849487305,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 864.734375,
+    "round": 7,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.671875,
+    "distance": 13.603342056274414,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 866.03125,
+    "round": 7,
+    "victim": "Anvil",
+    "victim_side": "defend",
+    "killer": "Cinder",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 3.520112991333008,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 866.0625,
+    "round": 7,
+    "victim": "Cinder",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.90625,
+    "distance": 11.254395484924316,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 873.453125,
+    "round": 7,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.328125,
+    "distance": 22.039756774902344,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 883.5,
+    "round": 7,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.765625,
+    "distance": 21.20117950439453,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 940.703125,
+    "round": 8,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.203125,
+    "distance": 36.46879577636719,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 942.109375,
+    "round": 8,
+    "victim": "Jager",
+    "victim_side": "attack",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.15625,
+    "distance": 10.30833625793457,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 947.75,
+    "round": 8,
+    "victim": "Dagger",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.25,
+    "distance": 39.38105392456055,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 948.09375,
+    "round": 8,
+    "victim": "Cinder",
+    "victim_side": "attack",
+    "killer": "Osprey",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.390625,
+    "distance": 30.435503005981445,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 952.25,
+    "round": 8,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Thorn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.28125,
+    "distance": 11.165645599365234,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   }
+  ],
+  "stacking": [
+   {
+    "t": 99.546875,
+    "round": 1,
+    "pair": [
+     "Kestrel",
+     "Dagger"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 221.609375,
+    "round": 2,
+    "pair": [
+     "Cinder",
+     "Dagger"
+    ],
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 222.359375,
+    "round": 2,
+    "pair": [
+     "Kestrel",
+     "Cinder"
+    ],
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 230.734375,
+    "round": 2,
+    "pair": [
+     "Jager",
+     "Sable"
+    ],
+    "where": "A Site",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 271.421875,
+    "round": 2,
+    "pair": [
+     "Cinder",
+     "Sable"
+    ],
+    "where": "A Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 702.671875,
+    "round": 6,
+    "pair": [
+     "Kestrel",
+     "Sable"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 706.046875,
+    "round": 6,
+    "pair": [
+     "Kestrel",
+     "Cinder"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 725.171875,
+    "round": 6,
+    "pair": [
+     "Jager",
+     "Sable"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 825.046875,
+    "round": 7,
+    "pair": [
+     "Cinder",
+     "Sable"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 852.859375,
+    "round": 7,
+    "pair": [
+     "Osprey",
+     "Bastille"
+    ],
+    "where": "B Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 861.984375,
+    "round": 7,
+    "pair": [
+     "Cinder",
+     "Dagger"
+    ],
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 879.796875,
+    "round": 7,
+    "pair": [
+     "Thorn",
+     "Grail"
+    ],
+    "where": "A Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 921.109375,
+    "round": 8,
+    "pair": [
+     "Sable",
+     "Dagger"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 922.296875,
+    "round": 8,
+    "pair": [
+     "Jager",
+     "Cinder"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   }
+  ],
+  "rounds_detail": [
+   {
+    "round": 1,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 136.96875
+   },
+   {
+    "round": 2,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 76.515625
+   },
+   {
+    "round": 3,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 95.15625
+   },
+   {
+    "round": 4,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 73.71875
+   },
+   {
+    "round": 5,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 119.265625
+   },
+   {
+    "round": 6,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 84.484375
+   },
+   {
+    "round": 7,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 65.40625
+   },
+   {
+    "round": 8,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 34.75
+   }
+  ],
+  "plans_detail": [
+   {
+    "round": 1,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 2,
+    "plan": "execute",
+    "site": "A"
+   },
+   {
+    "round": 3,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 4,
+    "plan": "default",
+    "site": "B"
+   },
+   {
+    "round": 5,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 6,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 7,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 8,
+    "plan": "execute",
+    "site": "B"
+   }
+  ]
+ }
+}

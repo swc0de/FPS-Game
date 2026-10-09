@@ -144,6 +144,21 @@ class PanelTests(unittest.TestCase):
         self.assertFalse(ray_blocked(self.g, (0, -2, 1.9), (0, 2, 1.9)))
         self.assertTrue(ray_blocked(self.g, (0, -2, 2.6), (0, 2, 2.6)))
 
+    def test_intact_panels_are_drawn_from_the_shared_batch(self):
+        mgr, p = self.mgr, self.p
+        self.assertTrue(p.intact)
+        self.assertIsNone(p.mesh_np)
+        self.assertEqual(mgr.batch_np.getNumChildren(), 1)       # one material
+        mgr.explosion((0, -0.3, 1.5), 400.0, 1.2)
+        mgr.flush()
+        self.assertFalse(p.intact)
+        self.assertIsNotNone(p.mesh_np)
+        self.assertEqual(mgr.batch_np.getNumChildren(), 0)
+        mgr.reset()
+        self.assertTrue(p.intact)
+        self.assertIsNone(p.mesh_np)
+        self.assertEqual(mgr.batch_np.getNumChildren(), 1)
+
     def test_reset_restores(self):
         p = self.p
         self.mgr.explosion((0, -0.3, 1.5), 400.0, 1.2)

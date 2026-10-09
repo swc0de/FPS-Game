@@ -1,6 +1,7 @@
 """Application: window/engine configuration and the main loop."""
 from __future__ import annotations
 
+import os
 import sys
 
 from panda3d.core import loadPrcFileData
@@ -36,6 +37,9 @@ def configure_engine(settings: Settings, args) -> None:
         "default-near 0.05",
         "default-far 2000",
         "texture-anisotropic-degree 1",
+        # Panda's transform/render state cache is swept every frame; with ~500
+        # animated nodes a full sweep costs several ms, so sweep a fifth per frame
+        "garbage-collect-states-rate 0.2",
     ]
     if sys.platform == "darwin":
         # macOS only exposes modern OpenGL through a core profile
@@ -45,6 +49,8 @@ def configure_engine(settings: Settings, args) -> None:
         prc.append(f"clock-frame-rate {int(v['max_fps'])}")
     if getattr(args, "offscreen", False):
         prc.append("window-type offscreen")
+    # extra PRC lines for experiments, e.g. FPS_PRC="garbage-collect-states #f;pstats-gpu-timing #t"
+    prc += [line.strip() for line in os.environ.get("FPS_PRC", "").split(";") if line.strip()]
     loadPrcFileData("cold-sector", "\n".join(prc))
 
 
@@ -84,16 +90,25 @@ def main(argv=None) -> int:
     parser.add_argument("--bots", choices=["on", "off"], default="on",
                         help="off = practice against stand-ins that do not shoot back (Milestone 4)")
     parser.add_argument("--spectate", action="store_true", help="watch a 5v5 bot match")
+    parser.add_argument("--ai", default=None, metavar="SPEC",
+                        help="bot AI: legacy | v2 | per team, e.g. team0=v2,team1=legacy or attack=v2,defend=legacy "
+                             "(default from data/bots.json)")
+    parser.add_argument("--audit", action="store_true",
+                        help="fairness audit: report every bot read of enemy state it could not know (also BOT_AUDIT=1)")
     parser.add_argument("--seed", type=int, help="random seed for spawns, bot decisions and stand-in positions")
     parser.add_argument("--save-settings", action="store_true", help="persist CLI overrides to user/settings.json")
+    parser.add_argument("--benchmark", nargs="?", type=float, const=60.0, default=None, metavar="SECONDS",
+                        help="watch a bot match for SECONDS (default 60) at full speed and print FPS statistics")
     args = parser.parse_args(argv)
     if args.demo in ("routes",) and args.mode == "auto":
         args.mode = "sandbox"            # walking tests: no freeze time or round resets
     if args.demo in ("round", "m6"):
         args.bots = "off"                # the Milestone 4/6 demos work against stand-ins
-    if args.demo == "m6" and args.team is None:
+    if args.demo in ("m6", "m7") and args.team is None:
         args.team = "attack"
-    if args.demo == "bots":
+    if args.benchmark:
+        args.demo = "benchmark"
+    if args.demo in ("bots", "benchmark"):
         args.spectate = True
     if args.map is None:
         # the weapon demos are scripted against the shooting range

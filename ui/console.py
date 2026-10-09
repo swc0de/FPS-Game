@@ -8,7 +8,12 @@
     team <attack|defend>      switch side and restart
     bots <opponents> [mates]  roster size (bots or stand-ins), restarts the match
     difficulty <level>        bot difficulty: easy normal hard expert
-    botinfo                   what every bot is doing
+    ai <spec>                 bot AI: legacy | v2 | team0=v2,team1=legacy (restarts the match)
+    botinfo [name]            what every bot is doing / everything about one bot
+    overlay                   bot labels: action, scores, task, the fact behind it
+    hitboxes                  draw every soldier's hit capsules (head red, chest orange,
+                              stomach blue, arms green, legs violet)
+    belief [attack|defend|off]  radar: a v2 team's picture of where enemies can be
     spectate                  leave the match and watch ten bots play
     give <weapon>             e.g. give sr90 (r7 c9 mx5 s12 p9 frag smoke flash)
     god / noclip / kill       invulnerable / fly / suicide
@@ -145,11 +150,46 @@ class Console:
         if cmd == "difficulty" and args:
             d.set_difficulty(args[0])
             return f"bot difficulty: {d.difficulty}"
+        if cmd == "ai":
+            if not args:
+                return d.describe_ai()
+            try:
+                return "bot AI: " + d.set_ai(args[0])
+            except ValueError as e:
+                return str(e)
         if cmd == "spectate":
             d.set_spectate()
             return "watching a bot match (start the game again to play)"
         if cmd == "botinfo":
+            if args:
+                b = next((b for b in d.bots if b.name.lower() == args[0].lower()), None)
+                if b is None:
+                    return f"no bot called {args[0]}"
+                return "\n".join(b.brain.info()) if hasattr(b.brain, "info") else b.describe()
             return "\n".join(b.describe() for b in d.bots if b.active) or "no bots"
+        if cmd == "overlay":
+            if g.bot_overlay is None:
+                from ui.bot_overlay import BotOverlay
+                g.bot_overlay = BotOverlay(g)
+            return f"bot overlay {'on' if g.bot_overlay.toggle() else 'off'}"
+        if cmd == "hitboxes":
+            g.show_hitboxes = not getattr(g, "show_hitboxes", False)
+            bodies = [b.body for b in d.bots] + [getattr(d, "player_body", None)]
+            for body in bodies:
+                if body is not None and hasattr(body, "show_hitboxes"):
+                    body.show_hitboxes(g.show_hitboxes)
+            return f"hit boxes {'shown' if g.show_hitboxes else 'hidden'}"
+        if cmd == "belief":
+            if g.match_hud is None:
+                return "no radar"
+            side = args[0].lower() if args else ("off" if g.match_hud.radar.belief else d.player_agent.side or "attack")
+            if side not in ("attack", "defend", "off"):
+                return "belief attack | defend | off"
+            tb = d.brain_of(side) if side != "off" else None
+            if side != "off" and getattr(tb, "ai", "") != "v2":
+                return f"the {side} team is not playing v2"
+            g.match_hud.radar.set_belief(None if side == "off" else side)
+            return "belief radar off" if side == "off" else f"belief radar: what {side} knows (red = likely enemies)"
         if cmd == "god":
             d.god = not d.god
             return f"god {'on' if d.god else 'off'}"

@@ -83,6 +83,72 @@ def build_weapon_model(materials, key: str, parent: NodePath | None = None, name
     return WeaponModel(key, root, groups, anchors, d)
 
 
+_PROTOTYPES: dict[tuple, WeaponModel] = {}
+FAR_MATERIAL = {"bomb_charge": "metal_olive"}     # the one material of a "far" model (default gun metal)
+
+
+def _prototype(materials, key: str, flatten: str) -> WeaponModel:
+    pkey = (id(materials), key, flatten)
+    proto = _PROTOTYPES.get(pkey)
+    if proto is None:
+        proto = build_weapon_model(materials, key, None, f"proto:{key}")
+        if flatten == "all":
+            proto.root.flattenStrong()
+            proto.groups = {"body": proto.root}
+        elif flatten == "body" and proto.groups.get("body") is not None:
+            proto.groups["body"].flattenStrong()
+        elif flatten == "far":
+            # the far LOD (soldiers beyond 40 m and the shadow passes): one material, one Geom
+            from panda3d.core import RenderState
+            for np_ in [proto.root] + list(proto.root.findAllMatches("**")):
+                np_.setState(RenderState.makeEmpty())
+                if np_.node().isGeomNode():
+                    gn = np_.node()
+                    for i in range(gn.getNumGeoms()):
+                        gn.setGeomState(i, RenderState.makeEmpty())
+            materials.get(FAR_MATERIAL.get(key, "gun_metal")).apply(proto.root)
+            proto.root.flattenStrong()
+            proto.groups = {"body": proto.root}
+        _PROTOTYPES[pkey] = proto
+    return proto
+
+
+def prewarm(materials, keys) -> int:
+    """Build the prototypes of ``keys`` ((model key, flatten) pairs) now, at load, so that no
+    first use (a bot buying a new gun, a gadget deployed for the first time in round 6) builds
+    one inside the 64 Hz tick. Returns how many were built."""
+    n = len(_PROTOTYPES)
+    for key, flatten in keys:
+        _prototype(materials, key, flatten)
+    return len(_PROTOTYPES) - n
+
+
+def shared_weapon_model(materials, key: str, parent: NodePath, name: str | None = None,
+                        flatten: str = "all") -> WeaponModel:
+    """A copy of a model that is built only once per key.
+
+    Building a model bevels dozens of boxes in numpy: 50-300 ms for a rifle or
+    a gadget. Bots switch weapons, drop their gun when they die and deploy
+    gadgets in the middle of a round, and each of those used to rebuild the
+    model inside the 64 Hz tick (docs/baseline). The prototype is built and
+    flattened the first time; ``copyTo`` then shares its Geoms copy-on-write,
+    so a copy costs microseconds and renders exactly the same.
+
+    ``flatten``: "all" merges everything per material (third-person guns,
+    pickups); "body" merges only the static body group and keeps the other
+    groups (an LED) as separate nodes; "none" keeps the hierarchy; "far" is one Geom in one
+    material (a distant soldier's gun)."""
+    proto = _prototype(materials, key, flatten)
+    root = proto.root.copyTo(parent)
+    root.setName(name or f"weapon:{key}")
+    if flatten in ("all", "far"):
+        groups = {"body": root}
+    else:
+        groups = {g: root.find(g) for g in proto.groups}
+        groups = {g: np_ for g, np_ in groups.items() if not np_.isEmpty()}
+    return WeaponModel(key, root, groups, dict(proto.anchors), proto.meta)
+
+
 def segment_hpr(a: Point3, b: Point3) -> tuple[float, float]:
     """Heading/pitch that aim local +Y from a to b."""
     dx, dy, dz = b.x - a.x, b.y - a.y, b.z - a.z

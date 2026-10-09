@@ -45,6 +45,91 @@ def vertex_format() -> GeomVertexFormat:
     return _FORMAT
 
 
+_SKIN_FORMAT = None
+SKIN_FLOATS = FLOATS_PER_VERTEX + 8     # + 4 joint indices + 4 weights
+
+
+def skinned_vertex_format() -> GeomVertexFormat:
+    """The standard format plus four bone indices and four weights per vertex
+    (render/shaders/skinning.glsl). Indices are stored as floats: GLSL 3.30 reads
+    them as a plain vec4 on every driver."""
+    global _SKIN_FORMAT
+    if _SKIN_FORMAT is None:
+        arr = GeomVertexArrayFormat()
+        arr.addColumn(InternalName.getVertex(), 3, Geom.NTFloat32, Geom.CPoint)
+        arr.addColumn(InternalName.getNormal(), 3, Geom.NTFloat32, Geom.CNormal)
+        arr.addColumn(InternalName.getTangent(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getBinormal(), 3, Geom.NTFloat32, Geom.CVector)
+        arr.addColumn(InternalName.getTexcoord(), 2, Geom.NTFloat32, Geom.CTexcoord)
+        arr.addColumn(InternalName.make("skin_joints"), 4, Geom.NTFloat32, Geom.COther)
+        arr.addColumn(InternalName.make("skin_weights"), 4, Geom.NTFloat32, Geom.COther)
+        _SKIN_FORMAT = GeomVertexFormat.registerFormat(GeomVertexFormat(arr))
+    return _SKIN_FORMAT
+
+
+def transform_vertices(v: np.ndarray, mat) -> np.ndarray:
+    """Move (n, 14) vertices by a row-vector 4x4 matrix: positions, and the
+    normal, tangent and binormal re-normalised."""
+    v = np.array(v, np.float64)
+    m = np.asarray(mat, np.float64)
+    v[:, 0:3] = v[:, 0:3] @ m[:3, :3] + m[3, :3]
+    for a in (3, 6, 9):
+        d = v[:, a:a + 3] @ m[:3, :3]
+        v[:, a:a + 3] = d / np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
+    return v
+
+
+def skinned_node(verts: np.ndarray, joints: np.ndarray, weights: np.ndarray, indices: np.ndarray,
+                 name: str = "skinned") -> GeomNode:
+    """A GeomNode from bind-pose vertices (n, 14), up to four bones per vertex
+    (n, 4 indices and n, 4 weights; rows are normalised to sum to 1) and triangles."""
+    w = np.asarray(weights, np.float64)
+    w = w / np.maximum(w.sum(axis=1, keepdims=True), 1e-9)
+    out = np.zeros((len(verts), SKIN_FLOATS), np.float32)
+    out[:, :FLOATS_PER_VERTEX] = verts
+    out[:, FLOATS_PER_VERTEX:FLOATS_PER_VERTEX + 4] = joints
+    out[:, FLOATS_PER_VERTEX + 4:] = w
+    alli = np.asarray(indices, np.uint32)
+    vdata = GeomVertexData(name, skinned_vertex_format(), Geom.UHStatic)
+    vdata.uncleanSetNumRows(len(out))
+    memoryview(vdata.modifyArray(0)).cast("B")[:] = out.tobytes()
+    prim = GeomTriangles(Geom.UHStatic)
+    prim.setIndexType(Geom.NTUint32)
+    handle = prim.modifyVertices()
+    handle.uncleanSetNumRows(len(alli))
+    memoryview(handle).cast("B")[:] = alli.tobytes()
+    geom = Geom(vdata)
+    geom.addPrimitive(prim)
+    node = GeomNode(name)
+    node.addGeom(geom)
+    return node
+
+
+def build_skinned(pieces, name: str = "skinned") -> GeomNode | None:
+    """One rigidly skinned mesh from several builders, each on one bone.
+
+    pieces: [(MeshBuilder, bone index, 4x4 matrix or None)], the matrix
+    (row-vector convention) places the builder's vertices in the bind pose."""
+    verts, joints, indices, base = [], [], [], 0
+    for mb, bone, mat in pieces:
+        if not mb._verts:
+            continue
+        v = np.concatenate(mb._verts).astype(np.float64)
+        if mat is not None:
+            v = transform_vertices(v, mat)
+        verts.append(v)
+        joints.append(np.full(len(v), bone, np.float32))
+        indices.append(np.concatenate(mb._indices).astype(np.uint32) + np.uint32(base))
+        base += len(v)
+    if not verts:
+        return None
+    j = np.zeros((base, 4), np.float32)
+    j[:, 0] = np.concatenate(joints)
+    w = np.zeros((base, 4), np.float32)
+    w[:, 0] = 1.0
+    return skinned_node(np.concatenate(verts), j, w, np.concatenate(indices), name)
+
+
 def hpr_matrix(hpr) -> np.ndarray:
     """3x3 rotation (row-vector convention, like Panda) for heading/pitch/roll."""
     m = TransformState.makeHpr(tuple(hpr)).getMat()

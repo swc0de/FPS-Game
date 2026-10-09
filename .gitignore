@@ -13,6 +13,7 @@ assets/textures/*
 assets/hdri/*
 !assets/hdri/.gitkeep
 assets/cache/
+assets/characters/
 assets/CREDITS.md
 
 # Editors / OS

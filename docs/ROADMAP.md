@@ -8,7 +8,264 @@
 | 4 | Rounds, economy, buy menu, bomb objective | **done** |
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
-| 7 | HUD polish, audio, menus, performance pass | next |
+| 7 | HUD polish, audio, menus, performance pass | **done** |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, win-rate target not reached (awaiting your review) |
+| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** (awaiting your review) |
+
+## Milestone 9 - delivered
+
+Soldiers instead of mannequins (workstream B of [OVERHAUL_PLAN.md](OVERHAUL_PLAN.md); results and
+sheet: [docs/results_m9/](results_m9/README.md)).
+
+* **Skeleton and skinning** (`gameplay/skeleton.py`, `render/shaders/skinning.glsl`): 47 bones (spine,
+  neck, clavicles, twist bones, three finger chains, weapon and pack), forward kinematics by pointer
+  jumping in numpy, linear blend skinning with 4 weights and a `mat3x4` palette in every pass.
+* **Soldiers** (`characters/`): bodies, clothing and gear as distance fields meshed with surface nets and
+  simplified to three LODs (about 12k / 4k / 1.2k triangles); MakeHuman / MPFB2 (CC0) faces when fetched,
+  procedural faces offline; one draw call per soldier (plus the rifle), colours from a per-team palette, skin, fabric and
+  hard-surface shading (`render/shaders/character.*`). Variety from the bot's name and the match seed:
+  faces, five skin tones and more, three builds, men and women, hair and facial hair, helmet / cap /
+  balaclava, pouch layouts. Built once per soldier and cached.
+* **Animation** (`gameplay/body.py`, `data/character_anims.json`): gait, crouch, aim, lean, arm IK onto the
+  weapon; reload, switch, throw, knife, plant and defuse clips from the game's own events; a hit flinch
+  that does not depend on health; animation LOD; Bullet ragdolls on death (`gameplay/ragdoll.py`).
+* **Hit boxes** (`gameplay/hitboxes.py`): capsules on the bones fitted to the visible soldier (your
+  choice), a sphere on the visible head; console `hitboxes` draws them. Rays on capsules are
+  re-tested exactly (`engine/physics.py`): Bullet's own capsule test is up to 6 mm generous.
+* **The charge on the carrier's back** (B-8), shown only to attackers and omniscient spectators.
+* **Tools**: `tools/soldier_sheet.py` (sheet, statistics, silhouettes, 40 m team contrast),
+  `tools/fit_hitboxes.py`.
+
+### Milestone 9 results
+
+Full tables, sheet and statistics: [docs/results_m9/](results_m9/README.md).
+
+* **Draw calls per soldier**, the rifle included: 5 at LOD0, 2 far (budget 6 / 3; the mannequin had 10).
+* **Triangles**: 11.6-11.7k / 3.8-3.9k / 1.2k per full kit (budget about 12k / 4k / 1.2k).
+* **Variety**: 20 different faces per match roster, at least five skin tones, three builds, men and
+  women, two to three kinds of headgear and several gear layouts per team (tests).
+* **No candy-wrapper**: twisted 90 degrees, forearm and upper-arm rings keep 85-95 % of their area.
+* **Hit boxes**: fitted to the soldier, total exposed area 8-9 % below the mannequin's in every view;
+  by group from -25 % to +24 % as the game's ray tests see them (table in the results); head
+  centres within 1 cm. The B5 table you chose from projected the capsules and split overlapping
+  groups approximately (up to -28 % / +47 % there); the outline is the same.
+* **Animation CPU**: 1.48 ms per tick for 10 running soldiers near the camera (the mannequin 0.69 ms),
+  before the animation LOD.
+* **AI balance with the new hit boxes**: head-to-head subset 38 % (16/42, CI 25-53) against 50 %
+  (19/38, CI 35-65) for the same seeds with the Milestone 8 hit boxes, within the interval. Hits per
+  shot 50 % → 44 % and deaths while reloading 8.4 % → 12.7 % (legacy 20.3 %): smaller targets,
+  longer fights.
+
+### Milestone 9 known issues
+
+* The first match builds every soldier once (about 1.5-2 minutes on 4 cores).
+* Shots test the pose of the last physics step (at most one tick behind), as before; kept as you chose.
+* Animation costs about twice the mannequin's per soldier near the camera (above).
+* Hair lines and brows follow the head's vertex spacing (about 1 cm at LOD0): soft up close.
+* In the backlit 40 m shot the teams separate by hue more than by value.
+
+## Milestone 8 - delivered
+
+Bots that play by decisions, not better aim (`ai/v2/`, selectable per team with `--ai`; the Milestone 5
+brain is unchanged and still the default until you confirm). Plan, measurements and running log:
+[OVERHAUL_PLAN.md](OVERHAUL_PLAN.md).
+
+* **What a bot knows** (`ai/v2/knowledge.py`, `comms.py`, `belief.py`): facts with a source and a
+  precision - sight (exact), sound (fuzzier with distance), damage from an unseen shooter (a direction
+  only), radio callouts (0.3-1.2 s late, snapped to the area and fuzzed, batched into lines such as
+  "Two B Long, one tagged"; "tagged" only from the speaker's own hit markers), the radar (a glance every
+  few seconds, never mid-fight), pings, the kill feed, the defuse sound. A dying bot gets its last call
+  out. Each team keeps a **possibility field** over the tactical points: earliest arrival times from the
+  enemy spawn, cleared by what the team sees (one bot's view per tick), refilled from the sides at running
+  speed, tracks for enemies seen or heard recently, and a danger weight per point with priors learned from
+  earlier rounds.
+* **Fairness audit** (`ai/audit.py`, `--audit`): every read of an enemy's position, head, velocity, the
+  hidden charge carrier or an unseen gadget by AI code is checked against what the reader's team can see.
+  v2: 0 violations in every run; the legacy brain's leaks are listed by call site.
+* **Tactical map** (`ai/v2/tactical_map.py`): about 1,800 points on the compound with standing and crouched
+  visibility (bitsets), cover in 16 directions, a walking graph, spawn arrival times, and per site the
+  entries, hold spots (scored by how much of the entries they see and how exposed they are, off-angles,
+  crouch spots), crossfire pairs and forward information spots. Built once (~15 s), cached; breakable walls
+  update it.
+* **The brain** (`ai/v2/brain.py`): utility-scored actions (fight, fall back, reload, trade, investigate,
+  reposition, avoid, throw, the team's task) with commitment and hysteresis; controllers for movement
+  (spacing, doorways, walking near likely enemies), aim (likely-point pre-aim from the field), shooting
+  (bursts, counter-strafe, jiggle between bursts at range, break off stale duels) and peeking; own utility
+  (pop-flash a corner and swing, frag a held spot); budgeted A* (`ai/v2/pathing.py`, both portal scorings,
+  cached chains).
+* **Team strategy** (`ai/v2/strategy.py`): attack plans default / execute / split / fake / contact / rush with
+  an anti-repetition decay and weights that follow results; roles entry, trade, support, lurker, AWPer;
+  defence setups 2-1-2 / stack / aggro / retake, crossfire holds, rotations on credible information, anchors
+  that fall back, spots that died twice used less; post-plant hiding and a synchronised swing on the defuse;
+  retakes with utility.
+* **Humanisation and difficulty** (`ai/v2/humanize.py`, `personality.py`): lognormal reactions around the
+  profile's mean, late reactions to a second enemy, flick side, stress, per-difficulty mistakes, stable
+  per-bot traits.
+* **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
+  head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.
+
+### Milestone 8 results
+
+Full tables and files: [docs/results/](results/README.md). Measured after the performance pass
+you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
+
+* **Against legacy: 42 % of rounds** (32 of 77, 95 % CI 31-53; four full matches with sides
+  swapped, same aim and reaction numbers). The target was 70 %. Before the performance pass the
+  same four seeds gave 43 % (CI 33-54). Attack 21 of 36, defence 11 of 41.
+* **Behaviour** (v2 against v2, same seeds as the baseline):
+  * deaths while reloading 20 % → 8 %;
+  * stacking 3.4 → 1.4 incidents per round (target 0.1);
+  * no attack plan above 29 % of rounds;
+  * on the wrong side of legacy in the final matches: trades 13.6 % → 11.9 % of deaths (16.1 %
+    before the pass) and unseen deaths 8.4 % → 9.2 % (8.0 % before the pass). Re-runs of the same
+    two seeds gave 15.0-15.2 % and 8.1-8.4 %, so single matches vary by about as much as the gap
+    (decision 2).
+* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 10,000
+  times a match.
+* **Performance**:
+  * live tick on the final code 4.42 ms mean, 7.31 ms p95; the legacy control in the same session
+    3.15 / 5.55 ms (1.40 × / 1.32 ×). An earlier session measured 3.95 / 6.52 against 2.91 / 4.95.
+    So within 1.3 × the Phase 0 numbers in one session and over in the other, and over 1.3 × the
+    same-session legacy in both (budget 1.3 ×);
+  * AI p99 3.90 ms (3.51 in the earlier session; rule ≤ 4 ms: met). The AI's own cost fell
+    6-13 %;
+  * all gun, grenade, gadget and charge models are built at match load: their first use cost up
+    to 264 ms in one tick, for both brains.
+
+### Milestone 8 decisions to confirm
+
+1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
+   the Milestone 5 bots 70 % of the time; it loses most defence rounds. Options:
+   * a) accept it and make v2 the default now (legacy stays behind `--ai legacy`);
+   * b) keep legacy as the default and spend another tuning round on defence (retake and
+     aggressive setups lose most; anchors give up sites without a trade);
+   * c) both: v2 default now, defence tuning as a follow-up.
+   I recommend c): the measured gap is on one side, and v2 is better than legacy on most
+   behaviour metrics (reloading deaths, deaths to an unseen enemy, exposure, hits per shot,
+   utility). It is worse on clumping.
+2. **The path search budget.** The performance pass halved it (260 → 140 node expansions per
+   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. The
+   final v2-against-v2 matches traded less (16.1 % → 11.9 %) and died unseen more (8.0 % →
+   9.2 %) than before the pass; the head-to-head is unchanged at 42 %. Measured since, on the
+   same two seeds:
+   * at 260 on the final code: trades 15.2 %, unseen deaths 8.4 %, stuck 2 + 0, and the AI p99
+     4.15 ms (over the rule you chose; AI mean 1.42 → 1.46 ms);
+   * at 140 with Milestone 9's hit boxes (PR B), the only other change: trades 15.0 %, unseen
+     deaths 8.1 %.
+   So the budget does not explain the drop: one 24-round match differs from the next by about as
+   much. Options:
+   * a) keep 140 (spike rule met);
+   * b) go back to 260 (over the spike rule, no measurable gain);
+   * c) keep 140 and make trading cheaper anyway (a trade route from the path cache, not a new
+     search), as part of the defence tuning round.
+   I recommend a).
+3. **The tick budget.** The spike rule you chose is met, but the whole tick is about 1.32-1.40 ×
+   legacy's (budget 1.3 ×). Going further needs a structural change (batching the per-bot
+   queries across the team), not more trimming. Options: a) accept about 1.35-1.4 × for v2 (game
+   logic stays under a third of the 15.6 ms tick on this slow VM); b) the structural change as a
+   follow-up. I recommend a).
+4. **How the head-to-head was run.** Full matches through `--demo bots` with
+   `BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64` (same 64 Hz game logic, no drawing), four seeds instead
+   of the planned three seeds × two starting sides, because a full match is about 22 rounds.
+5. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
+
+### Milestone 8 known issues
+
+* **Win rate 42 %**, defence 27 % (above).
+* **Trades and unseen deaths** on the wrong side of legacy in the final matches, within the
+  spread between single matches (decision 2).
+* **Stacking**: 1.38 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move
+  as a group.
+* **Stuck**: one bot in 48 rounds (target 0; legacy had 2). Path-follower micro-stucks rose from
+  about 80 to 290-350 a match: bots in groups block each other for under a second.
+* **Performance**: about 1.32-1.40 × legacy's tick measured in the same session (budget 1.3 ×);
+  the AI p99 rule is met by a small margin. Timings on this VM vary by about ±10 % between
+  sessions.
+
+## Milestone 7 - delivered
+
+* **Main menu** (`ui/main_menu.py`): title over a slow camera tour of the
+  map's shots, Play (side, difficulty, 0-4 teammates, 1-5 opponents), Watch
+  bot match, How to play (lists your current binds), Settings, Quit. The
+  pause menu has "Quit to main menu", which ends the match
+  (`Director.stop`) and brings the menu back; any setup can be started
+  again without restarting the game.
+* **Settings** (`ui/menus.py`):
+  * a CONTROLS tab: every action in two columns, click and press a key or
+    mouse button; a key that is in use moves to the old key of the changed
+    action; Esc, F1, F3, F10, F12, V and the console key are reserved;
+  * GAMEPLAY: crosshair options with a live preview, HUD options (radar,
+    rotate, zoom, compass, first-person spectating);
+  * AUDIO: master, effects, ambience, music and interface volumes;
+  * DISPLAY: the debug overlay default (off / FPS / full); a Defaults button
+    per tab.
+* **HUD**:
+  * radar (`ui/radar.py`): the image is rasterised from the navmesh once per
+    map (floors shaded by height, walls, breakable panels, sites, tunnels)
+    and shown through a texture transform centred on the viewed player;
+    markers for teammates, spotted enemies (pings and the team's sightings
+    of the last 3 s), the bomb and the sites;
+  * a compass strip with site, ping and bomb markers;
+  * damage direction arcs (`ui/hud.py`), health and armour bars;
+  * the FPS counter moved to the top right (F1 cycles off / FPS / full).
+* **First-person spectating** (option): the camera sits at the bot's eyes and
+  its head is collapsed in the skinning palette.
+* **Audio** (`audio/system.py`, `audio/synth.py`):
+  * occlusion: a ray from the listener; blocked sounds play a low-passed
+    "_muffled" recording at 60 % volume (Panda's OpenAL has no live
+    filters, so the variants are synthesised offline like everything else);
+  * gunshots beyond 45 m play a "_far" recording (dull boom and echo);
+    shots under a roof add a room or hall tail;
+  * ambience loops (wind, room tone, tunnel rumble) crossfade by the
+    listener's surroundings (a ray up finds the roof), plus random distant
+    creaks, birds and clanks outdoors;
+  * music: a menu loop and stings for round start, win, loss and the plant;
+  * 270 synthesised files, about 7 s to build on the first start (cached).
+* **Performance**:
+  * character bodies are GPU-skinned: one mesh per material with a 24-bone
+    rigid palette (`render/shaders/skinning.glsl`) instead of a node per
+    part;
+  * static props, weapon models and gadget bodies are flattened, and intact
+    destructible panels are drawn from one batch per material; a panel
+    gets its own mesh only once it is damaged;
+  * about 506 -> 190 geometry nodes in a full 5v5 match;
+  * HUD text only rebuilds when it changes; the render-state cache is swept
+    at a fifth of the default rate;
+  * `--benchmark [SECONDS]` reports average FPS, 1 % / 0.1 % lows,
+    frame-time percentiles and the game-logic time, and writes
+    `user/benchmark.json`.
+* `--demo m7` tour with screenshots and an ambience report; 13 new unit
+  tests (radar, compass and arc maths, audio rules, synthesis), 4 more for
+  rebinding and destruction batching.
+
+### Milestone 7 decisions to confirm
+
+1. **A square radar that rotates with you**, 28 m from the centre to the
+   edge (zoom changes it). CS2 uses a rotating radar by default, too.
+2. **Enemies on the radar only when spotted** by a teammate, a camera, a
+   drone or a gadget, for 3 s (pings last their own time). Your own sight
+   doesn't add markers: you can see them anyway.
+3. **First-person spectating is off by default.** The bots' third-person
+   pose holds the gun lower than a real viewmodel, so the over-the-shoulder
+   camera reads better.
+4. **Music only in the menu and as short stings.** No music during rounds,
+   so footsteps stay audible.
+5. **The audio is still fully synthesised** (no third-party sounds). A CC0
+   pack could replace the gunshots and footsteps later.
+
+### Milestone 7 known issues
+
+* I could not listen to any of the audio: the container has no sound
+  device. I checked it with OpenAL's null device (every path plays without
+  errors), unit tests on the signals, and the logged mixer state. Levels
+  and the ambience mix probably need tuning by ear.
+* All performance numbers come from software OpenGL in a headless
+  container (2-3 FPS), so they don't say anything about real GPUs. The
+  draw-node count and the CPU-side profile are the reliable parts: about
+  5-6 ms per 64 Hz tick for a 10-bot match on this slow CPU, dominated by bot
+  AI, character movement and Bullet. Please run `--benchmark` on your
+  machine.
+* The radar image is static: holes blown in walls don't show on it.
 
 ## Milestone 6 - delivered
 

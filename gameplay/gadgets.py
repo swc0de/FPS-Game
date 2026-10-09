@@ -73,7 +73,7 @@ class Deployable:
     blocks_explosions = 0.0     # destroyed by explosions within this radius (0 = only by its hit box)
 
     def __init__(self, tac, owner, side: str, pos, hpr=(0.0, 0.0, 0.0)):
-        from weapons.models import build_weapon_model
+        from weapons.models import shared_weapon_model
         self.tac = tac
         self.game = tac.game
         self.owner = owner
@@ -87,7 +87,8 @@ class Deployable:
         self.root = self.game.render.attachNewNode(f"gadget:{self.kind}")
         self.root.setPos(self.pos)
         self.root.setHpr(*self.hpr)
-        model = build_weapon_model(self.game.materials, self.model, self.root, self.kind)
+        # one draw per material for the body; the LED stays a separate node
+        model = shared_weapon_model(self.game.materials, self.model, self.root, self.kind, flatten="body")
         self.led = model.groups.get("led")
         self.damageable: Damageable | None = None
         self.bodies = []

@@ -52,6 +52,15 @@ class Intent:
     lean: float = 0.0               # -1 left .. +1 right (peeking)
 
 
+def _reload_duration(ws) -> float:
+    """How long the reload clip lasts: the weapon's own reload time (shotguns: the shells)."""
+    d = ws.d
+    if d.fire_mode == "pump":
+        shells = max(d.magazine - ws.ammo, 1)
+        return float(d.raw.get("reload_start_time", 0.35)) + shells * float(d.raw.get("reload_shell_time", 0.5))
+    return d.reload_empty_time if ws.reload_kind == "empty" else d.reload_time
+
+
 class BotWeapons:
     """Inventory + weapon handling for a bot (the player's PlayerWeapons without input/viewmodel)."""
 
@@ -81,6 +90,7 @@ class BotWeapons:
         now = self.game.loop.time
         ws = self.inv.current()
         body = self.bot.body
+        body.event("switch")
         if ws is not None:
             ws.deploy(now)
             body.set_weapon(ws.d.model, ws.d.cls)
@@ -120,6 +130,8 @@ class BotWeapons:
         elif ws.wants_shot(now, intent.trigger, intent.pressed):
             self._fire(ws, now)
         for ev in ws.pop_events():
+            if ev.kind == "reload_start":
+                self.bot.body.event("reload", duration=_reload_duration(ws))
             if ev.kind == "reload_start" and ws.d.cls != "shotgun":
                 kind = "empty" if ev.data.get("kind") == "empty" else "tactical"
                 self.game.audio.play_at(f"reload_{ws.d.key}_{kind}", self.bot.eye(), 0.55)
@@ -145,6 +157,8 @@ class BotWeapons:
             d = Vec3(*angles_to_dir(yaw, pitch))
             first = first or d
             res = game.ballistics.fire(eye, d, ws.d, attacker=bot)
+            if res.damage and hasattr(bot.brain, "on_hits"):
+                bot.brain.on_hits(res.damage)
             for imp in res.impacts[:3]:
                 game.effects.impact(imp.pos, imp.normal, imp.surface, d, imp.exit)
             if (tracer and i == 0) or (ws.d.pellets > 1 and i < 2 and bot.rng.random() < 0.3):
@@ -161,6 +175,7 @@ class BotWeapons:
             return
         self.melee_next = now + 60.0 / ws.d.rpm
         bot = self.bot
+        bot.body.event("knife")
         eye = bot.eye()
         d = Vec3(*angles_to_dir(bot.aim.yaw, bot.aim.pitch))
         rng = float(ws.d.raw.get("melee_range", 1.6))
@@ -201,14 +216,19 @@ class BotWeapons:
         start = bot.eye() + Vec3(*angles_to_dir(bot.aim.yaw, 0)) * 0.3 - Vec3(0, 0, 0.1)
         self.game.spawn_grenade(Grenade(self.game, g, start, Vec3(velocity), bot))
         self.game.audio.play_at("throw", start, 0.5)
+        bot.body.event("throw")
         self.inv.slot = "melee"
         self.select(self.inv.best_slot(), force=True)
         return True
 
 
 class BotAgent(Participant):
-    def __init__(self, game, name: str, side: str, difficulty: str, nav, seed: int | None = None):
+    def __init__(self, game, name: str, side: str, difficulty: str, nav, seed: int | None = None,
+                 appearance_seed: int | None = None):
+        """``appearance_seed``: the procedural soldier for this name (characters/); None = the
+        Milestone 5 mannequin."""
         super().__init__(name)
+        self.appearance_seed = appearance_seed
         cfg = load_bot_config()
         self.game = game
         self.nav = nav
@@ -234,13 +254,15 @@ class BotAgent(Participant):
         self.last_fired = -10.0
         self.shots_fired = 0
         self.brain = None                 # set by the director (ai/brain.py)
+        self._bomb_clip: set[str] = set()
         self.active = False               # in the world this round
 
     def _make_body(self, side: str) -> CharacterBody:
         from gameplay.match import load_rules
         uniform = load_rules()["teams"][side].get("uniform", "uniform_tan")
         helmet = "metal_tan" if side == "attack" else "metal_olive"
-        return CharacterBody(self.game, self, uniform, helmet, name=f"bot:{self.name}")
+        character = (self.name, self.appearance_seed, side) if self.appearance_seed is not None else None
+        return CharacterBody(self.game, self, uniform, helmet, name=f"bot:{self.name}", character=character)
 
     def restyle(self) -> None:
         """New uniform after switching sides at halftime."""
@@ -293,6 +315,7 @@ class BotAgent(Participant):
         self.perception.reset()
         self.intent = Intent()
         self.scoped = False
+        self._bomb_clip = set()
         self.active = True
         if self.brain is not None:
             self.brain.reset()
@@ -315,6 +338,7 @@ class BotAgent(Participant):
             return
         if self.brain is not None:
             self.brain.update(dt, now, locked)
+            self._bomb_clips()
         it = self.intent
         if locked:
             it.wish = Vec3(0, 0, 0)
@@ -340,6 +364,19 @@ class BotAgent(Participant):
                           lean=self.lean.amount)
         self._auto_pickup()
 
+    def _bomb_clips(self) -> None:
+        """Planting and defusing poses while the brain's own plant or defuse timer runs (both
+        brains keep one); visual and hit boxes only, the timers decide nothing here."""
+        for clip, busy in (("plant", getattr(self.brain, "plant_t", 0.0) > 0.0),
+                           ("defuse", getattr(self.brain, "defuse_t", 0.0) > 0.0)):
+            if busy != (clip in self._bomb_clip):
+                if busy:
+                    self.body.event(clip)
+                    self._bomb_clip.add(clip)
+                else:
+                    self.body.stop(clip)
+                    self._bomb_clip.discard(clip)
+
     def frame_update(self, dt: float, alpha: float) -> None:
         if not self.active:
             return
@@ -357,6 +394,8 @@ class BotAgent(Participant):
 
     def on_hit(self, res: DamageResult, pos, direction) -> None:
         self.body.on_hit()
+        if not res.killed:
+            self.body.event("hit", direction=Vec3(*direction) if direction is not None else None)
         if res.killed:
             self.body.die(Vec3(*direction) if direction is not None else None)
             self._drop_on_death()

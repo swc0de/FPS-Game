@@ -278,6 +278,7 @@ class Level:
     def _weapon_model(self, e: dict) -> None:
         from weapons.models import build_weapon_model
         m = build_weapon_model(self.materials, e["model"], self.root)
+        m.root.flattenStrong()
         m.root.setPos(*e["pos"])
         m.root.setHpr(e.get("heading", 0.0), *e.get("pr", (0.0, 0.0)))
         m.root.setScale(e.get("scale", 1.0))

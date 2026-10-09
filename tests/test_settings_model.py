@@ -51,6 +51,35 @@ class SettingsModelTests(unittest.TestCase):
         self.m.step(opt("texture_size"), 1)
         self.assertEqual(self.m.restart_pending(), ["Texture quality"])
 
+    def test_rebinding_swaps_conflicts(self):
+        binds = self.m.pending["input"]["binds"]
+        self.assertEqual(binds["lean_right"], "e")
+        swapped = self.m.bind("reload", "e")
+        self.assertEqual(swapped, "lean_right")
+        self.assertEqual(binds["reload"], "e")
+        self.assertEqual(binds["lean_right"], "r")
+        self.assertEqual(self.m.text(opt("reload")), "E")
+        self.assertIsNone(self.m.bind("reload", "f5"))
+        self.assertTrue(self.m.dirty())
+
+    def test_every_action_has_a_controls_row(self):
+        from engine.settings import DEFAULT_KEYBINDS
+        self.assertEqual({o.key for o in TABS["CONTROLS"]}, set(DEFAULT_KEYBINDS))
+        self.assertEqual(len(set(DEFAULT_KEYBINDS.values())), len(DEFAULT_KEYBINDS))   # no default conflicts
+
+    def test_reset_tab(self):
+        self.m.bind("jump", "f6")
+        self.m.set(opt("music"), 0.1)
+        self.m.set(opt("minimap"), False)
+        self.m.reset_tab("CONTROLS")
+        self.assertEqual(self.m.pending["input"]["binds"]["jump"], "space")
+        self.assertEqual(self.m.get(opt("music")), 0.1)
+        self.m.reset_tab("AUDIO")
+        self.assertEqual(self.m.get(opt("music")), 0.5)
+        self.assertFalse(self.m.get(opt("minimap")))
+        self.m.reset_tab("GAMEPLAY")
+        self.assertTrue(self.m.get(opt("minimap")))
+
     def test_fov_text_shows_horizontal(self):
         self.assertIn("h)", self.m.text(opt("fov")))
 

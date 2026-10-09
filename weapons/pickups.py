@@ -12,7 +12,7 @@ from panda3d.bullet import BulletBoxShape, BulletRigidBodyNode
 from panda3d.core import BitMask32, NodePath, Point3, TextNode, Vec3
 
 from engine.physics import GROUP_DEBRIS
-from weapons.models import build_weapon_model
+from weapons.models import shared_weapon_model
 
 GROUP_PICKUP = BitMask32.bit(6)
 REACH = 2.3
@@ -39,7 +39,7 @@ class Pickup:
         elif kind == "grenade":
             model_key = game.weapon_db.grenades[item].model
         if model_key:
-            m = build_weapon_model(game.materials, model_key, self.visual)
+            m = shared_weapon_model(game.materials, model_key, self.visual)
             lo, hi = m.root.getTightBounds()
             ext = (hi - lo) * 0.5
             center = (hi + lo) * 0.5
