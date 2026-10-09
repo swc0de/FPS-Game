@@ -976,8 +976,29 @@ be added later behind the same event interface if you want.
     with the Milestone 8 hit boxes 50 %, CI 35-65); hits per shot 50 → 44 %, deaths while reloading
     8.4 → 12.7 % (smaller targets). `docs/results_m9/`.
 
-**In progress**
-* PR B.
+* Merged: PR A (swc0de/FPS-Game#2), PR B (swc0de/FPS-Game#3), and both with Milestone 7 into
+  `main` (swc0de/FPS-Game#1), as you chose ("merge now, then finish").
+
+* Follow-up after the merge (results in [docs/results/](results/README.md), "The follow-up"):
+  * Stacking: 60 incidents traced to two bots sent to one goal, lanes run side by side and fights
+    from one spot (the counter-strafe cancelled the one-tick step apart). Separation now bends
+    moving and fighting bots too, a whole step at a time (0.6 was eaten by friction); a goal a
+    teammate stands on counts as reached 1.8 m short. 1.79 → 0 per round at that step; 0.15 on
+    the final code (7 in 48 rounds, target 0.1).
+  * Stuck: three reports replayed from their seeds. A breach with a crate against its far side
+    linked to floor round the crate (shared navmesh fix, test); v2 bots walking in their own wire
+    made 0.05 m/s (they run now). 0 + 0 since.
+  * Diagnostics on the way (not committed): legacy with its leaks closed scored the same against
+    v2 (40 %), so the leaks are not the gap; v2 without any human error scored 55 % (CI 45-65)
+    against 41 %. You chose equal mechanics (no second-enemy reaction penalty, no flick error)
+    and lighter mistakes (Normal at the old Expert rates): 39 % → 48 %.
+  * Defence, from the 67 opening deaths of v2 defenders: defenders hold their angle; retakes go
+    in together and defuse only when safe or forced; hold spots scored by their best entry, not
+    the sum over every entry (the top spots at A saw and were seen from all three); no gadget
+    placing 3 s into the live phase. Head-to-head 46-48 % across these steps.
+  * Final: head-to-head 46 % (39/85, CI 36-56; attack 69 %, defence 23 %), kept as is by your
+    decision. Deaths while reloading 6.5 %, unseen deaths 5.2 %, trades 17.7 %, stuck 0, largest
+    plan 33 %, audit 0. Tick timing being measured.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

@@ -12,6 +12,55 @@
 | 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up below; win rate 46 % against legacy, kept as is (your decision) |
 | 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** |
 
+## Follow-up to Milestones 8 and 9 - delivered
+
+After the merge of Milestones 7-9 into `main` (swc0de/FPS-Game#1), the open items of the overhaul
+brief, settled the way you decided them: stacking and stuck bots, the human errors (equal
+mechanics, lighter mistakes) and a round on defence. The win rate is kept where it landed ("keep
+it as is"). Legacy stays the default brain (A-6, "v2 becomes the default later"); `--ai v2`
+selects the new one. Full tables: [docs/results/](results/README.md).
+
+* **Stacking**: the step apart from teammates closer than 1.1 m now bends the way of moving and
+  fighting bots too, a whole step at a time (sideways when straight apart is blocked); a goal a
+  teammate stands on counts as reached 1.8 m short.
+* **Stuck bots**: a hole in a breakable wall links only with floor right at it on both sides and
+  nothing in the way through it (a crate against the far side routed both brains into it;
+  `ai/navlinks.py`, shared); v2 bots run in razor wire (walking at 0.32 × lost all speed to
+  friction).
+* **Equal mechanics** (your choice): no reaction penalty for a second enemy, no flick error. v2
+  aims and reacts exactly as the Milestone 5 profile; only decisions differ.
+* **Lighter mistakes** (your choice): Normal at the old Expert rates, Hard and Expert lower,
+  Easy unchanged.
+* **Defence**: defenders hold their angle; retakes go in together and defuse only when safe or
+  forced; hold spots watch one entry well instead of all of them (tactical map version 2); no
+  gadget placing once the round is live.
+
+### Follow-up results
+
+* **Against legacy: 46 %** (39 of 85 rounds, CI 36-56; attack 29/42, defence 10/43), from 42 %
+  as merged. The 70 % target is not met; kept as is, your decision.
+* **Behaviour** (v2 against v2, seeds 1 and 2, the means; `main` before → final, legacy):
+  * deaths while reloading 12.7 → 6.5 % (legacy 20.3 %);
+  * deaths traded within 3 s 15.9 → 17.7 % (legacy 13.6 %);
+  * unseen deaths 5.0 → 5.2 % (legacy 8.4 %);
+  * stacking 1.79 → 0.15 incidents per round (target 0.1; legacy 3.38): 7 in 48 rounds, seed 1
+    at 0.08, seed 2 at 0.21. The same matches measured 0 at the equal-mechanics step with the
+    same spacing code;
+  * stuck bots 0 + 0 (target 0), micro-stucks 407 → 216 a match;
+  * largest attack plan share 33 % (limit 40 %).
+* **Fairness audit**: 0 v2 violations in every run (85 head-to-head rounds, 48 v2-against-v2
+  rounds); legacy read hidden state 36,856 times in the four head-to-head matches.
+* **Performance**: being measured on the final code.
+
+### Follow-up known issues
+
+* **Win rate 46 %**, defence 23 %: legacy gets the first kill in about three of four rounds v2
+  defends, and v2 rarely wins one back without the defuse.
+* **Stacking** 0.15 per round against the 0.1 target (7 incidents in 48 rounds; 0 at an
+  earlier step of the same matches).
+* Path-follower micro-stucks (216 a match, legacy 82) include the intentional waits at corners
+  and doors; bots in groups still block each other for under a second.
+
 ## Milestone 9 - delivered
 
 Soldiers instead of mannequins (workstream B of [OVERHAUL_PLAN.md](OVERHAUL_PLAN.md); results and
