@@ -56,7 +56,7 @@ from panda3d.core import Point3, Vec3
 
 from ai.aim import angles_to, wrap180
 from ai.brain import Task, ThrowOrder, solve_throw, BREACH_TAGS
-from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, teammate_in_line, EYE, RANGE_LIMIT
+from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, stable_bit, teammate_in_line, EYE, RANGE_LIMIT
 from ai.v2.humanize import Humanizer
 from ai.v2.knowledge import BotKnowledge, Fact, fact_point
 from ai.v2.pathing import FollowerV2, PENDING
@@ -772,17 +772,24 @@ class BrainV2:
         if now < self.frozen_until:
             return                                   # panicked for a moment
         self.action.run(dt, now)
-        # standing on a teammate: checked 16 times a second, and the step apart held in between
-        # (it only lasts the tick it is set in, so a step set every fourth tick moved a quarter as far)
+        # closer than 1.1 m to a teammate: checked 16 times a second, and the way apart held in
+        # between (a step set every fourth tick and kept for one tick moved a quarter as far).
+        # Standing still it is a walking step apart; moving or fighting, it bends the way, so
+        # two bots on one lane, at one goal or shooting from one spot spread out
         self._space_n += 1
-        if it.wish.lengthSquared() < 0.01:
-            if self._space_n % 4 == 0:
-                self._space_step = self._personal_space()
-            if self._space_step is not None:
-                it.wish = Vec3(self._space_step)
+        if self._space_n % 4 == 0:
+            self._space_step = self._personal_space()
+        step = self._space_step
+        if step is not None:
+            w = it.wish
+            n = w.length()
+            if n < 0.1:
+                it.wish = step * 0.6
                 it.walk = True
-        else:
-            self._space_step = None
+            else:
+                v = w / n + step * 1.2
+                v.normalize()
+                it.wish = v * n
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -1463,10 +1470,12 @@ class BrainV2:
             it.wish = -bot.forward() * 0.8
 
     def _personal_space(self) -> Vec3 | None:
-        """Standing still on top of a teammate: the step apart (one grenade or spray gets both),
+        """Within 1.1 m of teammates (one grenade or spray gets both): the unit direction apart
+        (weighted by how close each is), sideways along a wall when straight apart is blocked;
         or None."""
         bot = self.bot
         p = bot.position()
+        sx = sy = 0.0
         for m in self.team.mates_of(bot):
             q = m.position()
             dx, dy = p.x - q.x, p.y - q.y
@@ -1474,9 +1483,17 @@ class BrainV2:
             if d < 1.1 and abs(p.z - q.z) < 1.2:
                 if d < 1e-3:
                     dx, dy, d = (1.0, 0.0, 1.0) if bot.name > m.name else (-1.0, 0.0, 1.0)
-                if bot.nav.walkable_line(p, (p.x + dx / d * 0.8, p.y + dy / d * 0.8, p.z)):
-                    return Vec3(dx / d, dy / d, 0) * 0.6
-                return None
+                w = 1.2 - d
+                sx += dx / d * w
+                sy += dy / d * w
+        n = math.hypot(sx, sy)
+        if n < 1e-6:
+            return None
+        sx, sy = sx / n, sy / n
+        side = 1.0 if stable_bit(bot.name) else -1.0
+        for ax, ay in ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side)):
+            if bot.nav.walkable_line(p, (p.x + ax * 0.8, p.y + ay * 0.8, p.z)):
+                return Vec3(ax, ay, 0)
         return None
 
     def _shoot_gadget(self, dt: float, now: float) -> None:

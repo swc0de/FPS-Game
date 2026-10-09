@@ -77,6 +77,11 @@ class Mover:
         bot = self.bot
         pos = bot.position()
         f = b.follower
+        if self._goal_taken(goal, pos):
+            if f.active:
+                f.stop()
+            self.goal_key = None                 # walk the rest once the teammate moves off it
+            return True
         if self.goal_key != key or (f.failed and not f.active):
             path = self._plan(pos, goal, via)
             if path == PENDING:
@@ -104,6 +109,22 @@ class Mover:
         if look is None:
             look = b.aim_policy.travel_point(pos, f)
         b.look(look, dt, 0.6)
+        return False
+
+    def _goal_taken(self, goal: Point3, pos: Point3) -> bool:
+        """A teammate already stands on the goal: within 1.8 m of it is there. Shoving onto
+        the same spot stacks two bots (one grenade or spray gets both) and blocks them both.
+        Not for the objective (the charge, a pickup)."""
+        if (goal.x - pos.x) ** 2 + (goal.y - pos.y) ** 2 > 1.8 * 1.8:
+            return False
+        b = self.b
+        if b.task.kind in ("plant", "defuse", "pickup"):
+            return False
+        for m in b.team.mates_of(b.bot):
+            q = m.position()
+            if (q.x - goal.x) ** 2 + (q.y - goal.y) ** 2 < 0.9 * 0.9 and abs(q.z - goal.z) < 1.5 \
+                    and m.char.horizontal_speed < 0.6:
+                return True
         return False
 
     def _unstick(self, wish: Vec3, pos: Point3) -> Vec3:
