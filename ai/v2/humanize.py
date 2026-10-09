@@ -23,18 +23,20 @@ from __future__ import annotations
 import math
 
 DEFAULTS = {
+    # mistakes made rarer (your decision, "lighter mistakes"): Normal has the old Expert rates;
+    # Easy keeps its own, Hard and Expert make fewer still
     "easy": {"stress_gain": 1.0, "decision_noise": 0.35,
              "over_peek": 0.35, "skip_corner": 0.3, "reload_open": 0.35, "late_trade": 0.5,
              "ignore_call": 0.25, "panic": 0.35, "radar_glance": [3.0, 6.0]},
-    "normal": {"stress_gain": 0.8, "decision_noise": 0.2,
-               "over_peek": 0.15, "skip_corner": 0.15, "reload_open": 0.15, "late_trade": 0.25,
-               "ignore_call": 0.1, "panic": 0.15, "radar_glance": [2.0, 4.0]},
-    "hard": {"stress_gain": 0.6, "decision_noise": 0.12,
-             "over_peek": 0.07, "skip_corner": 0.07, "reload_open": 0.06, "late_trade": 0.12,
-             "ignore_call": 0.05, "panic": 0.06, "radar_glance": [1.5, 3.0]},
-    "expert": {"stress_gain": 0.45, "decision_noise": 0.06,
+    "normal": {"stress_gain": 0.45, "decision_noise": 0.08,
                "over_peek": 0.03, "skip_corner": 0.03, "reload_open": 0.02, "late_trade": 0.05,
-               "ignore_call": 0.0, "panic": 0.02, "radar_glance": [1.0, 2.5]},
+               "ignore_call": 0.0, "panic": 0.02, "radar_glance": [1.5, 3.0]},
+    "hard": {"stress_gain": 0.35, "decision_noise": 0.06,
+             "over_peek": 0.015, "skip_corner": 0.015, "reload_open": 0.01, "late_trade": 0.025,
+             "ignore_call": 0.0, "panic": 0.01, "radar_glance": [1.2, 2.5]},
+    "expert": {"stress_gain": 0.25, "decision_noise": 0.04,
+               "over_peek": 0.01, "skip_corner": 0.01, "reload_open": 0.005, "late_trade": 0.01,
+               "ignore_call": 0.0, "panic": 0.005, "radar_glance": [1.0, 2.0]},
 }
 
 

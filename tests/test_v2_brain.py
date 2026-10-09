@@ -45,10 +45,12 @@ class HumanizerTests(unittest.TestCase):
 
     def test_stress_makes_mistakes_likelier_and_decays(self):
         h = self.make()
+        h.c["over_peek"] = 0.3                     # a rate large enough to compare (Normal's is small)
         calm = sum(h.mistake("over_peek") for _ in range(4000))
         h.add_stress(1.0)
-        stressed = sum(h.mistake("over_peek") for _ in range(4000))
+        self.assertGreater(h.stress, 0.0)
         h.stress = 1.0
+        stressed = sum(h.mistake("over_peek") for _ in range(4000))
         self.assertGreater(stressed, calm * 1.2)
         for _ in range(64 * 6):
             h.update(1 / 64)
