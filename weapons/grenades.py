@@ -18,7 +18,7 @@ from panda3d.core import Point3, Vec3
 
 from engine.physics import GROUP_DEBRIS, MASK_SIGHT
 from gameplay.damage import DamageInfo
-from weapons.models import build_weapon_model, model_defs
+from weapons.models import model_defs, shared_weapon_model
 
 
 def blast_damage(distance: float, radius: float, max_damage: float, power: float) -> float:
@@ -64,7 +64,7 @@ class Grenade:
         node.setAngularVelocity(Vec3(5, 3, 8))
         game.physics.world.attachRigidBody(node)
         self.visual_root = game.render.attachNewNode("grenade_vis")
-        model = build_weapon_model(game.materials, gdef.model, self.visual_root)
+        model = shared_weapon_model(game.materials, gdef.model, self.visual_root)
         model.root.setPos(0, 0, 0)
         self.node = node
         self.last_speed = vel.length()

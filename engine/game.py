@@ -65,7 +65,7 @@ class Game(ShowBase):
         self.audio = AudioSystem(self, settings.audio, self.weapon_db.weapons, log=self.log)
         self.effects = Effects(self)
         from gameplay.destruction import DestructionManager
-        self.destruction = DestructionManager(self, self.level.panel_specs)
+        self.destruction = DestructionManager(self, self.level.panel_specs, seed=getattr(self.args, "seed", None))
         self.ballistics.destruction = self.destruction
         self.pickups = PickupManager(self)
         self.dummies: list[TargetDummy] = []
@@ -100,10 +100,16 @@ class Game(ShowBase):
                                               difficulty=getattr(args, "difficulty", None) or
                                               settings.data.get("gameplay", {}).get("bot_difficulty"),
                                               standins=getattr(args, "bots", "on") == "off",
-                                              spectate=bool(getattr(args, "spectate", False)))
+                                              spectate=bool(getattr(args, "spectate", False)),
+                                              ai=getattr(args, "ai", None))
+                import os
+                if getattr(args, "audit", False) or os.environ.get("BOT_AUDIT", "") == "1":
+                    from ai.audit import FairnessAudit
+                    self.director.audit = FairnessAudit(self.director)
         self.paused = False
         self.menu = PauseMenu(self)
         self.console = Console(self)
+        self.bot_overlay = None                 # console "overlay" (ui/bot_overlay.py)
         self.match_hud = None
         self.buy_menu = None
         self.main_menu = None
@@ -216,6 +222,16 @@ class Game(ShowBase):
             from ai.navlinks import NavLinks
             self.nav_links = NavLinks(self._nav, self.destruction)
         return self._nav
+
+    def tactical_map(self):
+        """The v2 bots' analysis of the level (ai/v2/tactical_map.py), cached next to the navmesh."""
+        if getattr(self, "_tmap", None) is None:
+            from ai.v2.tactical_map import TacticalMap
+            nav = self.navmesh()
+            self._tmap = TacticalMap.cached(self.level, nav, paths.CACHE_DIR / "nav", self.level.path.stem,
+                                            log=self.log)
+            self.destruction.listeners.append(self._tmap.on_panel)
+        return self._tmap
 
     # ---------------------------------------------------- match services
     @property
@@ -571,6 +587,8 @@ class Game(ShowBase):
         if self.buy_menu is not None:
             self.buy_menu.update()
         self.debug_hud.update(dt)
+        if self.bot_overlay is not None:
+            self.bot_overlay.update(dt)
         self.audio.frame_update(dt)
         self._frame += 1
         if self.args.trace:

@@ -145,6 +145,8 @@ class BotWeapons:
             d = Vec3(*angles_to_dir(yaw, pitch))
             first = first or d
             res = game.ballistics.fire(eye, d, ws.d, attacker=bot)
+            if res.damage and hasattr(bot.brain, "on_hits"):
+                bot.brain.on_hits(res.damage)
             for imp in res.impacts[:3]:
                 game.effects.impact(imp.pos, imp.normal, imp.surface, d, imp.exit)
             if (tracer and i == 0) or (ws.d.pellets > 1 and i < 2 and bot.rng.random() < 0.3):

@@ -1,0 +1,6012 @@
+{
+ "seed": 1,
+ "difficulty": "normal",
+ "rounds_requested": 24,
+ "wall_seconds": 3105.73362326622,
+ "python": "3.11.15",
+ "timing": {
+  "live": {
+   "ticks": 111451,
+   "total_ms": {
+    "mean": 3.5394648219748817,
+    "p50": 3.049379999993107,
+    "p95": 6.529526999884183,
+    "p99": 10.658495499910714,
+    "max": 336.2650270000813
+   },
+   "ai_ms": {
+    "mean": 0.7001889476377622,
+    "p50": 0.43856199908987037,
+    "p95": 1.669892999871081,
+    "p99": 4.612030000089362,
+    "max": 333.33257200001754
+   },
+   "ai_ticks_over_4ms": 1477,
+   "ai_decisions_ms": {
+    "mean": 0.6578687056839078,
+    "p50": 0.43828199932249845,
+    "p95": 1.6620059998331271,
+    "p99": 4.516772499528088,
+    "max": 60.822188000202004
+   },
+   "ai_decision_ticks_over_4ms": 1418,
+   "subsystems_mean_ms": {
+    "ai_decisions": 0.6578687056839078,
+    "animation": 0.7269796848195557,
+    "brains": 0.6868971848895811,
+    "bullet": 0.9117815262229922,
+    "destruction": 0.006290785466204519,
+    "gadget_ai": 0.0063233703426006675,
+    "gc": 0.00253021156384342,
+    "gc_in_ai": 0.0005966856107135502,
+    "movement": 0.6585429963905703,
+    "perception": 0.19090589690538312,
+    "tactical": 0.24975188279158647,
+    "team": 0.006968392405580599
+   },
+   "subsystems_p99_ms": {
+    "ai_decisions": 4.516772499528088,
+    "animation": 2.332016999616826,
+    "brains": 4.539789999739696,
+    "bullet": 2.947433499912222,
+    "destruction": 0.014266500102166901,
+    "gadget_ai": 0.1595440000983217,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 2.0366069998090097,
+    "perception": 1.3663765003002482,
+    "tactical": 0.6771125001705514,
+    "team": 0.14585749988782482
+   }
+  },
+  "all": {
+   "ticks": 163808,
+   "total_ms": {
+    "mean": 3.6941233555862656,
+    "p50": 3.029007499890213,
+    "p95": 6.309681049788196,
+    "p99": 10.166387130084319,
+    "max": 2955.875685999672
+   },
+   "ai_ms": {
+    "mean": 0.6311025160188947,
+    "p50": 0.38243849962782406,
+    "p95": 1.453985300088333,
+    "p99": 4.124648079505272,
+    "max": 372.1036569995704
+   },
+   "ai_ticks_over_4ms": 1714,
+   "ai_decisions_ms": {
+    "mean": 0.5608820350594732,
+    "p50": 0.38210800028082303,
+    "p95": 1.443275100314166,
+    "p99": 3.930087900148455,
+    "max": 60.822188000202004
+   },
+   "ai_decision_ticks_over_4ms": 1593,
+   "subsystems_mean_ms": {
+    "ai_decisions": 0.5608820350594732,
+    "animation": 0.744121797218969,
+    "brains": 0.6035313923554173,
+    "bullet": 0.9242386650845575,
+    "destruction": 0.006012184801956138,
+    "gadget_ai": 0.02279508635753658,
+    "gc": 0.0018679338555264166,
+    "gc_in_ai": 0.000428318690173333,
+    "movement": 0.6787728611773414,
+    "perception": 0.16838988907749458,
+    "tactical": 0.2321430958988372,
+    "team": 0.0047760373059406854
+   },
+   "subsystems_p99_ms": {
+    "ai_decisions": 3.930087900148455,
+    "animation": 2.5397919102078954,
+    "brains": 4.0018964096361715,
+    "bullet": 2.919269549890937,
+    "destruction": 0.015137089958443449,
+    "gadget_ai": 0.1386847899289023,
+    "gc": 0.0,
+    "gc_in_ai": 0.0,
+    "movement": 2.127096699764463,
+    "perception": 1.263689139386767,
+    "tactical": 0.6404472799567877,
+    "team": 0.12173011001323156
+   }
+  },
+  "slowest_single_brain_update_ms": 370.99790100000973,
+  "gc_pauses": {
+   "count": 636,
+   "mean": 0.8318346037878466,
+   "p50": 0.08407499990426004,
+   "p95": 0.6431420003991661,
+   "p99": 1.2990448501113783,
+   "max": 156.66993900003945,
+   "over_4ms": 5
+  },
+  "queries": {
+   "q:bomb_plant": {
+    "calls": 12,
+    "mean": 0.09022891670914153,
+    "p50": 0.09005449999222037,
+    "p95": 0.10377629999993586,
+    "p99": 0.10884245994702724,
+    "max": 0.11010899993380008,
+    "over_4ms": 0
+   },
+   "q:breach": {
+    "calls": 3489,
+    "mean": 0.004245861854026057,
+    "p50": 0.0020870002117590047,
+    "p95": 0.004897199869446922,
+    "p99": 0.012219919826747956,
+    "max": 0.5371390000163956,
+    "over_4ms": 0
+   },
+   "q:defend_setup": {
+    "calls": 24,
+    "mean": 1.2593057083260344,
+    "p50": 1.1853580001570663,
+    "p95": 1.6177804501239732,
+    "p99": 1.7564656301237846,
+    "max": 1.794098000118538,
+    "over_4ms": 0
+   },
+   "q:deploy_gadget": {
+    "calls": 68,
+    "mean": 80.75347616178372,
+    "p50": 41.49028299980273,
+    "p95": 304.76565490010887,
+    "p99": 357.6192279299311,
+    "max": 370.9117070002321,
+    "over_4ms": 68
+   },
+   "q:find_cover": {
+    "calls": 512,
+    "mean": 0.2173845624926507,
+    "p50": 0.18721600008575479,
+    "p95": 0.29898599989337526,
+    "p99": 0.3943203200878994,
+    "max": 7.81933600001139,
+    "over_4ms": 1
+   },
+   "q:find_path": {
+    "calls": 7233,
+    "mean": 1.354569705793639,
+    "p50": 0.8007720000478002,
+    "p95": 4.316499999822551,
+    "p99": 8.219991760033743,
+    "max": 34.597099000166054,
+    "over_4ms": 418
+   },
+   "q:fire": {
+    "calls": 1983,
+    "mean": 11.596609767527646,
+    "p50": 1.881203000266396,
+    "p95": 109.90286619958168,
+    "p99": 138.3946818199411,
+    "max": 194.16296800000055,
+    "over_4ms": 292
+   },
+   "q:flee": {
+    "calls": 4,
+    "mean": 1.5157034999901953,
+    "p50": 1.0608385000523413,
+    "p95": 3.5583733498697248,
+    "p99": 3.7978490698424134,
+    "max": 3.857717999835586,
+    "over_4ms": 0
+   },
+   "q:hearing": {
+    "calls": 1252393,
+    "mean": 0.0031102457263402503,
+    "p50": 0.0008320002962136641,
+    "p95": 0.014419999843084952,
+    "p99": 0.03969423994931298,
+    "max": 21.25329800014697,
+    "over_4ms": 18
+   },
+   "q:lane_path": {
+    "calls": 1591,
+    "mean": 1.9941932118164043,
+    "p50": 1.104334000046947,
+    "p95": 7.393768500037368,
+    "p99": 12.217244600060395,
+    "max": 24.883725000108825,
+    "over_4ms": 213
+   },
+   "q:lean": {
+    "calls": 975893,
+    "mean": 0.002901320080290006,
+    "p50": 0.0014629999895987567,
+    "p95": 0.00358199986294494,
+    "p99": 0.044428240116758264,
+    "max": 8.10081600002377,
+    "over_4ms": 14
+   },
+   "q:post_plant_spots": {
+    "calls": 12,
+    "mean": 0.213214166706166,
+    "p50": 0.17762749996563798,
+    "p95": 0.4031889501447948,
+    "p99": 0.496790589909324,
+    "max": 0.5201909998504561,
+    "over_4ms": 0
+   },
+   "q:preaim": {
+    "calls": 181481,
+    "mean": 0.04040791089385349,
+    "p50": 0.0018870000531023834,
+    "p95": 0.005616000180452829,
+    "p99": 1.3598576001186515,
+    "max": 34.692452999934176,
+    "over_4ms": 237
+   },
+   "q:radio_hud": {
+    "calls": 1778,
+    "mean": 0.014700610234866799,
+    "p50": 0.011593000067477988,
+    "p95": 0.018099800104209862,
+    "p99": 0.054965899862509146,
+    "max": 2.336477000199011,
+    "over_4ms": 0
+   },
+   "q:set_weapon_model": {
+    "calls": 606,
+    "mean": 56.54245679867212,
+    "p50": 64.51984799991806,
+    "p95": 126.98533750000252,
+    "p99": 156.2042038498817,
+    "max": 182.4245489999612,
+    "over_4ms": 374
+   },
+   "q:think": {
+    "calls": 107528,
+    "mean": 0.008500535972232165,
+    "p50": 0.005928999598836526,
+    "p95": 0.013429000318865292,
+    "p99": 0.037784920132253305,
+    "max": 8.204850999845803,
+    "over_4ms": 8
+   },
+   "q:throw": {
+    "calls": 48,
+    "mean": 2.7441010416803615,
+    "p50": 0.00790049989518593,
+    "p95": 0.026910549945569073,
+    "p99": 68.79078880007467,
+    "max": 118.38225600013175,
+    "over_4ms": 2
+   },
+   "q:throw_drone": {
+    "calls": 93,
+    "mean": 31.812552913980916,
+    "p50": 29.532542999959333,
+    "p95": 42.06127559982633,
+    "p99": 46.07201212022118,
+    "max": 48.09632399997099,
+    "over_4ms": 93
+   },
+   "q:use_gadget": {
+    "calls": 45,
+    "mean": 1.3922174667540175,
+    "p50": 0.021424000351544237,
+    "p95": 0.0615803999153286,
+    "p99": 31.178932120128607,
+    "max": 34.216594000099576,
+    "over_4ms": 2
+   },
+   "q:vision": {
+    "calls": 208804,
+    "mean": 0.08339462264151605,
+    "p50": 0.06310000026132911,
+    "p95": 0.19650385008844748,
+    "p99": 0.2848360999496437,
+    "max": 59.56103600010465,
+    "over_4ms": 91
+   }
+  },
+  "spikes": {
+   "count": 1714,
+   "worst": [
+    {
+     "t": 1559.453125,
+     "round": 16,
+     "phase": "prep",
+     "ai_ms": 372.1036569995704,
+     "tick_ms": 375.8182880001186,
+     "parts": {
+      "brains": 372.1,
+      "q:deploy_gadget": 370.91,
+      "animation": 1.5,
+      "movement": 0.89,
+      "bullet": 0.88,
+      "perception": 0.83,
+      "q:vision": 0.73
+     },
+     "slowest_bot": "Brine [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 859.453125,
+     "round": 9,
+     "phase": "prep",
+     "ai_ms": 351.4026270004251,
+     "tick_ms": 354.6346580001227,
+     "parts": {
+      "brains": 351.4,
+      "q:deploy_gadget": 351.07,
+      "movement": 1.43,
+      "animation": 0.69,
+      "bullet": 0.67,
+      "tactical": 0.31
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 388.671875,
+     "round": 5,
+     "phase": "live",
+     "ai_ms": 333.33257200001754,
+     "tick_ms": 336.2650270000813,
+     "parts": {
+      "brains": 333.33,
+      "q:deploy_gadget": 331.13,
+      "perception": 1.81,
+      "q:vision": 1.72,
+      "bullet": 0.91,
+      "animation": 0.82,
+      "movement": 0.82
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1815.671875,
+     "round": 18,
+     "phase": "prep",
+     "ai_ms": 333.2780899991121,
+     "tick_ms": 338.38399400019625,
+     "parts": {
+      "brains": 333.28,
+      "q:deploy_gadget": 332.76,
+      "bullet": 1.6,
+      "movement": 1.58,
+      "animation": 1.46
+     },
+     "slowest_bot": "Brine [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 279.046875,
+     "round": 4,
+     "phase": "prep",
+     "ai_ms": 256.1750759998631,
+     "tick_ms": 258.51179000005686,
+     "parts": {
+      "brains": 256.18,
+      "q:deploy_gadget": 255.8,
+      "bullet": 0.73,
+      "movement": 0.66,
+      "animation": 0.52
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1147.4375,
+     "round": 12,
+     "phase": "prep",
+     "ai_ms": 255.52371499952642,
+     "tick_ms": 258.6014680000517,
+     "parts": {
+      "brains": 255.52,
+      "q:deploy_gadget": 254.95,
+      "movement": 0.94,
+      "bullet": 0.9,
+      "animation": 0.83,
+      "tactical": 0.37,
+      "perception": 0.32
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 959.71875,
+     "round": 10,
+     "phase": "prep",
+     "ai_ms": 254.77847999991354,
+     "tick_ms": 257.9568629998903,
+     "parts": {
+      "brains": 254.78,
+      "q:deploy_gadget": 254.39,
+      "animation": 1.16,
+      "bullet": 0.82,
+      "movement": 0.76
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 121.234375,
+     "round": 2,
+     "phase": "live",
+     "ai_ms": 252.77011499952096,
+     "tick_ms": 258.6790329999076,
+     "parts": {
+      "brains": 252.77,
+      "q:deploy_gadget": 252.27,
+      "bullet": 3.48,
+      "movement": 1.13,
+      "animation": 0.83
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 2226.921875,
+     "round": 22,
+     "phase": "live",
+     "ai_ms": 248.59417299921915,
+     "tick_ms": 253.04526899981283,
+     "parts": {
+      "brains": 248.59,
+      "q:deploy_gadget": 247.97,
+      "movement": 1.67,
+      "animation": 1.31,
+      "bullet": 1.05
+     },
+     "slowest_bot": "Brine [defend] hp 100 sr90 task/hold:hold "
+    },
+    {
+     "t": 2129.890625,
+     "round": 21,
+     "phase": "prep",
+     "ai_ms": 244.9601649991564,
+     "tick_ms": 248.41406099994856,
+     "parts": {
+      "brains": 244.96,
+      "q:deploy_gadget": 244.67,
+      "movement": 1.18,
+      "bullet": 1.07,
+      "animation": 0.76
+     },
+     "slowest_bot": "Brine [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 2362.3125,
+     "round": 23,
+     "phase": "prep",
+     "ai_ms": 233.06816999911462,
+     "tick_ms": 236.20546599977388,
+     "parts": {
+      "brains": 233.07,
+      "q:deploy_gadget": 232.81,
+      "movement": 1.29,
+      "animation": 0.77,
+      "bullet": 0.66,
+      "tactical": 0.31
+     },
+     "slowest_bot": "Brine [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1652.75,
+     "round": 17,
+     "phase": "prep",
+     "ai_ms": 181.46760299987363,
+     "tick_ms": 187.0185680004397,
+     "parts": {
+      "gadget_ai": 180.73,
+      "q:throw_drone": 179.33,
+      "bullet": 2.53,
+      "animation": 1.57,
+      "q:defend_setup": 1.24,
+      "movement": 1.05,
+      "brains": 0.73,
+      "perception": 0.39,
+      "q:vision": 0.32
+     },
+     "slowest_bot": "Wolfe [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1022.0,
+     "round": 11,
+     "phase": "prep",
+     "ai_ms": 180.1910389999648,
+     "tick_ms": 186.7303340000035,
+     "parts": {
+      "gadget_ai": 179.49,
+      "q:throw_drone": 178.2,
+      "animation": 2.59,
+      "bullet": 2.1,
+      "movement": 1.2,
+      "q:defend_setup": 1.15,
+      "brains": 0.7
+     },
+     "slowest_bot": "Tarn [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 2118.25,
+     "round": 21,
+     "phase": "prep",
+     "ai_ms": 176.47871200097143,
+     "tick_ms": 181.46604599996863,
+     "parts": {
+      "gadget_ai": 168.51,
+      "q:throw_drone": 167.16,
+      "brains": 7.96,
+      "q:lane_path": 7.16,
+      "q:find_path": 7.07,
+      "bullet": 1.68,
+      "animation": 1.65,
+      "q:defend_setup": 1.23,
+      "movement": 1.12
+     },
+     "slowest_bot": "Sable [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 167.0,
+     "round": 3,
+     "phase": "prep",
+     "ai_ms": 166.5021600003911,
+     "tick_ms": 169.66653899999073,
+     "parts": {
+      "gadget_ai": 166.17,
+      "q:throw_drone": 164.88,
+      "bullet": 1.22,
+      "q:defend_setup": 1.17,
+      "animation": 0.81,
+      "movement": 0.72,
+      "brains": 0.32
+     },
+     "slowest_bot": "Grail [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1227.5,
+     "round": 13,
+     "phase": "prep",
+     "ai_ms": 158.32109899838542,
+     "tick_ms": 161.9612870003948,
+     "parts": {
+      "gadget_ai": 157.96,
+      "q:throw_drone": 156.05,
+      "q:defend_setup": 1.79,
+      "bullet": 1.53,
+      "animation": 1.05,
+      "movement": 0.68,
+      "brains": 0.36
+     },
+     "slowest_bot": "Wolfe [defend] hp 100 p9 task/hold:hold "
+    },
+    {
+     "t": 470.75,
+     "round": 6,
+     "phase": "prep",
+     "ai_ms": 153.33336300068368,
+     "tick_ms": 157.6290410000638,
+     "parts": {
+      "gadget_ai": 152.95,
+      "q:throw_drone": 151.72,
+      "bullet": 1.56,
+      "animation": 1.26,
+      "q:defend_setup": 1.08,
+      "movement": 1.05,
+      "brains": 0.38
+     },
+     "slowest_bot": "Grail [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 213.390625,
+     "round": 3,
+     "phase": "planted",
+     "ai_ms": 152.7620179999758,
+     "tick_ms": 160.22779800005083,
+     "parts": {
+      "brains": 152.76,
+      "q:set_weapon_model": 151.53,
+      "movement": 5.27,
+      "bullet": 0.97,
+      "animation": 0.66,
+      "perception": 0.42,
+      "tactical": 0.39,
+      "q:vision": 0.35
+     },
+     "slowest_bot": "Kestrel [attack] hp 21 r7 task/plant:plant d20 off1.0/0.6"
+    },
+    {
+     "t": 447.15625,
+     "round": 5,
+     "phase": "planted",
+     "ai_ms": 149.7892289999072,
+     "tick_ms": 151.91519799986963,
+     "parts": {
+      "brains": 149.79,
+      "q:set_weapon_model": 149.22,
+      "movement": 0.8,
+      "animation": 0.43,
+      "tactical": 0.3
+     },
+     "slowest_bot": "Wolfe [attack] hp 100 r7 task/plant:plant d44 off0.6/0.6"
+    },
+    {
+     "t": 1460.0,
+     "round": 15,
+     "phase": "prep",
+     "ai_ms": 149.70769200044742,
+     "tick_ms": 153.7455709999449,
+     "parts": {
+      "gadget_ai": 149.33,
+      "q:throw_drone": 148.02,
+      "bullet": 1.52,
+      "animation": 1.4,
+      "q:defend_setup": 1.19,
+      "movement": 0.7,
+      "brains": 0.37
+     },
+     "slowest_bot": "Wolfe [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1807.5,
+     "round": 18,
+     "phase": "prep",
+     "ai_ms": 144.96811800108844,
+     "tick_ms": 150.87320999964504,
+     "parts": {
+      "gadget_ai": 144.28,
+      "q:throw_drone": 142.47,
+      "bullet": 3.37,
+      "q:defend_setup": 1.63,
+      "animation": 1.06,
+      "movement": 0.92,
+      "brains": 0.68
+     },
+     "slowest_bot": "Wolfe [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 100.25,
+     "round": 2,
+     "phase": "prep",
+     "ai_ms": 143.2814909994704,
+     "tick_ms": 147.39330399993378,
+     "parts": {
+      "gadget_ai": 142.44,
+      "q:throw_drone": 141.18,
+      "animation": 1.61,
+      "bullet": 1.22,
+      "q:defend_setup": 1.14,
+      "movement": 0.84,
+      "brains": 0.83
+     },
+     "slowest_bot": "Bastille [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1137.75,
+     "round": 12,
+     "phase": "prep",
+     "ai_ms": 141.94343799999842,
+     "tick_ms": 146.61943100009012,
+     "parts": {
+      "gadget_ai": 141.45,
+      "q:throw_drone": 139.78,
+      "q:defend_setup": 1.55,
+      "bullet": 1.54,
+      "movement": 1.35,
+      "animation": 1.23,
+      "brains": 0.49
+     },
+     "slowest_bot": "Grail [defend] hp 100 c9 task/hold:hold "
+    },
+    {
+     "t": 1102.71875,
+     "round": 11,
+     "phase": "planted",
+     "ai_ms": 135.71332100082145,
+     "tick_ms": 138.73188200022923,
+     "parts": {
+      "brains": 135.71,
+      "q:set_weapon_model": 134.93,
+      "animation": 0.99,
+      "bullet": 0.93,
+      "movement": 0.69
+     },
+     "slowest_bot": "Rook [attack] hp 100 mx5 task/plant:plant d14 off0.3/0.7"
+    },
+    {
+     "t": 1522.25,
+     "round": 15,
+     "phase": "planted",
+     "ai_ms": 134.47286500104383,
+     "tick_ms": 139.13215499997023,
+     "parts": {
+      "brains": 132.0,
+      "q:set_weapon_model": 131.33,
+      "animation": 2.89,
+      "team": 2.46,
+      "q:find_path": 2.24,
+      "bullet": 0.65,
+      "movement": 0.65,
+      "tactical": 0.39
+     },
+     "slowest_bot": "Bastille [attack] hp 100 r7 alert/plant:plant d41 off0.4/0.6"
+    }
+   ]
+  }
+ },
+ "behaviour": {
+  "rounds": 24,
+  "wins_by_side": {
+   "defend": 9,
+   "attack": 15
+  },
+  "attack_win_pct": 62.5,
+  "results": {
+   "defend/elimination": 8,
+   "attack/bomb_detonated": 3,
+   "attack/elimination": 12,
+   "defend/time": 1
+  },
+  "avg_round_s": 72.55924479166667,
+  "kills": 173,
+  "deaths_total": 179,
+  "headshot_pct": 36.994219653179194,
+  "plants": 12,
+  "defuses": 0,
+  "shots": 1983,
+  "bullet_hits": 762,
+  "accuracy_pct": 38.42662632375189,
+  "deaths_while_reloading": 38,
+  "deaths_while_reloading_pct": 21.965317919075144,
+  "deaths_with_empty_mag": 0,
+  "unseen_deaths": 24,
+  "unseen_deaths_pct": 13.872832369942197,
+  "never_saw_killer_this_round_pct": 12.138728323699421,
+  "traded_pct": 12.138728323699421,
+  "traded_of_tradeable_pct": 19.318181818181817,
+  "tradeable_deaths": 88,
+  "exposure_before_death_s": {
+   "mean": 3.152595029239766,
+   "n": 171
+  },
+  "exposed_share_pct": 29.691492926191344,
+  "exposed_s_per_death": 20.730446927374302,
+  "stacking_incidents": 86,
+  "stacking_per_round": 3.5833333333333335,
+  "stacking_where": {
+   "Main Gate": 22,
+   "B Long": 17,
+   "Mid": 14,
+   "T Spawn": 10,
+   "B Connector": 8,
+   "Bunker": 4,
+   "B Yard": 3,
+   "West Yard": 3,
+   "B Site": 2,
+   "CT Spawn": 1,
+   "A Connector": 1,
+   "A Site": 1
+  },
+  "clumps": 22,
+  "stuck_bots": 2,
+  "stuck_reports": [
+   "Wolfe stuck at (50.0, 38.1, 0.03)  - alert/guard:post d18 off0.6/1.0",
+   "Kestrel stuck at (50.0, 38.3, 0.03)  - alert/move:clear d23 off0.7/0.6"
+  ],
+  "micro_stuck_events": 83,
+  "grenades_thrown": {
+   "attack:frag": 1
+  },
+  "utility": {
+   "flash": {
+    "detonated": 0,
+    "effective": 0,
+    "effective_pct": 0.0,
+    "team_flashes": 0
+   },
+   "smoke": {
+    "detonated": 0,
+    "effective": 0,
+    "effective_pct": 0.0,
+    "enemy_sightings_blocked": 0
+   },
+   "frag": {
+    "detonated": 1,
+    "effective": 0,
+    "effective_pct": 0.0
+   }
+  },
+  "attack_plans": {
+   "default": 8,
+   "execute": 12,
+   "rush": 4
+  },
+  "attack_plans_pct": {
+   "default": 33.333333333333336,
+   "execute": 50.0,
+   "rush": 16.666666666666668
+  },
+  "attack_plan_sites": {
+   "default A": 4,
+   "execute B": 9,
+   "rush B": 2,
+   "execute A": 3,
+   "default B": 4,
+   "rush A": 2
+  },
+  "defender_hold_spots": {
+   "distinct": 11,
+   "samples": 119,
+   "top": [
+    [
+     [
+      4.0,
+      34.3
+     ],
+     16
+    ],
+    [
+     [
+      47.0,
+      29.0
+     ],
+     13
+    ],
+    [
+     [
+      29.0,
+      25.6
+     ],
+     12
+    ],
+    [
+     [
+      39.2,
+      23.2
+     ],
+     12
+    ],
+    [
+     [
+      -33.8,
+      18.1
+     ],
+     11
+    ],
+    [
+     [
+      -38.0,
+      54.5
+     ],
+     10
+    ],
+    [
+     [
+      -28.0,
+      33.0
+     ],
+     10
+    ],
+    [
+     [
+      -5.0,
+      45.3
+     ],
+     10
+    ]
+   ]
+  },
+  "team_reports": 11003,
+  "info_leaks": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 77,
+   "exact_killer_position_broadcast_after_unseen_kill": 24
+  },
+  "info_leaks_per_round": {
+   "exact_attacker_position_when_shot_by_unseen_enemy": 3.2083333333333335,
+   "exact_killer_position_broadcast_after_unseen_kill": 1.0
+  },
+  "deaths": [
+   {
+    "t": 52.65625,
+    "round": 1,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.265625,
+    "distance": 37.089210510253906,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 56.71875,
+    "round": 1,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.859375,
+    "distance": 39.63405990600586,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 65.875,
+    "round": 1,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.921875,
+    "distance": 17.783491134643555,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 66.15625,
+    "round": 1,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.109375,
+    "distance": 21.64523696899414,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 79.15625,
+    "round": 1,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.578125,
+    "distance": 18.637815475463867,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 86.125,
+    "round": 1,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.703125,
+    "distance": 0.5694888830184937,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 140.859375,
+    "round": 2,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.328125,
+    "distance": 30.578454971313477,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 144.796875,
+    "round": 2,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 2.28125,
+    "distance": 21.021923065185547,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 147.0,
+    "round": 2,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.734375,
+    "distance": 2.9898269176483154,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 147.328125,
+    "round": 2,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.4375,
+    "distance": 8.103466987609863,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 150.0625,
+    "round": 2,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.46875,
+    "distance": 53.43740463256836,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 152.765625,
+    "round": 2,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.15625,
+    "distance": 14.45201587677002,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 204.484375,
+    "round": 3,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.65625,
+    "distance": 17.158628463745117,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 206.78125,
+    "round": 3,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.515625,
+    "distance": 23.281442642211914,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 218.84375,
+    "round": 3,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.296875,
+    "distance": 15.884358406066895,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 219.0625,
+    "round": 3,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.796875,
+    "distance": 16.618375778198242,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 219.1875,
+    "round": 3,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 8.1875,
+    "distance": 36.81351089477539,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 222.671875,
+    "round": 3,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 11.671875,
+    "distance": 39.43517303466797,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 231.84375,
+    "round": 3,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.078125,
+    "distance": 5.623808860778809,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 253.390625,
+    "round": 3,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 309.984375,
+    "round": 4,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.8125,
+    "distance": 18.49098777770996,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 319.9375,
+    "round": 4,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.921875,
+    "distance": 26.88832664489746,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 329.75,
+    "round": 4,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.578125,
+    "distance": 36.58303451538086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 333.328125,
+    "round": 4,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.84375,
+    "distance": 27.777652740478516,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 339.578125,
+    "round": 4,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.34375,
+    "distance": 24.246746063232422,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 349.203125,
+    "round": 4,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 14.7775297164917,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 351.734375,
+    "round": 4,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.75,
+    "distance": 15.16478157043457,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 408.46875,
+    "round": 5,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.234375,
+    "distance": 10.283849716186523,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 408.59375,
+    "round": 5,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.015625,
+    "distance": 21.81385612487793,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 408.828125,
+    "round": 5,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 3.09375,
+    "distance": 25.454925537109375,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 412.328125,
+    "round": 5,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.96875,
+    "distance": 10.452620506286621,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 412.6875,
+    "round": 5,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.578125,
+    "distance": 25.165517807006836,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 424.5,
+    "round": 5,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 11.546875,
+    "distance": 44.10386657714844,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 442.15625,
+    "round": 5,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.703125,
+    "distance": 0.555803120136261,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 456.609375,
+    "round": 5,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.3125,
+    "distance": 25.120603561401367,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 530.578125,
+    "round": 6,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.46875,
+    "distance": 21.159217834472656,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 534.84375,
+    "round": 6,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.828125,
+    "distance": 25.83014488220215,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 538.609375,
+    "round": 6,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.84375,
+    "distance": 32.35078811645508,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 542.609375,
+    "round": 6,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.875,
+    "distance": 22.49479866027832,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 547.796875,
+    "round": 6,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 10.53125,
+    "distance": 34.353721618652344,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 550.796875,
+    "round": 6,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.875,
+    "distance": 34.1341667175293,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 562.296875,
+    "round": 6,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.75,
+    "distance": 22.057857513427734,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 569.71875,
+    "round": 6,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.515625,
+    "distance": 27.513315200805664,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 577.03125,
+    "round": 6,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.796875,
+    "distance": 10.982763290405273,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 621.34375,
+    "round": 7,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.578125,
+    "distance": 57.647613525390625,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 629.75,
+    "round": 7,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.09375,
+    "distance": 25.003538131713867,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 633.546875,
+    "round": 7,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.484375,
+    "distance": 22.020387649536133,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 637.328125,
+    "round": 7,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.046875,
+    "distance": 45.5643424987793,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 643.3125,
+    "round": 7,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.875,
+    "distance": 49.62712860107422,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 658.265625,
+    "round": 7,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 29.953125,
+    "distance": 49.13927459716797,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 661.125,
+    "round": 7,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 10.40625,
+    "distance": 34.70869827270508,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 715.53125,
+    "round": 7,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 715.53125,
+    "round": 7,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 782.25,
+    "round": 8,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.1875,
+    "distance": 41.58390426635742,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 783.375,
+    "round": 8,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Bastille",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 26.3125,
+    "distance": 46.12333297729492,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 793.015625,
+    "round": 8,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.453125,
+    "distance": 22.461034774780273,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 795.171875,
+    "round": 8,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.265625,
+    "distance": 23.106060028076172,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 819.546875,
+    "round": 8,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 6.234375,
+    "distance": 21.629684448242188,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 829.4375,
+    "round": 8,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 16.78125,
+    "distance": 21.405010223388672,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 834.390625,
+    "round": 8,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.390625,
+    "distance": 11.37746524810791,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 887.296875,
+    "round": 9,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.484375,
+    "distance": 11.922101974487305,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 887.703125,
+    "round": 9,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Brine",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.9375,
+    "distance": 21.97369956970215,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 891.71875,
+    "round": 9,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.15625,
+    "distance": 8.903666496276855,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 893.28125,
+    "round": 9,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.171875,
+    "distance": 15.937135696411133,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 894.90625,
+    "round": 9,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.15625,
+    "distance": 9.1636381149292,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 897.78125,
+    "round": 9,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.515625,
+    "distance": 17.327072143554688,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 938.78125,
+    "round": 9,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 19.546875,
+    "distance": 70.01158905029297,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 998.0625,
+    "round": 10,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 2.328125,
+    "distance": 26.26327896118164,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1000.625,
+    "round": 10,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.15625,
+    "distance": 19.14264488220215,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1001.140625,
+    "round": 10,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.53125,
+    "distance": 27.19139862060547,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1004.296875,
+    "round": 10,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.171875,
+    "distance": 26.60390281677246,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1006.359375,
+    "round": 10,
+    "victim": "Wolfe",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.296875,
+    "distance": 12.970399856567383,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1007.359375,
+    "round": 10,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.046875,
+    "distance": 16.57899284362793,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1007.96875,
+    "round": 10,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.375,
+    "distance": 18.286617279052734,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1063.609375,
+    "round": 11,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Pike",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.265625,
+    "distance": 27.505956649780273,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1065.21875,
+    "round": 11,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.71875,
+    "distance": 5.434986114501953,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1071.53125,
+    "round": 11,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": null,
+    "distance": 24.256887435913086,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1082.03125,
+    "round": 11,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.8125,
+    "distance": 13.97901725769043,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1115.71875,
+    "round": 11,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.109375,
+    "distance": 26.91283416748047,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1121.234375,
+    "round": 11,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Kestrel",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.046875,
+    "distance": 8.955763816833496,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1123.53125,
+    "round": 11,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.0,
+    "distance": 15.348715782165527,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1178.296875,
+    "round": 12,
+    "victim": "Kestrel",
+    "victim_side": "attack",
+    "killer": "Tarn",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.703125,
+    "distance": 8.587139129638672,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1178.5625,
+    "round": 12,
+    "victim": "Tarn",
+    "victim_side": "defend",
+    "killer": "Rook",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.71875,
+    "distance": 8.732948303222656,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1183.515625,
+    "round": 12,
+    "victim": "Rook",
+    "victim_side": "attack",
+    "killer": "Rampart",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.828125,
+    "distance": 2.259683609008789,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1184.828125,
+    "round": 12,
+    "victim": "Pike",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.984375,
+    "distance": 5.3674211502075195,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1192.984375,
+    "round": 12,
+    "victim": "Brine",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.734375,
+    "distance": 12.27210807800293,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1193.0625,
+    "round": 12,
+    "victim": "Rampart",
+    "victim_side": "defend",
+    "killer": "Sable",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.1875,
+    "distance": 12.777618408203125,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1195.15625,
+    "round": 12,
+    "victim": "Sable",
+    "victim_side": "attack",
+    "killer": "Grail",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.84375,
+    "distance": 11.347883224487305,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1197.34375,
+    "round": 12,
+    "victim": "Grail",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.84375,
+    "distance": 8.784780502319336,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1205.421875,
+    "round": 12,
+    "victim": "Bastille",
+    "victim_side": "defend",
+    "killer": "Wolfe",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.140625,
+    "distance": 8.643659591674805,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1269.703125,
+    "round": 13,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.078125,
+    "distance": 31.446884155273438,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1270.1875,
+    "round": 13,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.734375,
+    "distance": 10.064061164855957,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1273.53125,
+    "round": 13,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 11.078125,
+    "distance": 16.76152801513672,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1299.84375,
+    "round": 13,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.734375,
+    "distance": 13.783439636230469,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1305.078125,
+    "round": 13,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Kestrel",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.09375,
+    "distance": 16.931198120117188,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1307.578125,
+    "round": 13,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.3125,
+    "distance": 28.195026397705078,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1350.578125,
+    "round": 13,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.9375,
+    "distance": 25.951801300048828,
+    "victim_mode": "task",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1361.15625,
+    "round": 13,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.546875,
+    "distance": 10.308000564575195,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1407.78125,
+    "round": 14,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.53125,
+    "distance": 44.17502975463867,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1431.109375,
+    "round": 14,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.765625,
+    "distance": 16.619382858276367,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1432.984375,
+    "round": 14,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.0,
+    "distance": 31.577138900756836,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1440.53125,
+    "round": 14,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.96875,
+    "distance": 30.655529022216797,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1445.25,
+    "round": 14,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Kestrel",
+    "killer_side": "defend",
+    "weapon": "p9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.96875,
+    "distance": 13.336702346801758,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1445.90625,
+    "round": 14,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.34375,
+    "distance": 18.200010299682617,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1499.5,
+    "round": 15,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.15625,
+    "distance": 35.01611328125,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1501.1875,
+    "round": 15,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.09375,
+    "distance": 6.7438063621521,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1503.75,
+    "round": 15,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.1875,
+    "distance": 58.90012741088867,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1511.6875,
+    "round": 15,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 13.28125,
+    "distance": 41.02891159057617,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1512.703125,
+    "round": 15,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.875,
+    "distance": 3.0736632347106934,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1515.25,
+    "round": 15,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.34375,
+    "distance": 19.712949752807617,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1522.15625,
+    "round": 15,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Kestrel",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 7.625,
+    "distance": 44.021400451660156,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1533.1875,
+    "round": 15,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.03125,
+    "distance": 8.914897918701172,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1536.671875,
+    "round": 15,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.859375,
+    "distance": 6.221205711364746,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1602.265625,
+    "round": 16,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": null,
+    "distance": 53.16337585449219,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1613.3125,
+    "round": 16,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.703125,
+    "distance": 4.8074469566345215,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1613.84375,
+    "round": 16,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.859375,
+    "distance": 6.2784504890441895,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1614.9375,
+    "round": 16,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.3125,
+    "distance": 9.41761589050293,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1621.828125,
+    "round": 16,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.71875,
+    "distance": 20.109193801879883,
+    "victim_mode": "seek",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1623.421875,
+    "round": 16,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Kestrel",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.09375,
+    "distance": 27.302364349365234,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1627.703125,
+    "round": 16,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.03125,
+    "distance": 19.80620574951172,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1638.6875,
+    "round": 16,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.671875,
+    "distance": 28.73165512084961,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1695.796875,
+    "round": 17,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.234375,
+    "distance": 27.5053768157959,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1699.984375,
+    "round": 17,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.109375,
+    "distance": 21.129714965820312,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1716.09375,
+    "round": 17,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.265625,
+    "distance": 56.49934387207031,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1742.546875,
+    "round": 17,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.203125,
+    "distance": 64.72093963623047,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1745.671875,
+    "round": 17,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.9375,
+    "distance": 66.33184051513672,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1793.484375,
+    "round": 17,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 1793.484375,
+    "round": 17,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 1793.484375,
+    "round": 17,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": null,
+    "killer_side": null,
+    "weapon": "bomb",
+    "kind": "bomb",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false
+   },
+   {
+    "t": 1848.28125,
+    "round": 18,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 3.328125,
+    "distance": 26.63774299621582,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1850.375,
+    "round": 18,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.140625,
+    "distance": 26.999727249145508,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1861.109375,
+    "round": 18,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.59375,
+    "distance": 5.363089084625244,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1861.328125,
+    "round": 18,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.8125,
+    "distance": 13.736137390136719,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1863.265625,
+    "round": 18,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.875,
+    "distance": 10.469409942626953,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1870.90625,
+    "round": 18,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.015625,
+    "distance": 16.5328426361084,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1942.09375,
+    "round": 19,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.1875,
+    "distance": 18.01179313659668,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1944.96875,
+    "round": 19,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.765625,
+    "distance": 43.86637496948242,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1949.984375,
+    "round": 19,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.546875,
+    "distance": 16.310142517089844,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1950.890625,
+    "round": 19,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.28125,
+    "distance": 10.919316291809082,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1951.21875,
+    "round": 19,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.8125,
+    "distance": 11.141014099121094,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1952.171875,
+    "round": 19,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.390625,
+    "distance": 9.761967658996582,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 1955.25,
+    "round": 19,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.90625,
+    "distance": 8.414071083068848,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2014.734375,
+    "round": 20,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.421875,
+    "distance": 41.21192932128906,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2018.640625,
+    "round": 20,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.546875,
+    "distance": 62.76438903808594,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2026.53125,
+    "round": 20,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.375,
+    "distance": 21.801958084106445,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2032.40625,
+    "round": 20,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 4.3125,
+    "distance": 18.965681076049805,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2035.53125,
+    "round": 20,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.09375,
+    "distance": 23.591615676879883,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2079.734375,
+    "round": 20,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.203125,
+    "distance": 11.254847526550293,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2154.703125,
+    "round": 21,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Grail",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.203125,
+    "distance": 26.35624122619629,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2160.171875,
+    "round": 21,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.921875,
+    "distance": 41.484676361083984,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2163.0625,
+    "round": 21,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.78125,
+    "distance": 41.67842483520508,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2170.234375,
+    "round": 21,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.671875,
+    "distance": 16.019960403442383,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2171.53125,
+    "round": 21,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.40625,
+    "distance": 18.66503143310547,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2178.203125,
+    "round": 21,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "mx5",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.390625,
+    "distance": 15.973877906799316,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2180.765625,
+    "round": 21,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.765625,
+    "distance": 9.190295219421387,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2183.859375,
+    "round": 21,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.265625,
+    "distance": 15.031438827514648,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2186.03125,
+    "round": 21,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.875,
+    "distance": 10.197239875793457,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2247.125,
+    "round": 22,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Tarn",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.28125,
+    "distance": 22.09807014465332,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2258.515625,
+    "round": 22,
+    "victim": "Rook",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.609375,
+    "distance": 53.988067626953125,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2265.703125,
+    "round": 22,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.265625,
+    "distance": 24.303882598876953,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2315.0625,
+    "round": 22,
+    "victim": "Brine",
+    "victim_side": "defend",
+    "killer": "Bastille",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.75,
+    "distance": 34.59344482421875,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2315.25,
+    "round": 22,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "sr90",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.625,
+    "distance": 75.24927520751953,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2315.8125,
+    "round": 22,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 16.25,
+    "distance": 52.457698822021484,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2333.125,
+    "round": 22,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.15625,
+    "distance": 21.212230682373047,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2335.9375,
+    "round": 22,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.71875,
+    "distance": 27.593393325805664,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2336.640625,
+    "round": 22,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.109375,
+    "distance": 33.08914566040039,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2426.953125,
+    "round": 23,
+    "victim": "Sable",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 5.328125,
+    "distance": 28.605676651000977,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2429.109375,
+    "round": 23,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Kestrel",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": true,
+    "tradeable": true,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.34375,
+    "distance": 19.685678482055664,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2431.0,
+    "round": 23,
+    "victim": "Kestrel",
+    "victim_side": "defend",
+    "killer": "Pike",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 0.703125,
+    "distance": 24.734926223754883,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2434.28125,
+    "round": 23,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": false,
+    "exposure_before_death": 1.078125,
+    "distance": 24.80645751953125,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2434.90625,
+    "round": 23,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.796875,
+    "distance": 25.252248764038086,
+    "victim_mode": "alert",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2443.359375,
+    "round": 23,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": true,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.6875,
+    "distance": 26.924680709838867,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2449.546875,
+    "round": 23,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Wolfe",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 0.5,
+    "distance": 17.84528350830078,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2503.328125,
+    "round": 24,
+    "victim": "Pike",
+    "victim_side": "attack",
+    "killer": "Brine",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 6.75,
+    "distance": 35.16075134277344,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2510.171875,
+    "round": 24,
+    "victim": "Grail",
+    "victim_side": "attack",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.96875,
+    "distance": 38.241703033447266,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2521.234375,
+    "round": 24,
+    "victim": "Tarn",
+    "victim_side": "attack",
+    "killer": "Sable",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": true,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 4.46875,
+    "distance": 31.890335083007812,
+    "victim_mode": "retreat",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2528.40625,
+    "round": 24,
+    "victim": "Wolfe",
+    "victim_side": "defend",
+    "killer": "Rampart",
+    "killer_side": "attack",
+    "weapon": "r7",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.515625,
+    "distance": 11.67425537109375,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2553.1875,
+    "round": 24,
+    "victim": "Rampart",
+    "victim_side": "attack",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": true,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": false,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 2.421875,
+    "distance": 13.23084831237793,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   },
+   {
+    "t": 2559.40625,
+    "round": 24,
+    "victim": "Bastille",
+    "victim_side": "attack",
+    "killer": "Rook",
+    "killer_side": "defend",
+    "weapon": "c9",
+    "kind": "bullet",
+    "headshot": false,
+    "traded": false,
+    "tradeable": false,
+    "reloading": false,
+    "empty_mag": false,
+    "victim_saw_killer_5s": true,
+    "victim_ever_saw_killer_this_round": true,
+    "exposure_before_death": 1.046875,
+    "distance": 14.050480842590332,
+    "victim_mode": "engage",
+    "killer_mode": "engage"
+   }
+  ],
+  "stacking": [
+   {
+    "t": 136.109375,
+    "round": 2,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "Bunker",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 145.296875,
+    "round": 2,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 192.734375,
+    "round": 3,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 193.046875,
+    "round": 3,
+    "pair": [
+     "Wolfe",
+     "Kestrel"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 194.546875,
+    "round": 3,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 195.984375,
+    "round": 3,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 299.921875,
+    "round": 4,
+    "pair": [
+     "Rook",
+     "Brine"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 300.109375,
+    "round": 4,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 300.296875,
+    "round": 4,
+    "pair": [
+     "Sable",
+     "Brine"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 312.171875,
+    "round": 4,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "B Long",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 392.421875,
+    "round": 5,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 407.671875,
+    "round": 5,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 503.171875,
+    "round": 6,
+    "pair": [
+     "Sable",
+     "Brine"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 503.296875,
+    "round": 6,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 503.296875,
+    "round": 6,
+    "pair": [
+     "Kestrel",
+     "Brine"
+    ],
+    "where": "Bunker",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 509.546875,
+    "round": 6,
+    "pair": [
+     "Wolfe",
+     "Brine"
+    ],
+    "where": "Bunker",
+    "modes": [
+     "engage",
+     "seek"
+    ]
+   },
+   {
+    "t": 510.671875,
+    "round": 6,
+    "pair": [
+     "Wolfe",
+     "Kestrel"
+    ],
+    "where": "Bunker",
+    "modes": [
+     "seek",
+     "engage"
+    ]
+   },
+   {
+    "t": 522.921875,
+    "round": 6,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "where": "B Long",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 537.796875,
+    "round": 6,
+    "pair": [
+     "Kestrel",
+     "Brine"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 616.296875,
+    "round": 7,
+    "pair": [
+     "Rook",
+     "Brine"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 624.796875,
+    "round": 7,
+    "pair": [
+     "Wolfe",
+     "Brine"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 637.921875,
+    "round": 7,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "CT Spawn",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 804.734375,
+    "round": 8,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "B Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 875.234375,
+    "round": 9,
+    "pair": [
+     "Wolfe",
+     "Brine"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 877.796875,
+    "round": 9,
+    "pair": [
+     "Rook",
+     "Kestrel"
+    ],
+    "where": "Mid",
+    "modes": [
+     "task",
+     "engage"
+    ]
+   },
+   {
+    "t": 889.296875,
+    "round": 9,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "B Yard",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 978.421875,
+    "round": 10,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 979.109375,
+    "round": 10,
+    "pair": [
+     "Wolfe",
+     "Sable"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 979.859375,
+    "round": 10,
+    "pair": [
+     "Wolfe",
+     "Kestrel"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 981.609375,
+    "round": 10,
+    "pair": [
+     "Rook",
+     "Kestrel"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 984.546875,
+    "round": 10,
+    "pair": [
+     "Rook",
+     "Brine"
+    ],
+    "where": "Mid",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 984.609375,
+    "round": 10,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "Mid",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 989.421875,
+    "round": 10,
+    "pair": [
+     "Rook",
+     "Kestrel"
+    ],
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 993.546875,
+    "round": 10,
+    "pair": [
+     "Kestrel",
+     "Brine"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 996.046875,
+    "round": 10,
+    "pair": [
+     "Wolfe",
+     "Sable"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 1004.796875,
+    "round": 10,
+    "pair": [
+     "Wolfe",
+     "Kestrel"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1043.859375,
+    "round": 11,
+    "pair": [
+     "Rook",
+     "Kestrel"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1046.046875,
+    "round": 11,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "B Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1167.546875,
+    "round": 12,
+    "pair": [
+     "Sable",
+     "Rook"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1175.921875,
+    "round": 12,
+    "pair": [
+     "Sable",
+     "Kestrel"
+    ],
+    "where": "West Yard",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1251.984375,
+    "round": 13,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1292.671875,
+    "round": 13,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "A Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1402.359375,
+    "round": 14,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1484.859375,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1485.109375,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1485.234375,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1485.546875,
+    "round": 15,
+    "pair": [
+     "Tarn",
+     "Rampart"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1490.234375,
+    "round": 15,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1577.234375,
+    "round": 16,
+    "pair": [
+     "Bastille",
+     "Rampart"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1578.046875,
+    "round": 16,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1582.359375,
+    "round": 16,
+    "pair": [
+     "Grail",
+     "Bastille"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1610.046875,
+    "round": 16,
+    "pair": [
+     "Bastille",
+     "Rampart"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1693.671875,
+    "round": 17,
+    "pair": [
+     "Bastille",
+     "Tarn"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "seek"
+    ]
+   },
+   {
+    "t": 1694.421875,
+    "round": 17,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "B Long",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 1694.546875,
+    "round": 17,
+    "pair": [
+     "Pike",
+     "Rampart"
+    ],
+    "where": "B Long",
+    "modes": [
+     "seek",
+     "engage"
+    ]
+   },
+   {
+    "t": 1694.734375,
+    "round": 17,
+    "pair": [
+     "Tarn",
+     "Rampart"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1704.421875,
+    "round": 17,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1739.421875,
+    "round": 17,
+    "pair": [
+     "Pike",
+     "Rampart"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1740.171875,
+    "round": 17,
+    "pair": [
+     "Tarn",
+     "Rampart"
+    ],
+    "where": "B Long",
+    "modes": [
+     "engage",
+     "retreat"
+    ]
+   },
+   {
+    "t": 1831.796875,
+    "round": 18,
+    "pair": [
+     "Wolfe",
+     "Sable"
+    ],
+    "where": "B Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1846.671875,
+    "round": 18,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "West Yard",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1848.359375,
+    "round": 18,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "West Yard",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1868.234375,
+    "round": 18,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "A Site",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1912.296875,
+    "round": 19,
+    "pair": [
+     "Grail",
+     "Rampart"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1912.921875,
+    "round": 19,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 1924.109375,
+    "round": 19,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "seek",
+     "seek"
+    ]
+   },
+   {
+    "t": 1927.484375,
+    "round": 19,
+    "pair": [
+     "Tarn",
+     "Rampart"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1928.859375,
+    "round": 19,
+    "pair": [
+     "Bastille",
+     "Tarn"
+    ],
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 1938.234375,
+    "round": 19,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1938.421875,
+    "round": 19,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1938.484375,
+    "round": 19,
+    "pair": [
+     "Pike",
+     "Rampart"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1948.359375,
+    "round": 19,
+    "pair": [
+     "Wolfe",
+     "Rook"
+    ],
+    "where": "B Site",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 1996.921875,
+    "round": 20,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2142.921875,
+    "round": 21,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2143.796875,
+    "round": 21,
+    "pair": [
+     "Bastille",
+     "Tarn"
+    ],
+    "where": "T Spawn",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2144.421875,
+    "round": 21,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2144.421875,
+    "round": 21,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2153.546875,
+    "round": 21,
+    "pair": [
+     "Pike",
+     "Bastille"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 2155.171875,
+    "round": 21,
+    "pair": [
+     "Grail",
+     "Pike"
+    ],
+    "where": "Mid",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2156.671875,
+    "round": 21,
+    "pair": [
+     "Bastille",
+     "Tarn"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 2156.921875,
+    "round": 21,
+    "pair": [
+     "Grail",
+     "Bastille"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 2157.109375,
+    "round": 21,
+    "pair": [
+     "Grail",
+     "Tarn"
+    ],
+    "where": "Mid",
+    "modes": [
+     "engage",
+     "engage"
+    ]
+   },
+   {
+    "t": 2377.359375,
+    "round": 23,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "Main Gate",
+    "modes": [
+     "task",
+     "task"
+    ]
+   },
+   {
+    "t": 2410.609375,
+    "round": 23,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "Mid",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 2433.984375,
+    "round": 23,
+    "pair": [
+     "Pike",
+     "Tarn"
+    ],
+    "where": "B Connector",
+    "modes": [
+     "alert",
+     "alert"
+    ]
+   },
+   {
+    "t": 2435.859375,
+    "round": 23,
+    "pair": [
+     "Grail",
+     "Bastille"
+    ],
+    "where": "B Long",
+    "modes": [
+     "retreat",
+     "retreat"
+    ]
+   }
+  ],
+  "rounds_detail": [
+   {
+    "round": 1,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 58.140625
+   },
+   {
+    "round": 2,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 32.640625
+   },
+   {
+    "round": 3,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 66.625
+   },
+   {
+    "round": 4,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 64.34375
+   },
+   {
+    "round": 5,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 70.875
+   },
+   {
+    "round": 6,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 86.421875
+   },
+   {
+    "round": 7,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 104.5
+   },
+   {
+    "round": 8,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 84.859375
+   },
+   {
+    "round": 9,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 70.390625
+   },
+   {
+    "round": 10,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 35.1875
+   },
+   {
+    "round": 11,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 81.5625
+   },
+   {
+    "round": 12,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 47.890625
+   },
+   {
+    "round": 13,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 113.734375
+   },
+   {
+    "round": 14,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 50.75
+   },
+   {
+    "round": 15,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 56.765625
+   },
+   {
+    "round": 16,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 68.015625
+   },
+   {
+    "round": 17,
+    "winner": "attack",
+    "reason": "bomb_detonated",
+    "length": 120.796875
+   },
+   {
+    "round": 18,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 43.421875
+   },
+   {
+    "round": 19,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 50.34375
+   },
+   {
+    "round": 20,
+    "winner": "defend",
+    "reason": "time",
+    "length": 115.0
+   },
+   {
+    "round": 21,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 47.78125
+   },
+   {
+    "round": 22,
+    "winner": "attack",
+    "reason": "elimination",
+    "length": 116.609375
+   },
+   {
+    "round": 23,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 78.90625
+   },
+   {
+    "round": 24,
+    "winner": "defend",
+    "reason": "elimination",
+    "length": 75.859375
+   }
+  ],
+  "plans_detail": [
+   {
+    "round": 1,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 2,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 3,
+    "plan": "rush",
+    "site": "B"
+   },
+   {
+    "round": 4,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 5,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 6,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 7,
+    "plan": "execute",
+    "site": "A"
+   },
+   {
+    "round": 8,
+    "plan": "default",
+    "site": "B"
+   },
+   {
+    "round": 9,
+    "plan": "rush",
+    "site": "B"
+   },
+   {
+    "round": 10,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 11,
+    "plan": "default",
+    "site": "B"
+   },
+   {
+    "round": 12,
+    "plan": "execute",
+    "site": "A"
+   },
+   {
+    "round": 13,
+    "plan": "default",
+    "site": "B"
+   },
+   {
+    "round": 14,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 15,
+    "plan": "rush",
+    "site": "A"
+   },
+   {
+    "round": 16,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 17,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 18,
+    "plan": "execute",
+    "site": "A"
+   },
+   {
+    "round": 19,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 20,
+    "plan": "default",
+    "site": "B"
+   },
+   {
+    "round": 21,
+    "plan": "rush",
+    "site": "A"
+   },
+   {
+    "round": 22,
+    "plan": "default",
+    "site": "A"
+   },
+   {
+    "round": 23,
+    "plan": "execute",
+    "site": "B"
+   },
+   {
+    "round": 24,
+    "plan": "default",
+    "site": "A"
+   }
+  ]
+ }
+}

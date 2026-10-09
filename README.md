@@ -6,7 +6,15 @@ Siege-style tactics (leaning, destructible soft walls, gadgets, drones and
 cameras). It has an original modern-military theme. All names, maps,
 weapons and characters are original. Third-party art is CC0 only.
 
-> **Status: Milestone 7 of 7 - feature complete.** Milestone 7 adds the polish:
+> **Status: Milestone 8 - bots that decide like players** (workstream A of the overhaul in
+> [docs/OVERHAUL_PLAN.md](docs/OVERHAUL_PLAN.md)). A new bot brain (`--ai v2`) that knows only what a player
+> knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
+> holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
+> aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
+> you confirm the switch: against them v2 wins 42 % of rounds (target 70 %, not reached; results in
+> [docs/results/](docs/results/README.md)). See "Milestone 8 - what to test" below.
+>
+> Milestone 7 added the polish:
 > * **A main menu** over a camera tour of the map: play (side, difficulty, team sizes), watch a bot match,
 >   how to play, settings. The pause menu can quit back to it.
 > * **Settings:** rebind every key in the new CONTROLS tab (conflicts swap), HUD options, a live
@@ -126,6 +134,48 @@ Useful options (`python main.py --help` lists them all):
 Every key except Esc, F1, F3, F10, F12, V and the console key can be rebound in **Settings > Controls**: click
 a row, press a key or mouse button. A key that is already used swaps over to the old key of the action you
 changed. Bindings are saved in `user/settings.json` (`input.binds`).
+
+## Milestone 8 - what to test
+
+Milestone 8 rewrites the bots' decision making (`ai/v2/`). They aim and react exactly as before (same
+`data/bots.json` profiles); what changed is what they decide, and what they know. Start a match with the new
+bots with `python main.py --ai v2` (or `ai v2` in the console). `--ai team0=v2,team1=legacy` puts the
+Milestone 5 bots on one team for a comparison.
+
+1. **They only know what a player would know.** Sight, sound, their team's radio callouts (late, and only as
+   precise as an area name: "Two B Long, one tagged"), the radar (they glance at it now and then, never
+   mid-fight), pings and the kill feed. Hide after being seen and they lose you; shoot them from out of sight
+   and they only know the direction. `--audit` checks this while you play and reports at the end.
+2. **Fights.** They break off long-range duels that go nowhere and get out of sight when your gun outranges
+   theirs, jiggle between bursts at range, hide to reload and then hold the corner you would come round
+   instead of re-peeking at a rhythm, back off a step when hurt, fight back when shot, trade a teammate (the two closest swing, the others keep their angles), pop-flash a corner they know
+   you are behind and swing while you are blind.
+3. **Attacking.** A plan per round, announced on the radio, and rarely the same twice: default (map control
+   and a mid-round call to the quieter site), execute (utility, then entry and his trader), split, fake (two
+   bots show at one site), contact (walk quietly until the first information), rush (mostly on eco rounds).
+   One bot may lurk on the other side and come in behind the rotation. After the plant they hold hidden spots
+   in a crossfire on the charge; when they hear the defuse start they swing on it.
+4. **Defending.** 2-1-2, a stack (at the site that is hit more often), aggressive information plays (a forward
+   spot early, then back to the site), or a retake setup. Spots come from the map analysis: off-angles and
+   crossfires on the site's entries. They rotate only on credible information (two different enemies near a
+   site, or one plus utility, or a teammate dying there). A spot that got someone killed twice is used less.
+5. **Roles and styles.** Entry, trader, support, lurker, AWPer; anchor, rotator. Every bot has fixed traits
+   (aggression, patience, teamwork, utility, risk): `botinfo <name>` shows them.
+6. **Difficulty** changes decision quality, not aim: reaction times are a lognormal draw around the profile's
+   mean (the same mean as before), a bot busy with one enemy notices a second one late, a fast flick decides
+   only which side of the target the usual first-shot error falls on, stress makes mistakes likelier, and the
+   easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
+   when shot from behind).
+7. **Debugging.** Console: `botinfo <name>` (the decision and everything behind it), `overlay` (labels over the
+   bots with their action, the runner-up scores, the task and the fact behind it), `belief attack|defend|off`
+   (the radar shows where that team thinks enemies can be).
+8. **Statistics.** `python main.py --demo bots --ai team0=v2,team1=legacy --audit` plays a match and prints the
+   round-win rate with a confidence interval, deaths while reloading, unseen deaths, trades, stacking, stuck
+   bots, utility effectiveness, the attack plans and the fairness audit. `BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`
+   runs it without drawing (much faster), `BOT_DEMO_JSON=out.json` saves everything.
+
+Please tell me whether the bots feel like players: where they surprise you, where they still feel robotic,
+and whether any of them seems to know something it shouldn't.
 
 ## Milestone 7 - what to test
 
@@ -517,6 +567,14 @@ The tests cover:
   bearings and damage arc directions
 * audio rules (distance and occlusion variants, environments, fades) and the synthesised loops, muffled and
   distant variants and music cues
+* the v2 bots (Milestone 8): AI selection per team; the fairness audit catching reads of hidden enemy state;
+  the tactical map (doorways, visibility through walls and doorways agreeing with Bullet rays, crouch cover,
+  the graph, spawn arrival times, site spots, the cache, breakable walls); the possibility field (arrival
+  times, spreading, clearing and refilling, tracks); radio delay, fuzz, batching and missed calls; knowledge
+  precision by source; the humaniser (lognormal reactions with the profile's mean, attention, error-neutral
+  flicks, mistakes by difficulty); traits and roles; utility scoring with commitment; the budgeted A*
+  (budget per tick, cache, same routes as the full search); plan variety; the trade rule; post-plant hiding
+  spots; the halftime side swap
 
 ## Troubleshooting
 

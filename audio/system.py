@@ -74,6 +74,7 @@ class AudioSystem:
     def __init__(self, game, settings: dict, weapons: dict, log=print):
         self.game = game
         self.settings = settings
+        self.listeners: list = []           # callback(name, pos) for every positional sound
         self.enabled = False
         self.pools3d: dict[str, list] = {}
         self.pools2d: dict[str, list] = {}
@@ -164,6 +165,8 @@ class AudioSystem:
         return lst[i]
 
     def play_at(self, name: str, pos, volume: float = 1.0, category: str = "misc", occlude: bool = True) -> None:
+        for cb in self.listeners:               # who else hears it (v2 bots: the defuse start)
+            cb(name, pos)
         if not self.enabled or name not in self.lib:
             return
         if occlude and self.occluded(pos):

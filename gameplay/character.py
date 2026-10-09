@@ -216,7 +216,9 @@ class KinematicCharacter:
                     if key not in deepest or dist < deepest[key][0]:
                         deepest[key] = (dist, Vec3(mp.getNormalWorldOnB()) * sign)
             push = Vec3(0, 0, 0)
-            for dist, n in deepest.values():
+            # summed in a fixed order: Bullet's contact order can differ between runs, and float
+            # rounding would make the result (and so --seed reproduction) depend on it
+            for dist, n in sorted(deepest.values(), key=lambda dn: (dn[0], dn[1].x, dn[1].y, dn[1].z)):
                 push += n * (-dist + SKIN * 0.5)
             if self.on_ground and push.z < 0.0:
                 push.z = 0.0          # head in a ceiling: never push a grounded character into the floor

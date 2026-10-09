@@ -550,7 +550,7 @@ class Benchmark:
 
 
 class BotDemo:
-    """Milestone 5: watch a 5v5 bot match at high speed and report how it went.
+    """Watch a 5v5 bot match at high speed and report how it went (Milestones 5 and 8).
 
     Runs ``BOT_DEMO_ROUNDS`` rounds (env, default 8) with 32 fixed ticks per
     rendered frame (``BOT_DEMO_DT``; ``BOT_DEMO_TRACE=1`` logs every bot's
@@ -558,39 +558,63 @@ class BotDemo:
     defusing, carrying the charge) and saves user/screenshots/demo_bots_*.png
     around kills, plants and defuses. Prints every round's events, then a
     summary: round results, kills by weapon, headshot rate, accuracy, plants,
-    defuses and any bot that got stuck (a move task without progress)."""
+    defuses, the behaviour metrics of ai/metrics.py (per AI in a
+    head-to-head, with the round-win rate and its confidence interval), any
+    bot that got stuck, and the fairness audit (``--audit``).
+    ``BOT_DEMO_JSON=path`` also writes every number to a JSON file;
+    ``BOT_DEMO_TICKS=n`` renders a frame every n ticks instead of 8 (faster
+    tuning runs); ``BOT_DEMO_NORENDER=1`` draws nothing at all (statistics
+    runs); ``BOT_DEMO_CONSOLE="overlay;belief attack"`` runs console commands
+    at the start."""
 
     def __init__(self, game):
         import os
+        from ai.metrics import MetricsCollector
         self.game = game
         self.name = "bots"
         self.rounds = int(os.environ.get("BOT_DEMO_ROUNDS", "8"))
         self.trace = os.environ.get("BOT_DEMO_TRACE", "") == "1"
         self.frame_dt = float(os.environ.get("BOT_DEMO_DT", "0.5"))
+        ticks = int(os.environ.get("BOT_DEMO_TICKS", "0"))
+        if ticks > 0:
+            # fewer rendered frames per simulated second: faster for tuning runs (the hit boxes
+            # are interpolated per frame, so results differ slightly from the default of 8)
+            game.loop.max_ticks_per_frame = ticks
+            self.frame_dt = ticks * game.loop.dt
+        self.json_path = os.environ.get("BOT_DEMO_JSON", "")
         self.done = False
         self.ticks = 0
         self.results = []
         self.kills = []
-        self.events = []
         self.shot_queue: list[tuple[int, str]] = []
         self.shots_this_round = 0
-        self.stuck: dict[int, list] = {}
-        self.stuck_reports = []
-        self.hits = 0
-        self.plants = 0
-        self.defuses = 0
         self.round_t0 = 0.0
         game.debug_hud.set_mode(False)
         d = game.director
         d.listeners.append(self._event)
-        for b in d.bots:
-            b.damageable.on_damage.append(lambda res, b=b: self._hit(res))
-        game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds")
+        self.metrics = MetricsCollector(game, d)
+        game.log(f"[demo] bot match: {len(d.bots)} bots, difficulty {d.difficulty}, {self.rounds} rounds, "
+                 f"AI {d.describe_ai()}")
         d.tactical.verbose = self.trace or os.environ.get("BOT_DEMO_GADGETS", "") == "1"
+        self.render = os.environ.get("BOT_DEMO_NORENDER", "") != "1"
+        for cmd in filter(None, (c.strip() for c in os.environ.get("BOT_DEMO_CONSOLE", "").split(";"))):
+            game.log(f"[demo] console: {cmd} -> {game.console.run(cmd)}")
 
-    def _hit(self, res) -> None:
-        if res.info.kind == "bullet":
-            self.hits += 1
+    @property
+    def stuck_reports(self) -> list[str]:
+        return self.metrics.stuck_reports
+
+    @property
+    def plants(self) -> int:
+        return self.metrics.plants
+
+    @property
+    def defuses(self) -> int:
+        return self.metrics.defuses
+
+    @property
+    def hits(self) -> int:
+        return sum(self.metrics.hits.values())
 
     def _event(self, kind: str, data: dict) -> None:
         g = self.game
@@ -599,7 +623,6 @@ class BotDemo:
         t = now - self.round_t0
         if kind == "round_start":
             self.shots_this_round = 0
-            self.stuck = {}
         elif kind == "live":
             self.round_t0 = now
         elif kind == "kill":
@@ -621,11 +644,9 @@ class BotDemo:
                 self.shot_queue.append((3, f"bots_r{d.match.round}_kill{self.shots_this_round}"))
                 self.shots_this_round += 1
         elif kind == "bomb_planted":
-            self.plants += 1
             g.log(f"[bots] {t:5.1f}s  charge planted at {d.bomb.site} by {data['planter'].name}")
             self.shot_queue.append((2, f"bots_r{d.match.round}_planted"))
         elif kind == "bomb_defused":
-            self.defuses += 1
             g.log(f"[bots] {t:5.1f}s  charge defused by {data['defuser'].name}")
             self.shot_queue.append((2, f"bots_r{d.match.round}_defused"))
         elif kind == "round_end":
@@ -633,42 +654,28 @@ class BotDemo:
             m = d.match
             self.results.append((r.winner_side, r.reason, t))
             a, b = m.scoreline()
-            g.log(f"[bots] round {m.round}: {r.winner_side} win ({r.reason}) after {t:.0f}s  -  "
+            team = next((tm for tm in m.teams if tm.side == r.winner_side), None)
+            who = f" [{d.team_ai.get(team.index, '?')}]" if team is not None and len(set(d.team_ai.values())) > 1 else ""
+            g.log(f"[bots] round {m.round}: {r.winner_side}{who} win ({r.reason}) after {t:.0f}s  -  "
                   f"attack {a} : {b} defend")
 
     def tick(self, dt: float) -> None:
         self.ticks += 1
+        self.metrics.tick(dt)
         d = self.game.director
         if self.ticks % 16:
             return
         now = self.game.loop.time
         if self.trace and self.ticks % (64 * 5) == 0 and d.match.phase in ("live", "planted"):
+            for side, tb in d.team_brains.items():
+                self.game.log(f"[trace] {now - self.round_t0:5.1f}s team {side} [{getattr(tb, 'ai', 'legacy')}] "
+                              f"plan {tb.plan or getattr(tb, 'setup', '') or '-'} site {tb.site or '-'} "
+                              f"phase {tb.phase}")
             for b in d.bots:
                 if b.active and b.alive:
                     p = b.position()
                     self.game.log(f"[trace] {now - self.round_t0:5.1f}s {b.describe()} @ "
                                   f"{self.game.level.callout_at(p.x, p.y)} ({p.x:.1f}, {p.y:.1f}, {p.z:.1f})")
-        # stuck detection: a bot with a move task that has not moved 0.6 m in 5 s
-        if d.match.phase in ("live", "planted"):
-            for b in d.bots:
-                if not (b.active and b.alive):
-                    continue
-                br = b.brain
-                moving = (br.follower.active and br.mode in ("task", "alert", "seek", "retreat")
-                          and b.intent.wish.lengthSquared() > 0.25)
-                rec = self.stuck.get(id(b))
-                p = b.position()
-                if not moving or rec is None:
-                    self.stuck[id(b)] = [p, now, False]
-                    continue
-                if (p - rec[0]).length() > 0.6:
-                    self.stuck[id(b)] = [p, now, False]
-                elif now - rec[1] > 5.0 and not rec[2]:
-                    rec[2] = True
-                    msg = (f"{b.name} stuck at ({p.x:.1f}, {p.y:.1f}, {p.z:.2f}) "
-                           f"{self.game.level.callout_at(p.x, p.y)} - {br.describe()}")
-                    self.stuck_reports.append(msg)
-                    self.game.log(f"[bots] STUCK {msg}")
         # follow the action
         sp = d.spectator
         if sp.active and not sp.free:
@@ -681,6 +688,12 @@ class BotDemo:
     def frame(self) -> bool:
         g = self.game
         d = g.director
+        if not self.render:
+            # statistics runs: simulate only (no frames drawn, no screenshots)
+            self.shot_queue.clear()
+            ge = g.graphicsEngine
+            for i in range(ge.getNumWindows()):
+                ge.getWindow(i).setActive(False)
         if self.shot_queue:
             n, name = self.shot_queue[0]
             if n <= 0:
@@ -701,6 +714,7 @@ class BotDemo:
         log = g.log
         d = g.director
         log("[bots] ===== summary =====")
+        log(f"[bots] AI: {d.describe_ai()}")
         by_reason = {}
         for side, reason, t in self.results:
             by_reason[(side, reason)] = by_reason.get((side, reason), 0) + 1
@@ -719,12 +733,26 @@ class BotDemo:
             f"({100.0 * self.hits / max(fired, 1):.0f}%)")
         for b in sorted(d.bots, key=lambda b: -b.stats.kills):
             st = b.stats
-            log(f"[bots]   {b.name:9s} {b.side:7s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}  ${b.money}")
+            log(f"[bots]   {b.name:9s} {b.side:7s} {d.ai_of(b):6s} K {st.kills:2d}  D {st.deaths:2d}  A {st.assists:2d}"
+                f"  ${b.money}")
         tac = d.tactical
         log("[bots] gadgets: " + ", ".join(f"{k} {v}" for k, v in sorted(tac.stats.items())))
+        for line in self.metrics.report_lines():
+            log(line)
         log(f"[bots] stuck reports: {len(self.stuck_reports)}")
         for msg in self.stuck_reports[:20]:
             log(f"[bots]   {msg}")
+        if d.audit is not None:
+            for line in d.audit.report():
+                log(line)
+        if self.json_path:
+            import json
+            from pathlib import Path
+            out = Path(self.json_path)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps({"ai": d.describe_ai(), "seed": d.seed, "difficulty": d.difficulty,
+                                       "behaviour": self.metrics.summary()}, indent=1, default=str))
+            log(f"[bots] metrics written to {out}")
 
 
 class DemoRunner:

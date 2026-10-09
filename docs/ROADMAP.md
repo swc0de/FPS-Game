@@ -9,6 +9,126 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, win-rate target not reached (awaiting your review) |
+| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | next |
+
+## Milestone 8 - delivered
+
+Bots that play by decisions, not better aim (`ai/v2/`, selectable per team with `--ai`; the Milestone 5
+brain is unchanged and still the default until you confirm). Plan, measurements and running log:
+[OVERHAUL_PLAN.md](OVERHAUL_PLAN.md).
+
+* **What a bot knows** (`ai/v2/knowledge.py`, `comms.py`, `belief.py`): facts with a source and a
+  precision - sight (exact), sound (fuzzier with distance), damage from an unseen shooter (a direction
+  only), radio callouts (0.3-1.2 s late, snapped to the area and fuzzed, batched into lines such as
+  "Two B Long, one tagged"; "tagged" only from the speaker's own hit markers), the radar (a glance every
+  few seconds, never mid-fight), pings, the kill feed, the defuse sound. A dying bot gets its last call
+  out. Each team keeps a **possibility field** over the tactical points: earliest arrival times from the
+  enemy spawn, cleared by what the team sees (one bot's view per tick), refilled from the sides at running
+  speed, tracks for enemies seen or heard recently, and a danger weight per point with priors learned from
+  earlier rounds.
+* **Fairness audit** (`ai/audit.py`, `--audit`): every read of an enemy's position, head, velocity, the
+  hidden charge carrier or an unseen gadget by AI code is checked against what the reader's team can see.
+  v2: 0 violations in every run; the legacy brain's leaks are listed by call site.
+* **Tactical map** (`ai/v2/tactical_map.py`): about 1,800 points on the compound with standing and crouched
+  visibility (bitsets), cover in 16 directions, a walking graph, spawn arrival times, and per site the
+  entries, hold spots (scored by how much of the entries they see and how exposed they are, off-angles,
+  crouch spots), crossfire pairs and forward information spots. Built once (~15 s), cached; breakable walls
+  update it.
+* **The brain** (`ai/v2/brain.py`): utility-scored actions (fight, fall back, reload, trade, investigate,
+  reposition, avoid, throw, the team's task) with commitment and hysteresis; controllers for movement
+  (spacing, doorways, walking near likely enemies), aim (likely-point pre-aim from the field), shooting
+  (bursts, counter-strafe, jiggle between bursts at range, break off stale duels) and peeking; own utility
+  (pop-flash a corner and swing, frag a held spot); budgeted A* (`ai/v2/pathing.py`, both portal scorings,
+  cached chains).
+* **Team strategy** (`ai/v2/strategy.py`): attack plans default / execute / split / fake / contact / rush with
+  an anti-repetition decay and weights that follow results; roles entry, trade, support, lurker, AWPer;
+  defence setups 2-1-2 / stack / aggro / retake, crossfire holds, rotations on credible information, anchors
+  that fall back, spots that died twice used less; post-plant hiding and a synchronised swing on the defuse;
+  retakes with utility.
+* **Humanisation and difficulty** (`ai/v2/humanize.py`, `personality.py`): lognormal reactions around the
+  profile's mean, late reactions to a second enemy, flick side, stress, per-difficulty mistakes, stable
+  per-bot traits.
+* **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
+  head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.
+
+### Milestone 8 results
+
+Full tables and files: [docs/results/](results/README.md). Measured after the performance pass
+you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
+
+* **Against legacy: 42 % of rounds** (32 of 77, 95 % CI 31-53; four full matches with sides
+  swapped, same aim and reaction numbers). The target was 70 %. Before the performance pass the
+  same four seeds gave 43 % (CI 33-54). Attack 21 of 36, defence 11 of 41.
+* **Behaviour** (v2 against v2, same seeds as the baseline):
+  * deaths while reloading 20 % → 8 %;
+  * stacking 3.4 → 1.4 incidents per round (target 0.1);
+  * no attack plan above 29 % of rounds;
+  * on the wrong side of legacy in the final matches: trades 13.6 % → 11.9 % of deaths (16.1 %
+    before the pass) and unseen deaths 8.4 % → 9.2 % (8.0 % before the pass). Re-runs of the same
+    two seeds gave 15.0-15.2 % and 8.1-8.4 %, so single matches vary by about as much as the gap
+    (decision 2).
+* **Fairness audit**: 0 violations for v2 in every run. Legacy reads hidden state about 10,000
+  times a match.
+* **Performance**:
+  * live tick on the final code 4.42 ms mean, 7.31 ms p95; the legacy control in the same session
+    3.15 / 5.55 ms (1.40 × / 1.32 ×). An earlier session measured 3.95 / 6.52 against 2.91 / 4.95.
+    So within 1.3 × the Phase 0 numbers in one session and over in the other, and over 1.3 × the
+    same-session legacy in both (budget 1.3 ×);
+  * AI p99 3.90 ms (3.51 in the earlier session; rule ≤ 4 ms: met). The AI's own cost fell
+    6-13 %;
+  * all gun, grenade, gadget and charge models are built at match load: their first use cost up
+    to 264 ms in one tick, for both brains.
+
+### Milestone 8 decisions to confirm
+
+1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
+   the Milestone 5 bots 70 % of the time; it loses most defence rounds. Options:
+   * a) accept it and make v2 the default now (legacy stays behind `--ai legacy`);
+   * b) keep legacy as the default and spend another tuning round on defence (retake and
+     aggressive setups lose most; anchors give up sites without a trade);
+   * c) both: v2 default now, defence tuning as a follow-up.
+   I recommend c): the measured gap is on one side, and v2 is better than legacy on most
+   behaviour metrics (reloading deaths, deaths to an unseen enemy, exposure, hits per shot,
+   utility). It is worse on clumping.
+2. **The path search budget.** The performance pass halved it (260 → 140 node expansions per
+   team per tick) to keep AI spikes down; routes now take about twice as long to arrive. The
+   final v2-against-v2 matches traded less (16.1 % → 11.9 %) and died unseen more (8.0 % →
+   9.2 %) than before the pass; the head-to-head is unchanged at 42 %. Measured since, on the
+   same two seeds:
+   * at 260 on the final code: trades 15.2 %, unseen deaths 8.4 %, stuck 2 + 0, and the AI p99
+     4.15 ms (over the rule you chose; AI mean 1.42 → 1.46 ms);
+   * at 140 with Milestone 9's hit boxes (PR B), the only other change: trades 15.0 %, unseen
+     deaths 8.1 %.
+   So the budget does not explain the drop: one 24-round match differs from the next by about as
+   much. Options:
+   * a) keep 140 (spike rule met);
+   * b) go back to 260 (over the spike rule, no measurable gain);
+   * c) keep 140 and make trading cheaper anyway (a trade route from the path cache, not a new
+     search), as part of the defence tuning round.
+   I recommend a).
+3. **The tick budget.** The spike rule you chose is met, but the whole tick is about 1.32-1.40 ×
+   legacy's (budget 1.3 ×). Going further needs a structural change (batching the per-bot
+   queries across the team), not more trimming. Options: a) accept about 1.35-1.4 × for v2 (game
+   logic stays under a third of the 15.6 ms tick on this slow VM); b) the structural change as a
+   follow-up. I recommend a).
+4. **How the head-to-head was run.** Full matches through `--demo bots` with
+   `BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64` (same 64 Hz game logic, no drawing), four seeds instead
+   of the planned three seeds × two starting sides, because a full match is about 22 rounds.
+5. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
+
+### Milestone 8 known issues
+
+* **Win rate 42 %**, defence 27 % (above).
+* **Trades and unseen deaths** on the wrong side of legacy in the final matches, within the
+  spread between single matches (decision 2).
+* **Stacking**: 1.38 incidents per round (target ≤ 0.1; legacy 3.4). Executes and regroups move
+  as a group.
+* **Stuck**: one bot in 48 rounds (target 0; legacy had 2). Path-follower micro-stucks rose from
+  about 80 to 290-350 a match: bots in groups block each other for under a second.
+* **Performance**: about 1.32-1.40 × legacy's tick measured in the same session (budget 1.3 ×);
+  the AI p99 rule is met by a small margin. Timings on this VM vary by about ±10 % between
+  sessions.
 
 ## Milestone 7 - delivered
 
