@@ -18,9 +18,9 @@ run every tick and decide *how*, on top of the layers every bot shares
 * ``Shooter`` is the trigger discipline of the Milestone 5 brain: fire only
   when the bullets land within the target's angular size, bursts that
   shorten with range, pauses for the recoil to reset, counter-strafing, no
-  shooting through teammates. On top: the flick of a new target overshoots
-  or undershoots (ai/v2/humanize.py), stress widens the aim error, and a
-  pre-fire is a short burst at a believed position the bot cannot see yet.
+  shooting through teammates, with the same aim profile and controller.
+  On top: a pre-fire is a short burst at a believed position the bot cannot
+  see yet.
 * ``PeekHelper`` finds the side step that breaks line of sight to a threat
   (to hide between bursts or to reload) and back (to re-peek).
 """
@@ -31,7 +31,6 @@ import zlib
 
 from panda3d.core import Point3, Vec3
 
-from ai.aim import angles_to, wrap180
 from ai.v2.pathing import PENDING
 from engine.physics import MASK_BULLETS, MASK_SIGHT
 
@@ -322,20 +321,9 @@ class Shooter:
         self.prefer_head = bot.rng.random() < float(bot.profile.get("headshot", 0.3))
         self.burst = 0
         self.burst_limit = self.burst_for((c.pos - bot.position()).length())
-        # a flick onto a new target over- or undershoots, then the hand corrects
-        eye = bot.eye()
-        yaw, _ = angles_to(c.pos.x - eye.x, c.pos.y - eye.y, c.pos.z + 1.4 - eye.z)
-        turn = abs(wrap180(yaw - bot.aim.yaw))
         dist = (c.pos - bot.position()).length()
         tvel = c.agent.velocity() if hasattr(c.agent, "velocity") else Vec3(0, 0, 0)
         bot.aim.acquire(id(c.agent), dist, math.hypot(tvel.x, tvel.y), bot.char.horizontal_speed)
-        # a big turn overshoots (or stops short) and the hand corrects: the flick decides which
-        # side of the target the usual first-shot error falls on, never how big it is (same aim
-        # profile as the Milestone 5 bots)
-        over = self.b.human.flick(turn)
-        if over != 0.0:
-            sign = 1.0 if wrap180(yaw - bot.aim.yaw) > 0 else -1.0
-            bot.aim.err_x = abs(bot.aim.err_x) * sign * (1.0 if over > 0 else -1.0)
 
     def release(self) -> None:
         self.target_id = None

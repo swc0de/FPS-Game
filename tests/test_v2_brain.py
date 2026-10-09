@@ -31,13 +31,12 @@ class HumanizerTests(unittest.TestCase):
         slow = sum(1 for d in draws if d > hi * 1.3) / len(draws)
         self.assertGreater(slow, 0.01)                              # now and then much slower
 
-    def test_attention_and_flicks(self):
+    def test_no_aim_or_reaction_error_beyond_the_profile(self):
+        """Equal mechanics: no late reaction to a second enemy, no flick error (both removed)."""
         h = self.make()
-        self.assertEqual(h.attention(90, busy=False), 1.0)
-        self.assertEqual(h.attention(90, busy=True), DEFAULTS["normal"]["tunnel"])
-        self.assertLess(h.attention(10, busy=True), h.attention(90, busy=True))
-        self.assertEqual(h.flick(5.0), 0.0)                         # small corrections do not overshoot
-        self.assertTrue(any(h.flick(60.0) != 0.0 for _ in range(10)))
+        self.assertFalse(hasattr(h, "attention") or hasattr(h, "flick"))
+        for d in DEFAULTS.values():
+            self.assertFalse({"tunnel", "flick"} & set(d))
 
     def test_harder_bots_make_fewer_mistakes(self):
         for kind in ("over_peek", "skip_corner", "reload_open", "late_trade", "ignore_call", "panic"):

@@ -442,10 +442,12 @@ right.*
   * The mean equals today's mean, so expected reaction is unchanged; only the shape is more human.
   * In the head-to-head both brains draw from the same sampler.
 * **Attention**: tunnel vision on the current target. A second enemy, or one outside a cone of
-  about 40° around the target, reacts ×1.3-1.8 slower, by difficulty.
+  about 40° around the target, reacts ×1.3-1.8 slower, by difficulty. *Removed after Milestone 9
+  (your decision, "equal mechanics"): it cost v2 about 14 points of win rate against a brain that
+  does not have it.*
 * **Flicks**: large turns are split into a ballistic phase that overshoots or undershoots
   (±8-20 %, by difficulty) and a correction. This is fed through `AimController.turn_towards`
-  targets; the controller is unchanged.
+  targets; the controller is unchanged. *Removed with the attention penalty.*
 * **Stress**: rises on being hit, in a clutch or when flanked, and decays over 3-5 s. It scales aim
   error and decision noise, and on easy it can freeze the bot briefly when flanked.
 * **Mistake rates by difficulty**:

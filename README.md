@@ -191,10 +191,9 @@ Milestone 5 bots on one team for a comparison.
    site, or one plus utility, or a teammate dying there). A spot that got someone killed twice is used less.
 5. **Roles and styles.** Entry, trader, support, lurker, AWPer; anchor, rotator. Every bot has fixed traits
    (aggression, patience, teamwork, utility, risk): `botinfo <name>` shows them.
-6. **Difficulty** changes decision quality, not aim: reaction times are a lognormal draw around the profile's
-   mean (the same mean as before), a bot busy with one enemy notices a second one late, a fast flick decides
-   only which side of the target the usual first-shot error falls on, stress makes mistakes likelier, and the
-   easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
+6. **Difficulty** changes decision quality, not aim: aim and reaction are exactly the Milestone 5 profile
+   (reaction times a lognormal draw around the profile's mean, the same mean as before), stress makes mistakes
+   likelier, and the easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
    when shot from behind).
 7. **Debugging.** Console: `botinfo <name>` (the decision and everything behind it), `overlay` (labels over the
    bots with their action, the runner-up scores, the task and the fact behind it), `belief attack|defend|off`

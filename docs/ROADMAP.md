@@ -99,7 +99,7 @@ brain is unchanged and still the default until you confirm). Plan, measurements 
   that fall back, spots that died twice used less; post-plant hiding and a synchronised swing on the defuse;
   retakes with utility.
 * **Humanisation and difficulty** (`ai/v2/humanize.py`, `personality.py`): lognormal reactions around the
-  profile's mean, late reactions to a second enemy, flick side, stress, per-difficulty mistakes, stable
+  profile's mean (aim and reaction otherwise exactly the Milestone 5 profile), stress, per-difficulty mistakes, stable
   per-bot traits.
 * **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
   head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.

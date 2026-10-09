@@ -4,9 +4,8 @@ Sight, hearing and smoke are exactly ai/perception.py (same view cone,
 rays, ranges and scan rate). What changes is how long a bot takes to react
 to an enemy that appears (ai/v2/humanize.py):
 
-* the base time is a lognormal draw with the profile's mean;
-* a bot busy with another enemy reacts later, more so when the new one is
-  far from its aim (attention);
+* the base time is a lognormal draw with the profile's mean (no other
+  reaction penalty: a second enemy is seen as fast as the first);
 * an enemy the bot expected - its own knowledge put an enemy near there in
   the last 4 s (a callout, a sound, a recent sighting) - is recognised
   faster, as before; a team callout no longer counts unless the bot itself
@@ -28,7 +27,6 @@ class PerceptionV2(Perception):
         super().__init__(bot, vision_cfg, profile)
         self.human = humanizer
         self.knowledge = knowledge
-        self.busy_with = None           # id of the enemy the brain is fighting
 
     def on_callout(self, enemy, pos, t) -> None:
         pass
@@ -76,10 +74,6 @@ class PerceptionV2(Perception):
                         react *= 0.4                     # just lost sight of it: faster re-acquire
                     elif self._expected(pos, now):
                         react *= 0.75
-                    busy = self.busy_with is not None and self.busy_with != id(e)
-                    if busy:
-                        to = math.degrees(math.atan2(-(pos.x - eye.x), pos.y - eye.y))
-                        react *= self.human.attention(abs((to - bot.aim.yaw + 180.0) % 360.0 - 180.0), True)
                     c = Contact(e, pos, now, "sight", True, now, now + react)
                     self.contacts[id(e)] = c
                     bot.on_spotted(e)

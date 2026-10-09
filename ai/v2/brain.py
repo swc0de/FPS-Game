@@ -140,7 +140,6 @@ class Fight(Action):
             return
         if c is not self.target:
             self.target = c
-        b.perception.busy_with = id(c.agent)
         if not c.seen:
             # hidden on purpose: step behind cover, hold the corner it would come round
             # (it knows where we were and may push), then re-peek - never at a rhythm
@@ -224,7 +223,6 @@ class Fight(Action):
         return Vec3(0, 0, 0)
 
     def stop(self):
-        self.b.perception.busy_with = None
         self.hide_dir = None
 
 
@@ -617,7 +615,6 @@ class BrainV2:
         self.shooter.reset()
         self.mover.reset()
         self.aim_policy.reset()
-        self.perception.busy_with = None
         for a in self.actions.values():
             a.started = -1.0
         self._preaim_key = None
