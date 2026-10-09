@@ -1152,8 +1152,9 @@ class TeamStrategy(TeamBrain):
             if movers:
                 # not one by one into a contested site: to the defenders' side of it, together,
                 # where they cut it off from behind and can retake
+                taken = []
                 for b in movers:
-                    p = self._regroup_point(b, self.site_centers[name])
+                    p = self._regroup_point(b, self.site_centers[name], taken)
                     self.area_of[id(b)] = name
                     b.brain.set_task(Task("hold", p, look=self.site_centers[name] + Vec3(0, 0, 1.4), wait=True,
                                           tag="rotate", walk_near=8.0))
@@ -1212,9 +1213,10 @@ class TeamStrategy(TeamBrain):
             self.gather_t = now
             self.defuser = None
             self.say(bots[0], f"Charge is down at {bomb.site}. Group up for the retake!", key="regroup", every=5.0)
+            taken = []
             for b in bots:
-                b.brain.set_task(Task("move", self._regroup_point(b, bomb.pos), look=bomb.pos + Vec3(0, 0, 1.4),
-                                      tag="regroup", wait=True))
+                b.brain.set_task(Task("move", self._regroup_point(b, bomb.pos, taken),
+                                      look=bomb.pos + Vec3(0, 0, 1.4), tag="regroup", wait=True))
         if self.retake_phase == "gather":
             ready = [b for b in bots if b.brain.task.tag == "regroup" and b.brain.arrived]
             pressed = left - max(eta(b) for b in bots) < 10.0
@@ -1277,9 +1279,11 @@ class TeamStrategy(TeamBrain):
         """Where defenders coming from their spawn enter the site (precomputed)."""
         return self._rot_pts.get(site)
 
-    def _regroup_point(self, bot, bomb_pos: Point3) -> Point3:
+    def _regroup_point(self, bot, bomb_pos: Point3, taken: list | None = None) -> Point3:
         """A spot about 16 m short of the site on the bot's side, out of the fight (the
-        retake gathers there)."""
+        retake gathers there). Spots already given to teammates (``taken``, appended to) are
+        kept 1.6 m clear: bots that start together were all sent to one point and stood on
+        each other there."""
         p = bot.position()
         if (p - bomb_pos).length() < 18.0:
             return Point3(p)
@@ -1291,8 +1295,13 @@ class TeamStrategy(TeamBrain):
         if len(cand) == 0:
             return Point3(p)
         d = np.hypot(tm._xy[cand, 0] - p.x, tm._xy[cand, 1] - p.y) + 0.5 * np.abs(dist[cand] - 16.0)
+        for t in taken or ():
+            d = d + 1e3 * (np.hypot(tm._xy[cand, 0] - t.x, tm._xy[cand, 1] - t.y) < 1.6)
         q = tm.pos[int(cand[int(np.argmin(d))])]
-        return Point3(float(q[0]), float(q[1]), float(q[2]))
+        out = Point3(float(q[0]), float(q[1]), float(q[2]))
+        if taken is not None:
+            taken.append(out)
+        return out
 
     # ---------------------------------------------------------------- misc
     def round_over(self) -> None:
