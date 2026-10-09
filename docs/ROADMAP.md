@@ -55,28 +55,28 @@ selects the new one. Full tables: [docs/results/](results/README.md).
     (**1.15 ×**); Milestone 8 as merged measured 1.40 × / 1.32 ×. Milestone 9's soldiers made
     every tick dearer for both brains, and v2's own extra cost fell (2.5 → 1.4-1.6 ms a tick in
     same-session controls);
-  * AI p99 **5.57 ms** against the 4 ms rule: **not met** in this measurement, by either brain
-    (legacy 5.97 ms). The same session measured the Milestone 8 code, which met the rule at
-    3.90 ms, at 5.63 ms, and `main` before the follow-up at 6.21 ms: the follow-up added no AI
-    cost. Milestone 9 made a bot's shot dearer for both brains (p99 about 4 → 11-13 ms), and
-    shots count as AI time (decision below).
+  * AI p99 **5.57 ms** against legacy's **5.97 ms** in the same session: the spike rule as you
+    re-based it (v2's AI p99 at most the same session's legacy) is **met**. The old absolute
+    4 ms is met by neither brain in this session, which measured the Milestone 8 code (3.90 ms
+    in its own session) at 5.63 ms and `main` before the follow-up at 6.21 ms: the follow-up
+    added no AI cost. Milestone 9 made a bot's shot dearer for both brains (p99 about 4 → 11-13
+    ms), and shots count as AI time (the decision below).
 
-### Follow-up decision to confirm
+### Follow-up decision (settled)
 
-**The AI spike rule** ("AI p99 ≤ 4 ms", your choice in Milestone 8) is not met in this session by
-either brain: v2 5.57 ms, legacy 5.97 ms. It is an absolute number, and this session measures
-the same Milestone 8 code that met it (3.90 ms) at 5.63 ms. On top of that, Milestone 9 made a
-bot's shot dearer for both brains (hit tests, what a kill sets off), and a shot counts as AI time.
-Options:
-* a) re-base the rule on the same session's legacy: v2's AI p99 at most legacy's (met: 5.57
-  against 5.97);
+**The AI spike rule: v2's AI p99 at most legacy's, measured in the same session** (option a, your
+choice; met: 5.57 against 5.97 ms). It replaces "AI p99 ≤ 4 ms" from Milestone 8, which neither
+brain meets in this session: an absolute number, and this session measures the Milestone 8 code
+that met it (3.90 ms) at 5.63 ms. Milestone 9 also made a bot's shot dearer for both brains (hit
+tests, what a kill sets off), and a shot counts as AI time. The options were:
+* a) re-base the rule on the same session's legacy (chosen);
 * b) keep 4 ms and count shots as game time rather than AI time (as model builds and drones
   already are), then re-measure;
 * c) keep 4 ms as is and make the shot path cheaper (a Milestone 9 follow-up).
 
-I recommend a): the rule was meant to keep v2's decisions from spiking, and v2 now spikes less
-than legacy at p99 and in its worst tick (32.6 against 59.7 ms), though more of its ticks pass
-4 ms (2,156 against 950 in 8 rounds).
+The rule is there to keep v2's decisions from spiking: v2 spikes less than legacy at p99 and in
+its worst tick (32.6 against 59.7 ms), though more of its ticks pass 4 ms (2,156 against 950 in
+8 rounds).
 
 ### Follow-up known issues
 
@@ -84,8 +84,9 @@ than legacy at p99 and in its worst tick (32.6 against 59.7 ms), though more of 
   and v2 wins 6 of those.
 * **Stacking** 0.15 per round against the 0.1 target (7 incidents in 48 rounds; 0 at an
   earlier step of the same matches).
-* **AI p99 5.57 ms** against the 4 ms rule in this measurement (legacy 5.97 ms); see the
-  decision above.
+* **More AI ticks over 4 ms than legacy** (2,156 against 950 in 8 rounds), though v2's AI p99
+  (5.57 against 5.97 ms) and worst AI tick (32.6 against 59.7 ms) are lower. On this VM neither
+  brain stays under 4 ms at p99 any more (the re-based rule above).
 * Path-follower micro-stucks (216 a match, legacy 82) include the intentional waits at corners
   and doors; bots in groups still block each other for under a second.
 
@@ -217,7 +218,8 @@ How they were settled after the merge, with the follow-up above:
   round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
 * **2. Path search budget**: 140 kept (a).
 * **3. Tick budget**: met on the final code (1.25 × legacy's mean, 1.15 × p95, same session), with
-  no structural change needed.
+  no structural change needed. The spike rule beside it was re-based in the follow-up: v2's AI
+  p99 at most the same session's legacy (met).
 * **4. Head-to-head method**: as run (full matches, four seeds, sides swapped).
 * **5. The radar**: a legitimate channel, as agreed.
 * **Human errors** (asked during the follow-up): equal mechanics (no second-enemy reaction

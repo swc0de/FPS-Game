@@ -779,7 +779,7 @@ be added later behind the same event interface if you want.
 | **A: v2 beats legacy in ≥70 % of rounds** (identical aim and reaction parameters) | `tools/bot_metrics.py --ai team0=v2,team1=legacy`, Normal, seeds 1-3 × 24 rounds (all rounds played), v2 starting on attack, and the same seeds with v2 starting on defence: 144 rounds, sides swapped at halftime. Reported: v2 round-win %, Wilson 95 % CI, per side. Smaller check runs at Easy and Expert. Both brains use the same `Perception`, `AimController`, profile numbers and reaction sampler; v2's humanisation can only add error. |
 | **A: behaviour metrics improve** | v2 vs v2, same seeds and definitions as the baseline (`docs/baseline/`). Deaths while reloading ↓, unseen deaths ↓, trade rate ↑, stacking ≤ 0.1 per round, **stuck = 0**, no attack plan above 40 % of rounds; plus utility effectiveness, exposure, side win rate. |
 | **A: fairness audit = 0** | `--audit` during every head-to-head and v2 demo run. The report lists access-guard and provenance violations per type for v2 bots (must be 0), and legacy's for reference. Unit tests feed planted ground truth and assert that it is not used. |
-| **A: performance** | Same machine and seeds, `--no-detail` run: live-tick mean and p95 at most 1.3× Phase 0. The detailed run: AI-decision ms per tick, max at most 4 ms, with the count of ticks over 4 ms = 0. Phase-0 values in the baseline README. |
+| **A: performance** | Same machine and seeds, `--no-detail` run: live-tick mean and p95 at most 1.3× Phase 0. The detailed run: AI-decision ms per tick, max at most 4 ms, with the count of ticks over 4 ms = 0. Phase-0 values in the baseline README. As settled with you since: the tick ratios against a legacy control run in the same session; the spike rule first "AI p99 ≤ 4 ms" (Milestone 8), then "v2's AI p99 at most the same session's legacy" (the follow-up). |
 | **A: tests** | New unit tests: utility scoring and hysteresis, belief propagation and clearing, comms delay and precision, tactical point generation and visibility against Bullet, cover and peek queries, role assignment and trait determinism, audit catching a planted leak. |
 | **B: before/after sheet** | `tools/soldier_sheet.py` → `docs/images/soldiers_before.jpg` (done) and `soldiers_after.jpg`, same shots, reviewed and iterated. |
 | **B: no seams or candy-wrapper** | An extreme-pose sheet (forearm twist ±90°, arms up, deep crouch with lean and pitch) plus automated checks: the body mesh has no open edges outside the neck/wrist/ankle seams covered by clothing; cross-section area of the forearm and upper-arm rings stays at least 70 % of the bind pose under twist. |
@@ -999,9 +999,9 @@ be added later behind the same event interface if you want.
   * Final: head-to-head 46 % (39/85, CI 36-56; attack 69 %, defence 23 %), kept as is by your
     decision. Deaths while reloading 6.5 %, unseen deaths 5.2 %, trades 17.7 %, stuck 0, largest
     plan 33 %, audit 0.
-    Tick 1.25 × legacy's (p95 1.15 ×; budget met); AI p99 5.57 ms against the 4 ms rule, not met
-    by either brain in this session (legacy 5.97, the Milestone 8 code 5.63, `main` before the
-    follow-up 6.21): a decision in the ROADMAP.
+    Tick 1.25 × legacy's (p95 1.15 ×; budget met); AI p99 5.57 ms, over the 4 ms rule for both
+    brains in this session (legacy 5.97, the Milestone 8 code 5.63, `main` before the follow-up
+    6.21). You re-based the rule: v2's AI p99 at most the same session's legacy (met).
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

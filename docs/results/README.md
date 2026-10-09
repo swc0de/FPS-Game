@@ -28,7 +28,7 @@ the Milestone 8 hit boxes). Legacy is the Phase 0 baseline.
 | fairness audit, v2 | 0 violations | | 0 | **0** in every run (85 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
 | live tick mean | ≤ 1.3 × legacy | | 1.40 × (Milestone 8 as merged) | **1.25 ×** (8.21 against 6.59 ms, same session, no drawing) | yes |
 | live tick p95 | ≤ 1.3 × legacy | | 1.32 × | **1.15 ×** (13.17 against 11.41 ms) | yes |
-| AI decision spikes (rule as chosen: AI p99 ≤ 4 ms) | p99 ≤ 4 ms | 5.97 ms in this session (3.11 at Phase 0) | 6.21 ms in this session (Milestone 8 as merged: 3.90 ms in its own session, 5.63 ms in this one) | **5.57 ms** | **no** in this measurement, by either brain; v2 below legacy and `main` in the same session (Performance below) |
+| AI decision spikes (rule re-based, your choice: v2's AI p99 at most legacy's in the same session; was ≤ 4 ms) | ≤ legacy's p99 | 5.97 ms in this session (3.11 at Phase 0) | 6.21 ms in this session (Milestone 8 as merged: 3.90 ms in its own session, 5.63 ms in this one) | **5.57 ms** | **yes**; the old absolute 4 ms: no, by either brain in this session (Performance below) |
 | tests | utility, belief, comms, tactical map, roles, audit | | 253 | **254**, all green (3 skipped); new or rewritten: no aim or reaction error beyond the profile, a hole blocked by a crate | yes |
 
 Behaviour rows: means of the seed 1 and seed 2 matches (24 rounds each, Normal, v2 against v2
@@ -185,7 +185,7 @@ minutes a round with the soldiers on this software-GL VM.
 | AI per tick (detail runs) | legacy | v2 |
 |---|---|---|
 | AI decisions mean ms | 1.20 | 2.13 |
-| **AI decisions p99 ms** (rule: ≤ 4 ms) | **5.97** | **5.57** |
+| **AI decisions p99 ms** (rule: v2 at most legacy's) | **5.97** | **5.57** |
 | ticks with AI decisions over 4 ms | 950 | 2,156 |
 | worst AI tick ms | 59.7 (a path search) | 32.6 (one re-think) |
 | a bot's shot (`fire`: the bullet, hits, deaths, ragdolls, effects), p99 / max ms | 11.3 / 23.8 | 13.2 / 24.2 |
@@ -210,17 +210,17 @@ so the final legacy run stands in.
   session. Part of the gain is a larger denominator (Milestone 9's soldiers made every tick
   dearer for both brains), part is v2 itself: its extra cost over legacy is 1.4-1.6 ms a tick,
   2.5 ms for the Milestone 8 code in this session.
-* **The AI spike rule (p99 ≤ 4 ms) is not met by either brain** in this measurement: v2 5.57 ms,
-  legacy 5.97 ms. This session and method measure higher than the ones before: the same
+* **The AI spike rule as you re-based it is met**: v2's AI p99 at most the same session's legacy
+  (5.57 against 5.97 ms). As the absolute 4 ms it was before, it is met by neither brain in this
+  measurement. This session and method measure higher than the ones before: the same
   Milestone 8 code that met the rule at 3.90 ms (its own session, rendering on) measures 5.63 ms
   here, and its legacy 4.18 ms (3.11 at Phase 0). Against the same-session controls the final v2
   is at the Milestone 8 level (5.57 against 5.63), below `main` before the follow-up (6.21) and
   below legacy (5.97): the follow-up added no AI cost (mean 2.37 → 2.13 ms). Milestone 9 made a
   bot's shot dearer for both brains (`fire` p99 3.9-4.1 → 11-13 ms; it covers the hit tests and
   what a kill sets off, both changed by Milestone 9), and that counts as AI time because bots
-  shoot from their brain update. The rule as an absolute 4 ms is not met in this measurement;
-  scaled by the Milestone 8 control, the final v2 would be about 3.9 ms in the session where the
-  rule was set.
+  shoot from their brain update. Scaled by the Milestone 8 control, the final v2 would be about
+  3.9 ms in the session where the 4 ms rule was set.
 * The longest ticks of the detail runs (135 ms legacy, 142 ms v2) are garbage-collection pauses
   (130 and 131 ms).
 
