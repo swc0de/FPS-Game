@@ -1,8 +1,10 @@
 # Overhaul plan: bot intelligence (Milestone 8) and realistic soldiers (Milestone 9)
 
-**Status: Phase 0 done. Waiting for your approval of this plan and the decisions in section 9.**
-No feature code has been written. Phase 0 added measuring tools only (`tools/bot_metrics.py`,
-`tools/soldier_sheet.py`) and the baseline in [docs/baseline/](baseline/README.md).
+**Status: both workstreams delivered and merged into `main`, the follow-up too** (running log
+at the end; results in [docs/results/](results/README.md) and
+[docs/results_m9/](results_m9/README.md)). The plan below is kept as approved. Phase 0's
+measuring tools (`tools/bot_metrics.py`, `tools/soldier_sheet.py`) and the baseline in
+[docs/baseline/](baseline/README.md) are the reference for every result.
 
 ## 0. Summary
 

@@ -69,7 +69,6 @@ class Humanizer:
     def update(self, dt: float) -> None:
         self.stress = max(0.0, self.stress - dt / 4.0)
 
-
     def noise(self) -> float:
         return float(self.c["decision_noise"]) * (1.0 + self.stress)
 

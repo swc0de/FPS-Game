@@ -194,7 +194,8 @@ Milestone 5 bots on one team for a comparison.
 6. **Difficulty** changes decision quality, not aim: aim and reaction are exactly the Milestone 5 profile
    (reaction times a lognormal draw around the profile's mean, the same mean as before), stress makes mistakes
    likelier, and the easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
-   when shot from behind).
+   when shot from behind). Easy makes them often; from Normal up they are rare (Normal at the rates Expert had
+   when Milestone 8 shipped, and only Easy misses calls).
 7. **Debugging.** Console: `botinfo <name>` (the decision and everything behind it), `overlay` (labels over the
    bots with their action, the runner-up scores, the task and the fact behind it), `belief attack|defend|off`
    (the radar shows where that team thinks enemies can be).
