@@ -148,7 +148,9 @@ class Fight(Action):
             bot.aim.look_at(bot.eye(), b.preaim(f, now), dt, 0.8)
             if self.hide_dir is not None and now < self.hide_until:
                 it.wish = self.hide_dir
-            elif self.hide_dir is not None and now < self.hold_until:
+            elif self.hide_dir is not None and (now < self.hold_until or bot.side == "defend"):
+                # a defender stays behind the corner once out of sight: swinging back out where
+                # it was seen meets a crosshair already there; the attacker has to come to it
                 it.crouch = b.traits["patience"] > 0.5
             elif self.hide_dir is not None:
                 it.wish = -self.hide_dir                     # swing back out
@@ -201,8 +203,9 @@ class Fight(Action):
     def _between_bursts(self, c, dist: float, now: float) -> Vec3:
         b = self.b
         bot = b.bot
-        # long-range duel: step behind cover between bursts, then re-peek
-        if dist > 20 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75:
+        # long-range duel: step behind cover between bursts, then re-peek - on attack only; a
+        # defender keeps the angle it holds (re-peeking the same spot loses to a held crosshair)
+        if dist > 20 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75 and bot.side != "defend":
             if self.hide_dir is None or now > self.hold_until + 1.0:
                 self._hide(c, now)
             if self.hide_dir is not None and now < self.hide_until:
@@ -255,8 +258,9 @@ class FallBack(Action):
             need = 0.97
         elif (ctx.stale or ctx.outranged) and ctx.holding:
             need = 0.9                           # out of its sight (it outguns us here), peek later
-        elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6:
-            need = 0.96
+        elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6 and \
+                (close or b.bot.side != "defend"):
+            need = 0.96                          # a defender only steps back into cover a step away
         if self.spot is not None and ctx.now < self.until:
             need = max(need, 0.9)
         return need
@@ -784,7 +788,9 @@ class BrainV2:
             w = it.wish
             n = w.length()
             if n < 0.1:
-                it.wish = step * 0.6
+                # a whole step at walking pace: the movement code takes the wish unnormalised, and
+                # at 0.6 of it ground friction ate nearly all the acceleration (0.1 m/s)
+                it.wish = Vec3(step)
                 it.walk = True
             else:
                 v = w / n + step * 1.2
