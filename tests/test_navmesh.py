@@ -175,11 +175,26 @@ class FollowTests(unittest.TestCase):
 
 
 class CompoundNavTests(unittest.TestCase):
-    def test_compound_lanes_are_connected(self):
+    @classmethod
+    def setUpClass(cls):
         from tests.test_maps import build
-        data, ctx = build("compound")
-        nav = NavMesh.build(ctx.colliders, data["bounds"], [s["pos"] for s in ctx.spawns],
-                            NavConfig.from_movement(CFG))
+        cls.data, cls.ctx = build("compound")
+        cls.nav = NavMesh.build(cls.ctx.colliders, cls.data["bounds"], [s["pos"] for s in cls.ctx.spawns],
+                                NavConfig.from_movement(CFG))
+
+    def test_bunker_room_is_on_the_mesh(self):
+        """The underground bunker room was cut off: no floor under its doors (nothing at ground
+        level covers that strip 3.2 m down), so the room was dropped as unreachable."""
+        nav = self.nav
+        for p in ((29.0, -17.0, -3.18), (32.3, -13.3, -3.18), (33.5, -9.6, -3.18)):
+            self.assertGreaterEqual(nav.locate(p, search=0), 0, f"bunker room {p}")
+        path = nav.find_path((32.0, -24.0, -1.4), (33.5, 5.0, -3.18))       # down the ramp, out the tunnel
+        self.assertIsNotNone(path)
+        self.assertLess(sum(math.dist(a, b) for a, b in zip(path, path[1:])), 34.0)     # through the room
+        self.assertTrue(path_is_walkable(nav, path))
+
+    def test_compound_lanes_are_connected(self):
+        data, ctx, nav = self.data, self.ctx, self.nav
         att = next(s["pos"] for s in ctx.spawns if s["team"] == "attack")
         dfn = next(s["pos"] for s in ctx.spawns if s["team"] == "defend")
         for z in ctx.zones:
