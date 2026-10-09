@@ -796,6 +796,10 @@ class BrainV2:
                 v = w / n + step * 1.2
                 v.normalize()
                 it.wish = v * n
+        if bot.slow < 0.9 and it.wish.lengthSquared() > 0.01:
+            # in razor wire: walking at a third of walking pace, ground friction ate all of it
+            # (stuck for seconds); the wire rattles anyway, so there is nothing to gain by walking
+            it.walk = False
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
