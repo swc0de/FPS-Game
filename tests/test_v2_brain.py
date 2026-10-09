@@ -274,6 +274,45 @@ class PostPlantTests(unittest.TestCase):
             self.assertTrue(tm.sees(bi, pi) or tm.sees(bi, pi, low=True))      # one step sees the charge
             self.assertLess((hide - peek).length(), 3.6)
 
+    def test_regroup_spots_are_spread(self):
+        """Bots that start together get gathering spots apart (they stood on one point)."""
+        import numpy as np
+        tm = self.tm
+        team = StubTeam([])
+        team.tm = tm
+        team._site_of_point = lambda p: "A"
+        team._site_dist = {"A": np.full(len(tm.pos), 16.0)}
+        far = Point3(500.0, 500.0, 0.0)
+        bots = [SimpleNamespace(position=lambda: Point3(1.0, 1.0, 0.0)) for _ in range(3)]
+        self.assertEqual(team._regroup_point(bots[0], far), team._regroup_point(bots[1], far))
+        taken = []
+        spots = [team._regroup_point(b, far, taken) for b in bots]
+        self.assertEqual(len(taken), 3)
+        for i in range(3):
+            for j in range(i + 1, 3):
+                self.assertGreaterEqual((spots[i] - spots[j]).length(), 1.6)
+
+
+class SpacingTests(unittest.TestCase):
+    def test_way_apart_from_off_the_mesh(self):
+        """Two bots pressed into the wall margin (off the walkable mesh, where no walkable line
+        starts) still get a way apart along the wall."""
+        nav = nav_for(room_level())
+        a = SimpleNamespace(name="Alpha", nav=nav, position=lambda: Point3(5.0, -0.2, 0.0))
+        b = SimpleNamespace(name="Bravo", nav=nav, position=lambda: Point3(5.6, -0.2, 0.0))
+        for bot in (a, b):
+            self.assertLess(nav.locate(bot.position(), search=0), 0)       # in the wall margin
+        team = StubTeam([a, b])
+        for bot, other in ((a, b), (b, a)):
+            brain = BrainV2.__new__(BrainV2)
+            brain.bot, brain.team = bot, team
+            step = brain._personal_space()
+            self.assertIsNotNone(step)
+            self.assertAlmostEqual(step.length(), 1.0, places=3)
+            away = bot.position() - other.position()
+            self.assertGreaterEqual(step.dot(away), 0.0)                    # never towards the mate
+            self.assertLessEqual(step.y, 0.01)                              # never into the wall
+
 
 if __name__ == "__main__":
     unittest.main()

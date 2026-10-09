@@ -792,9 +792,11 @@ class BrainV2:
                 it.wish = Vec3(step)
                 it.walk = True
             else:
+                # at least a whole step: two bots crossing at spawn each slowed to 0.35 for the
+                # other ahead, and the bent step at that strength did not get them apart
                 v = w / n + step * 1.2
                 v.normalize()
-                it.wish = v * n
+                it.wish = v * max(n, 1.0)
         if bot.slow < 0.9 and it.wish.lengthSquared() > 0.01:
             # in razor wire: walking at a third of walking pace, ground friction ate all of it
             # (stuck for seconds); the wire rattles anyway, so there is nothing to gain by walking
@@ -1503,14 +1505,20 @@ class BrainV2:
         sx, sy = sx / n, sy / n
         side = 1.0 if stable_bit(bot.name) else -1.0
         nav = bot.nav
-        for ax, ay in ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side)):
+        ways = ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side))
+        for ax, ay in ways:
             if nav.walkable_line(p, (p.x + ax * 0.8, p.y + ay * 0.8, p.z)):
                 return Vec3(ax, ay, 0)
-        # every way blocked: standing off the mesh (against a wall, up on a ledge), where no line
-        # starts. Two defenders stood like that at CT A for seconds; step back onto the mesh
-        if nav.locate((p.x, p.y, p.z), search=1) < 0:
+        # every way "blocked" because the bot stands off the mesh, where no walkable line passes:
+        # in the wall margin beside a door or at a corner, up on a ledge or a crate. Five of the
+        # seven stacked pairs in the final matches stood like that. Judge the ways from the
+        # nearest walkable cell, or at least step onto it
+        if nav.locate((p.x, p.y, p.z), search=0) < 0:
             q = nav.snap((p.x, p.y, p.z), search=3)
             if q is not None:
+                for ax, ay in ways:
+                    if nav.walkable_line(q, (q[0] + ax * 0.8, q[1] + ay * 0.8, q[2])):
+                        return Vec3(ax, ay, 0)
                 v = Vec3(q[0] - p.x, q[1] - p.y, 0)
                 if v.lengthSquared() > 1e-4:
                     v.normalize()
