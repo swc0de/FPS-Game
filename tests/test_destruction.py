@@ -277,6 +277,23 @@ class NavLinkTests(unittest.TestCase):
         mgr.reset()
         self.assertIsNone(nav.find_path((-3, -4, 0), (-3, 4, 0)))
 
+    def test_hole_blocked_by_a_crate_is_no_passage(self):
+        """A breach with a crate standing against it on one side: no link (the floor found
+        round the crate is not at the hole; bots pushed into the hole and stuck there)."""
+        g = FakeGame()
+        spec = PanelSpec((0, 0, 1.5), (20, 0.15, 3.0), (0, 0, 0), "plaster", "plaster", "plaster")
+        mgr = DestructionManager(g, [spec])
+        crate = box(-1.2, 0.08, 0.0, 1.2, 0.5, 1.6)              # against the +y face, over the hole
+        g.physics.add_static_box(crate[0], [v / 2 for v in crate[1]])
+        colliders = [box(-10, -10, -0.3, 10, 10, 0), (spec.center, spec.size, spec.hpr, "plaster"), crate]
+        nav = NavMesh.build(colliders, [[-10, -10, -1], [10, 10, 5]], [(0, -5, 0), (0, 5, 0)],
+                            NavConfig.from_movement(CFG))
+        links = NavLinks(nav, mgr)
+        mgr.cut_at(mgr.panels[0], (0, -0.08, 0.0), 1.0, 0.0, 2.0, "charge")
+        mgr.flush()
+        self.assertNotIn(0, links.links)
+        self.assertIsNone(nav.find_path((-3, -4, 0), (-3, 4, 0)))
+
     def test_open_hatch_is_a_one_way_drop(self):
         g = FakeGame()
         # a 3 m high roof over a room; the roof is reached from a separate seed

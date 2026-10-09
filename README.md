@@ -19,8 +19,10 @@ weapons and characters are original. Third-party art is CC0 only.
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
 > holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
 > aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
-> you confirm the switch: against them v2 wins 42 % of rounds (target 70 %, not reached; results in
-> [docs/results/](docs/results/README.md)). See "Milestone 8 - what to test" below.
+> you switch: after the follow-up (spacing, stuck bots, equal mechanics, lighter mistakes, defence) v2 wins
+> 46 % of rounds against them (target 70 %, kept as is by your decision), spreads out instead of stacking,
+> dies while reloading a third as often as they do (6.5 % of deaths against 20.3 %) and is traded more. Results in
+> [docs/results/](docs/results/README.md). See "Milestone 8 - what to test" below.
 >
 > Milestone 7 added the polish:
 > * **A main menu** over a camera tour of the map: play (side, difficulty, team sizes), watch a bot match,
@@ -191,11 +193,11 @@ Milestone 5 bots on one team for a comparison.
    site, or one plus utility, or a teammate dying there). A spot that got someone killed twice is used less.
 5. **Roles and styles.** Entry, trader, support, lurker, AWPer; anchor, rotator. Every bot has fixed traits
    (aggression, patience, teamwork, utility, risk): `botinfo <name>` shows them.
-6. **Difficulty** changes decision quality, not aim: reaction times are a lognormal draw around the profile's
-   mean (the same mean as before), a bot busy with one enemy notices a second one late, a fast flick decides
-   only which side of the target the usual first-shot error falls on, stress makes mistakes likelier, and the
-   easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
-   when shot from behind).
+6. **Difficulty** changes decision quality, not aim: aim and reaction are exactly the Milestone 5 profile
+   (reaction times a lognormal draw around the profile's mean, the same mean as before), stress makes mistakes
+   likelier, and the easier bots make more of them (over-peeking, reloading in the open, trading late, missing calls, flinching
+   when shot from behind). Easy makes them often; from Normal up they are rare (Normal at the rates Expert had
+   when Milestone 8 shipped, and only Easy misses calls).
 7. **Debugging.** Console: `botinfo <name>` (the decision and everything behind it), `overlay` (labels over the
    bots with their action, the runner-up scores, the task and the fact behind it), `belief attack|defend|off`
    (the radar shows where that team thinks enemies can be).

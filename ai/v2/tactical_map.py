@@ -60,7 +60,7 @@ import numpy as np
 
 from ai.navmesh import NavMesh, rasterize
 
-VERSION = 1
+VERSION = 2                 # 2: hold spots scored by their best entry, not the sum
 N_DIRS = 16
 
 
@@ -752,7 +752,7 @@ def _spots(tm: TacticalMap, level) -> dict:
                 continue                # in front of an entry it can see: the attackers' side
             if not seen:
                 continue
-            score = 0.0
+            values = []
             best_e, best_angle = -1, 0.0
             for e in seen:
                 d = float(np.linalg.norm(pts[h] - pts[e]))
@@ -762,15 +762,20 @@ def _spots(tm: TacticalMap, level) -> dict:
                 # cover towards the entry: crouched hidden but standing visible, or a cover direction
                 v = pts[e] - pts[h]
                 covered = tm.cover_toward(h, v[0], v[1]) or (vis[h, e] and not low[h, e])
-                score += w * (1.4 if covered else 1.0)
+                values.append(w * (1.4 if covered else 1.0))
                 walk = centre - pts[e]
                 ang = _angle(walk[:2], (pts[h] - pts[e])[:2])
                 if ang > best_angle:
                     best_e, best_angle = e, ang
-            if score <= 0.0:
+            if not values:
                 continue
+            # a spot watches one entry well, a second a little: one that sees every entry is seen
+            # from every entry, and the holder ends up in two or three duels at once (most of the
+            # defenders' opening deaths at A in the head-to-head were on such spots)
+            values.sort(reverse=True)
+            score = values[0] + (0.3 * values[1] if len(values) > 1 else 0.0) - 0.5 * max(len(values) - 2, 0)
             exposure = int(vis[h, beyond].sum()) if len(beyond) else 0
-            score -= 0.02 * exposure
+            score -= 0.04 * exposure
             score += 0.3 if tm.kind[h] & 2 else 0.0
             depth = float(np.linalg.norm(pts[h] - pts[best_e])) if best_e >= 0 else 0.0
             holds.append({"i": int(h), "score": round(float(score), 3), "exposure": exposure,

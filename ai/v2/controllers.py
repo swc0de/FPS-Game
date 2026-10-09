@@ -18,9 +18,9 @@ run every tick and decide *how*, on top of the layers every bot shares
 * ``Shooter`` is the trigger discipline of the Milestone 5 brain: fire only
   when the bullets land within the target's angular size, bursts that
   shorten with range, pauses for the recoil to reset, counter-strafing, no
-  shooting through teammates. On top: the flick of a new target overshoots
-  or undershoots (ai/v2/humanize.py), stress widens the aim error, and a
-  pre-fire is a short burst at a believed position the bot cannot see yet.
+  shooting through teammates, with the same aim profile and controller.
+  On top: a pre-fire is a short burst at a believed position the bot cannot
+  see yet.
 * ``PeekHelper`` finds the side step that breaks line of sight to a threat
   (to hide between bursts or to reload) and back (to re-peek).
 """
@@ -31,7 +31,6 @@ import zlib
 
 from panda3d.core import Point3, Vec3
 
-from ai.aim import angles_to, wrap180
 from ai.v2.pathing import PENDING
 from engine.physics import MASK_BULLETS, MASK_SIGHT
 
@@ -77,6 +76,11 @@ class Mover:
         bot = self.bot
         pos = bot.position()
         f = b.follower
+        if self._goal_taken(goal, pos):
+            if f.active:
+                f.stop()
+            self.goal_key = None                 # walk the rest once the teammate moves off it
+            return True
         if self.goal_key != key or (f.failed and not f.active):
             path = self._plan(pos, goal, via)
             if path == PENDING:
@@ -104,6 +108,22 @@ class Mover:
         if look is None:
             look = b.aim_policy.travel_point(pos, f)
         b.look(look, dt, 0.6)
+        return False
+
+    def _goal_taken(self, goal: Point3, pos: Point3) -> bool:
+        """A teammate already stands on the goal: within 1.8 m of it is there. Shoving onto
+        the same spot stacks two bots (one grenade or spray gets both) and blocks them both.
+        Not for the objective (the charge, a pickup)."""
+        if (goal.x - pos.x) ** 2 + (goal.y - pos.y) ** 2 > 1.8 * 1.8:
+            return False
+        b = self.b
+        if b.task.kind in ("plant", "defuse", "pickup"):
+            return False
+        for m in b.team.mates_of(b.bot):
+            q = m.position()
+            if (q.x - goal.x) ** 2 + (q.y - goal.y) ** 2 < 0.9 * 0.9 and abs(q.z - goal.z) < 1.5 \
+                    and m.char.horizontal_speed < 0.6:
+                return True
         return False
 
     def _unstick(self, wish: Vec3, pos: Point3) -> Vec3:
@@ -301,20 +321,9 @@ class Shooter:
         self.prefer_head = bot.rng.random() < float(bot.profile.get("headshot", 0.3))
         self.burst = 0
         self.burst_limit = self.burst_for((c.pos - bot.position()).length())
-        # a flick onto a new target over- or undershoots, then the hand corrects
-        eye = bot.eye()
-        yaw, _ = angles_to(c.pos.x - eye.x, c.pos.y - eye.y, c.pos.z + 1.4 - eye.z)
-        turn = abs(wrap180(yaw - bot.aim.yaw))
         dist = (c.pos - bot.position()).length()
         tvel = c.agent.velocity() if hasattr(c.agent, "velocity") else Vec3(0, 0, 0)
         bot.aim.acquire(id(c.agent), dist, math.hypot(tvel.x, tvel.y), bot.char.horizontal_speed)
-        # a big turn overshoots (or stops short) and the hand corrects: the flick decides which
-        # side of the target the usual first-shot error falls on, never how big it is (same aim
-        # profile as the Milestone 5 bots)
-        over = self.b.human.flick(turn)
-        if over != 0.0:
-            sign = 1.0 if wrap180(yaw - bot.aim.yaw) > 0 else -1.0
-            bot.aim.err_x = abs(bot.aim.err_x) * sign * (1.0 if over > 0 else -1.0)
 
     def release(self) -> None:
         self.target_id = None

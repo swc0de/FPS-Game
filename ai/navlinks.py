@@ -22,6 +22,7 @@ HULL = 0.30          # character radius (data/movement.json)
 MIN_WIDTH = 0.8      # opening a character fits through
 MIN_HEIGHT = 1.3     # crouch height + margin
 SIDE = 0.55          # probe distance from the wall face to find the floor on each side
+NEAR = 0.35          # that floor must be this close to the probe (walkable cells keep 0.375 m off walls)
 
 
 class NavLinks:
@@ -100,6 +101,19 @@ class NavLinks:
 
         pa = world(uc, half_t + SIDE)
         pb = world(uc, -(half_t + SIDE))
+        # walkable floor right at the hole on both sides: a crate or a car standing against the
+        # wall leaves the hole blocked, and a floor found further away (round the obstacle) made
+        # a link straight into it (bots pushed into the hole for the rest of the round)
+        for p in (pa, pb):
+            q = nav.snap((p.x, p.y, bottom_z), search=2)
+            if q is None or math.hypot(q[0] - p.x, q[1] - p.y) > NEAR or abs(q[2] - bottom_z) > 0.5:
+                return
+        phys = getattr(getattr(self.destruction, "game", None), "physics", None)
+        if phys is not None:
+            from engine.physics import MASK_MOVEMENT
+            for h in (0.35, 1.0):                    # straight through the hole at knee and chest height
+                if phys.ray_cast((pa.x, pa.y, bottom_z + h), (pb.x, pb.y, bottom_z + h), MASK_MOVEMENT) is not None:
+                    return
         ra = nav.rect_at((pa.x, pa.y, bottom_z), search=3, max_dz=0.5)
         rb = nav.rect_at((pb.x, pb.y, bottom_z), search=3, max_dz=0.5)
         if ra < 0 or rb < 0 or ra == rb:

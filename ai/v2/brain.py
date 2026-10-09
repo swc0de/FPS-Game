@@ -56,7 +56,7 @@ from panda3d.core import Point3, Vec3
 
 from ai.aim import angles_to, wrap180
 from ai.brain import Task, ThrowOrder, solve_throw, BREACH_TAGS
-from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, teammate_in_line, EYE, RANGE_LIMIT
+from ai.v2.controllers import AimPolicy, Mover, PeekHelper, Shooter, flat, stable_bit, teammate_in_line, EYE, RANGE_LIMIT
 from ai.v2.humanize import Humanizer
 from ai.v2.knowledge import BotKnowledge, Fact, fact_point
 from ai.v2.pathing import FollowerV2, PENDING
@@ -140,7 +140,6 @@ class Fight(Action):
             return
         if c is not self.target:
             self.target = c
-        b.perception.busy_with = id(c.agent)
         if not c.seen:
             # hidden on purpose: step behind cover, hold the corner it would come round
             # (it knows where we were and may push), then re-peek - never at a rhythm
@@ -148,7 +147,9 @@ class Fight(Action):
             bot.aim.look_at(bot.eye(), b.preaim(f, now), dt, 0.8)
             if self.hide_dir is not None and now < self.hide_until:
                 it.wish = self.hide_dir
-            elif self.hide_dir is not None and now < self.hold_until:
+            elif self.hide_dir is not None and (now < self.hold_until or bot.side == "defend"):
+                # a defender stays behind the corner once out of sight: swinging back out where
+                # it was seen meets a crosshair already there; the attacker has to come to it
                 it.crouch = b.traits["patience"] > 0.5
             elif self.hide_dir is not None:
                 it.wish = -self.hide_dir                     # swing back out
@@ -201,8 +202,9 @@ class Fight(Action):
     def _between_bursts(self, c, dist: float, now: float) -> Vec3:
         b = self.b
         bot = b.bot
-        # long-range duel: step behind cover between bursts, then re-peek
-        if dist > 20 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75:
+        # long-range duel: step behind cover between bursts, then re-peek - on attack only; a
+        # defender keeps the angle it holds (re-peeking the same spot loses to a held crosshair)
+        if dist > 20 and now < b.shooter.pause_until - 0.15 and b.traits["risk"] < 0.75 and bot.side != "defend":
             if self.hide_dir is None or now > self.hold_until + 1.0:
                 self._hide(c, now)
             if self.hide_dir is not None and now < self.hide_until:
@@ -221,7 +223,6 @@ class Fight(Action):
         return Vec3(0, 0, 0)
 
     def stop(self):
-        self.b.perception.busy_with = None
         self.hide_dir = None
 
 
@@ -255,8 +256,9 @@ class FallBack(Action):
             need = 0.97
         elif (ctx.stale or ctx.outranged) and ctx.holding:
             need = 0.9                           # out of its sight (it outguns us here), peek later
-        elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6:
-            need = 0.96
+        elif ctx.visible and len(ctx.visible) >= 2 and ctx.enemies > ctx.allies and b.traits["risk"] < 0.6 and \
+                (close or b.bot.side != "defend"):
+            need = 0.96                          # a defender only steps back into cover a step away
         if self.spot is not None and ctx.now < self.until:
             need = max(need, 0.9)
         return need
@@ -613,7 +615,6 @@ class BrainV2:
         self.shooter.reset()
         self.mover.reset()
         self.aim_policy.reset()
-        self.perception.busy_with = None
         for a in self.actions.values():
             a.started = -1.0
         self._preaim_key = None
@@ -772,17 +773,30 @@ class BrainV2:
         if now < self.frozen_until:
             return                                   # panicked for a moment
         self.action.run(dt, now)
-        # standing on a teammate: checked 16 times a second, and the step apart held in between
-        # (it only lasts the tick it is set in, so a step set every fourth tick moved a quarter as far)
+        # closer than 1.1 m to a teammate: checked 16 times a second, and the way apart held in
+        # between (a step set every fourth tick and kept for one tick moved a quarter as far).
+        # Standing still it is a walking step apart; moving or fighting, it bends the way, so
+        # two bots on one lane, at one goal or shooting from one spot spread out
         self._space_n += 1
-        if it.wish.lengthSquared() < 0.01:
-            if self._space_n % 4 == 0:
-                self._space_step = self._personal_space()
-            if self._space_step is not None:
-                it.wish = Vec3(self._space_step)
+        if self._space_n % 4 == 0:
+            self._space_step = self._personal_space()
+        step = self._space_step
+        if step is not None:
+            w = it.wish
+            n = w.length()
+            if n < 0.1:
+                # a whole step at walking pace: the movement code takes the wish unnormalised, and
+                # at 0.6 of it ground friction ate nearly all the acceleration (0.1 m/s)
+                it.wish = Vec3(step)
                 it.walk = True
-        else:
-            self._space_step = None
+            else:
+                v = w / n + step * 1.2
+                v.normalize()
+                it.wish = v * n
+        if bot.slow < 0.9 and it.wish.lengthSquared() > 0.01:
+            # in razor wire: walking at a third of walking pace, ground friction ate all of it
+            # (stuck for seconds); the wire rattles anyway, so there is nothing to gain by walking
+            it.walk = False
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -1463,10 +1477,12 @@ class BrainV2:
             it.wish = -bot.forward() * 0.8
 
     def _personal_space(self) -> Vec3 | None:
-        """Standing still on top of a teammate: the step apart (one grenade or spray gets both),
+        """Within 1.1 m of teammates (one grenade or spray gets both): the unit direction apart
+        (weighted by how close each is), sideways along a wall when straight apart is blocked;
         or None."""
         bot = self.bot
         p = bot.position()
+        sx = sy = 0.0
         for m in self.team.mates_of(bot):
             q = m.position()
             dx, dy = p.x - q.x, p.y - q.y
@@ -1474,9 +1490,17 @@ class BrainV2:
             if d < 1.1 and abs(p.z - q.z) < 1.2:
                 if d < 1e-3:
                     dx, dy, d = (1.0, 0.0, 1.0) if bot.name > m.name else (-1.0, 0.0, 1.0)
-                if bot.nav.walkable_line(p, (p.x + dx / d * 0.8, p.y + dy / d * 0.8, p.z)):
-                    return Vec3(dx / d, dy / d, 0) * 0.6
-                return None
+                w = 1.2 - d
+                sx += dx / d * w
+                sy += dy / d * w
+        n = math.hypot(sx, sy)
+        if n < 1e-6:
+            return None
+        sx, sy = sx / n, sy / n
+        side = 1.0 if stable_bit(bot.name) else -1.0
+        for ax, ay in ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side)):
+            if bot.nav.walkable_line(p, (p.x + ax * 0.8, p.y + ay * 0.8, p.z)):
+                return Vec3(ax, ay, 0)
         return None
 
     def _shoot_gadget(self, dt: float, now: float) -> None:

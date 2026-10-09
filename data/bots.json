@@ -15,7 +15,7 @@
   "  radio         callouts: delay (s, lognormal median) clipped to delay_range, fuzz (m) of the",
   "                called position, batch (s) to merge calls into one line, miss = chance a call is lost",
   "  humanize      per difficulty, overrides of ai/v2/humanize.py DEFAULTS: reaction_sigma (lognormal",
-  "                spread), tunnel (late reaction while busy), flick [mean, sd] (fraction of the turn),",
+  "                spread),",
   "                stress_gain, decision_noise, mistake chances (over_peek, skip_corner, reload_open,",
   "                late_trade, ignore_call, panic) and radar_glance [min, max] seconds between glances"
  ],

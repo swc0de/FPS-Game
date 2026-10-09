@@ -9,8 +9,85 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
-| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, win-rate target not reached (awaiting your review) |
-| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** (awaiting your review) |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up below; win rate 46 % against legacy, kept as is (your decision) |
+| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** |
+
+## Follow-up to Milestones 8 and 9 - delivered
+
+After the merge of Milestones 7-9 into `main` (swc0de/FPS-Game#1), the open items of the overhaul
+brief, settled the way you decided them: stacking and stuck bots, the human errors (equal
+mechanics, lighter mistakes) and a round on defence. The win rate is kept where it landed ("keep
+it as is"). Legacy stays the default brain (A-6, "v2 becomes the default later"); `--ai v2`
+selects the new one. Full tables: [docs/results/](results/README.md).
+
+* **Stacking**: the step apart from teammates closer than 1.1 m now bends the way of moving and
+  fighting bots too, a whole step at a time (sideways when straight apart is blocked); a goal a
+  teammate stands on counts as reached 1.8 m short.
+* **Stuck bots**: a hole in a breakable wall links only with floor right at it on both sides and
+  nothing in the way through it (a crate against the far side routed both brains into it;
+  `ai/navlinks.py`, shared); v2 bots run in razor wire (walking at 0.32 × lost all speed to
+  friction).
+* **Equal mechanics** (your choice): no reaction penalty for a second enemy, no flick error. v2
+  aims and reacts exactly as the Milestone 5 profile; only decisions differ.
+* **Lighter mistakes** (your choice): Normal at the old Expert rates, Hard and Expert lower,
+  Easy unchanged.
+* **Defence**: defenders hold their angle; retakes go in together and defuse only when safe or
+  forced; hold spots watch one entry well instead of all of them (tactical map version 2); no
+  gadget placing once the round is live.
+
+### Follow-up results
+
+* **Against legacy: 46 %** (39 of 85 rounds, CI 36-56; attack 29/42, defence 10/43), from 42 %
+  as merged. The 70 % target is not met; kept as is, your decision.
+* **Behaviour** (v2 against v2, seeds 1 and 2, the means; `main` before → final, legacy):
+  * deaths while reloading 12.7 → 6.5 % (legacy 20.3 %);
+  * deaths traded within 3 s 15.9 → 17.7 % (legacy 13.6 %);
+  * unseen deaths 5.0 → 5.2 % (legacy 8.4 %);
+  * stacking 1.79 → 0.15 incidents per round (target 0.1; legacy 3.38): 7 in 48 rounds, seed 1
+    at 0.08, seed 2 at 0.21. The same matches measured 0 at the equal-mechanics step with the
+    same spacing code;
+  * stuck bots 0 + 0 (target 0), micro-stucks 407 → 216 a match;
+  * largest attack plan share 33 % (limit 40 %).
+* **Fairness audit**: 0 v2 violations in every run (85 head-to-head rounds, 48 v2-against-v2
+  rounds); legacy read hidden state 36,856 times in the four head-to-head matches.
+* **Performance** (seed 3, 8 rounds, no drawing, legacy control in the same session):
+  * live tick 8.21 ms against 6.59 (**1.25 ×**, budget 1.3 ×), p95 13.17 against 11.41
+    (**1.15 ×**); Milestone 8 as merged measured 1.40 × / 1.32 ×. Milestone 9's soldiers made
+    every tick dearer for both brains, and v2's own extra cost fell (2.5 → 1.4-1.6 ms a tick in
+    same-session controls);
+  * AI p99 **5.57 ms** against the 4 ms rule: **not met** in this measurement, by either brain
+    (legacy 5.97 ms). The same session measured the Milestone 8 code, which met the rule at
+    3.90 ms, at 5.63 ms, and `main` before the follow-up at 6.21 ms: the follow-up added no AI
+    cost. Milestone 9 made a bot's shot dearer for both brains (p99 about 4 → 11-13 ms), and
+    shots count as AI time (decision below).
+
+### Follow-up decision to confirm
+
+**The AI spike rule** ("AI p99 ≤ 4 ms", your choice in Milestone 8) is not met in this session by
+either brain: v2 5.57 ms, legacy 5.97 ms. It is an absolute number, and this session measures
+the same Milestone 8 code that met it (3.90 ms) at 5.63 ms. On top of that, Milestone 9 made a
+bot's shot dearer for both brains (hit tests, what a kill sets off), and a shot counts as AI time.
+Options:
+* a) re-base the rule on the same session's legacy: v2's AI p99 at most legacy's (met: 5.57
+  against 5.97);
+* b) keep 4 ms and count shots as game time rather than AI time (as model builds and drones
+  already are), then re-measure;
+* c) keep 4 ms as is and make the shot path cheaper (a Milestone 9 follow-up).
+
+I recommend a): the rule was meant to keep v2's decisions from spiking, and v2 now spikes less
+than legacy at p99 and in its worst tick (32.6 against 59.7 ms), though more of its ticks pass
+4 ms (2,156 against 950 in 8 rounds).
+
+### Follow-up known issues
+
+* **Win rate 46 %**, defence 23 %: legacy gets the first kill in 32 of the 43 rounds v2 defends,
+  and v2 wins 6 of those.
+* **Stacking** 0.15 per round against the 0.1 target (7 incidents in 48 rounds; 0 at an
+  earlier step of the same matches).
+* **AI p99 5.57 ms** against the 4 ms rule in this measurement (legacy 5.97 ms); see the
+  decision above.
+* Path-follower micro-stucks (216 a match, legacy 82) include the intentional waits at corners
+  and doors; bots in groups still block each other for under a second.
 
 ## Milestone 9 - delivered
 
@@ -99,7 +176,7 @@ brain is unchanged and still the default until you confirm). Plan, measurements 
   that fall back, spots that died twice used less; post-plant hiding and a synchronised swing on the defuse;
   retakes with utility.
 * **Humanisation and difficulty** (`ai/v2/humanize.py`, `personality.py`): lognormal reactions around the
-  profile's mean, late reactions to a second enemy, flick side, stress, per-difficulty mistakes, stable
+  profile's mean (aim and reaction otherwise exactly the Milestone 5 profile), stress, per-difficulty mistakes, stable
   per-bot traits.
 * **Tools**: `botinfo <name>`, `overlay`, `belief`; the bot demo reports the behaviour metrics per AI, the
   head-to-head with a Wilson interval and the audit; `BOT_DEMO_NORENDER` / `TICKS` / `CONSOLE` / `JSON`.
@@ -132,7 +209,21 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
   * all gun, grenade, gadget and charge models are built at match load: their first use cost up
     to 264 ms in one tick, for both brains.
 
-### Milestone 8 decisions to confirm
+### Milestone 8 decisions (settled)
+
+How they were settled after the merge, with the follow-up above:
+
+* **1. Win rate**: kept as it is ("keep it as is, don't try to get to 70 %"), after one tuning
+  round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
+* **2. Path search budget**: 140 kept (a).
+* **3. Tick budget**: met on the final code (1.25 × legacy's mean, 1.15 × p95, same session), with
+  no structural change needed.
+* **4. Head-to-head method**: as run (full matches, four seeds, sides swapped).
+* **5. The radar**: a legitimate channel, as agreed.
+* **Human errors** (asked during the follow-up): equal mechanics (no second-enemy reaction
+  penalty, no flick error) and lighter mistakes (Normal at the old Expert rates), your choices.
+
+The options as they were put:
 
 1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
    the Milestone 5 bots 70 % of the time; it loses most defence rounds. Options:
@@ -170,6 +261,8 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 5. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
 
 ### Milestone 8 known issues
+
+As merged; the follow-up's known issues above replace them.
 
 * **Win rate 42 %**, defence 27 % (above).
 * **Trades and unseen deaths** on the wrong side of legacy in the final matches, within the

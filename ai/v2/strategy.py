@@ -1113,6 +1113,17 @@ class TeamStrategy(TeamBrain):
     def _update_defend(self, bots, now: float) -> None:
         d = self.director
         bomb = d.bomb
+        if now > self.live_t + 3.0:
+            # set-up running late: a wire or a sensor still to place at an entry means standing in
+            # the attackers' doorway once they come (13 of 67 opening deaths); go to the hold
+            for b in bots:
+                t = b.brain.task
+                if t.tag == "gadget":
+                    nxt = t.then
+                    while isinstance(nxt, Task) and nxt.tag == "gadget":
+                        nxt = nxt.then
+                    if isinstance(nxt, Task):
+                        b.brain.set_task(nxt)
         if bomb.state == "planted":
             if not self.planted_handled and bomb.site:
                 self.attacked[bomb.site] = self.attacked.get(bomb.site, 0) + 1
@@ -1182,8 +1193,65 @@ class TeamStrategy(TeamBrain):
         return Point3(float(p[0]), float(p[1]), float(p[2]))
 
     def _retake(self, bots, now: float) -> None:
+        """After a plant: gather out of sight, go in together with utility, and defuse only
+        when it is safe or the clock forces it. The Milestone 5 version (ai/tactics.py) sent
+        the closest bot onto the charge after a 2 s lull; the attackers hiding round it shot
+        the defuser (102 of 624 v2 defender deaths in the head-to-head were on the charge)."""
+        d = self.director
+        bomb = d.bomb
+        left = d.match.bomb_time_left()
+        t = d.rules["timers"]
+
+        def eta(b):
+            dist = (b.position() - bomb.pos).length()
+            return dist / 5.0 + float(t["defuse_time_kit" if b.has_kit else "defuse_time"])
         before = self.retake_phase
-        super()._retake(bots, now)
+        if not self.planted_handled:
+            self.planted_handled = True
+            self.retake_phase = "gather"
+            self.gather_t = now
+            self.defuser = None
+            self.say(bots[0], f"Charge is down at {bomb.site}. Group up for the retake!", key="regroup", every=5.0)
+            for b in bots:
+                b.brain.set_task(Task("move", self._regroup_point(b, bomb.pos), look=bomb.pos + Vec3(0, 0, 1.4),
+                                      tag="regroup", wait=True))
+        if self.retake_phase == "gather":
+            ready = [b for b in bots if b.brain.task.tag == "regroup" and b.brain.arrived]
+            pressed = left - max(eta(b) for b in bots) < 10.0
+            # in together: three (or everyone left) at the gathering point, unless time is short
+            if len(ready) >= min(3, len(bots)) or pressed or now - self.gather_t > 12.0:
+                self.retake_phase = "go"
+                self.say(bots[0], "Go go go, retake!", key="rgo", every=5.0)
+                for b in bots:
+                    b.brain.set_task(Task("move", self._snap(bomb.pos), tag="retake", wait=True))
+            else:
+                return
+        if self.defuser is not None and (not self.defuser.alive or self.defuser not in bots):
+            self.defuser = None
+        if self.defuser is None and self.retake_phase != "save":
+            cand = min(bots, key=eta)
+            need = eta(cand)
+            if need > left + 0.5:
+                self.retake_phase = "save"
+                self.say(cand, "No time, save!", key="rsave", every=5.0)
+                spawn = self.spawn_center.get("defend")
+                for b in bots:
+                    if spawn is not None:
+                        b.brain.set_task(Task("hold", self._snap(spawn), tag="save", wait=True))
+                return
+            near = sum(1 for b in bots if (b.position() - bomb.pos).length() < 10.0)
+            clear = self.enemies_alive == 0
+            quiet = now - self.last_contact_t > 4.0 and near >= min(2, len(bots))
+            forced = need > left - 3.0
+            if clear or forced or (quiet and (cand.position() - bomb.pos).length() < 14.0):
+                self.defuser = cand
+                cand.brain.set_task(Task("defuse", Point3(bomb.pos), tag="defuse"))
+                look = self._latest_report_pos() or bomb.pos
+                for b in bots:
+                    if b is not cand:
+                        b.brain.set_task(Task("guard", self._snap(bomb.pos + Vec3(self.rng.uniform(-5, 5),
+                                                                                  self.rng.uniform(-5, 5), 0)),
+                                              look=look + Vec3(0, 0, 1.4), wait=True, tag="cover"))
         if before == "gather" and self.retake_phase == "go" and not self.retake_util:
             self.retake_util = True
             bomb = self.director.bomb
