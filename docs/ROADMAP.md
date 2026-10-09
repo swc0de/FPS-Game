@@ -9,8 +9,8 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
-| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, win-rate target not reached (awaiting your review) |
-| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** (awaiting your review) |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up below; win rate 46 % against legacy, kept as is (your decision) |
+| 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** |
 
 ## Milestone 9 - delivered
 
@@ -132,7 +132,20 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
   * all gun, grenade, gadget and charge models are built at match load: their first use cost up
     to 264 ms in one tick, for both brains.
 
-### Milestone 8 decisions to confirm
+### Milestone 8 decisions (settled)
+
+How they were settled after the merge, with the follow-up above:
+
+* **1. Win rate**: kept as it is ("keep it as is, don't try to get to 70 %"), after one tuning
+  round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
+* **2. Path search budget**: 140 kept (a).
+* **3. Tick budget**: being measured on the final code.
+* **4. Head-to-head method**: as run (full matches, four seeds, sides swapped).
+* **5. The radar**: a legitimate channel, as agreed.
+* **Human errors** (asked during the follow-up): equal mechanics (no second-enemy reaction
+  penalty, no flick error) and lighter mistakes (Normal at the old Expert rates), your choices.
+
+The options as they were put:
 
 1. **The win rate.** v2 is fair by construction and plays more like a team, but it does not beat
    the Milestone 5 bots 70 % of the time; it loses most defence rounds. Options:
@@ -170,6 +183,8 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 5. **The radar is a legitimate channel** for bots (glances, never mid-fight), as agreed (A-1).
 
 ### Milestone 8 known issues
+
+As merged; the follow-up's known issues above replace them.
 
 * **Win rate 42 %**, defence 27 % (above).
 * **Trades and unseen deaths** on the wrong side of legacy in the final matches, within the
