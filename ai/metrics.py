@@ -141,6 +141,7 @@ class MetricsCollector:
         self.round_t0 = 0.0
         self.rounds: list[dict] = []
         self.plans: list[dict] = []
+        self.setups: list[dict] = []           # defence setups (v2 teams; legacy has none)
         self.deaths: list[dict] = []
         self.last_seen: dict[tuple[int, int], float] = {}
         self.round_seen: set[tuple[int, int]] = set()
@@ -272,6 +273,9 @@ class MetricsCollector:
             if tb is not None:
                 self.plans.append({"round": m.round, "plan": getattr(tb, "plan", ""), "site": getattr(tb, "site", ""),
                                    "ai": self._side_ai("attack")})
+            db = d.team_brains.get("defend")
+            if db is not None and getattr(db, "setup", ""):
+                self.setups.append({"round": m.round, "setup": db.setup, "ai": self._side_ai("defend")})
         bots = [b for b in d.bots if b.active and b.alive]
         for b in bots:
             self.alive_t[b.name] += sdt
@@ -351,6 +355,7 @@ class MetricsCollector:
         out["stacking"] = self.stacking
         out["rounds_detail"] = self.rounds
         out["plans_detail"] = self.plans
+        out["setups_detail"] = self.setups
         if self.d.audit is not None:
             out["audit"] = self.d.audit.summary()
         return out
