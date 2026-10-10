@@ -9,7 +9,7 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
-| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up below; win rate 46 % against legacy, kept as is (your decision) |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up and the stacking fix below; win rate 43-46 % against legacy, kept as is (your decision) |
 | 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** |
 
 ## Follow-up to Milestones 8 and 9 - delivered
@@ -62,6 +62,34 @@ selects the new one. Full tables: [docs/results/](results/README.md).
     added no AI cost. Milestone 9 made a bot's shot dearer for both brains (p99 about 4 → 11-13
     ms), and shots count as AI time (the decision below).
 
+### Stacking fix
+
+Asked for after the follow-up ("go ahead with the stacking fix"); the full account is in
+[docs/results/](results/README.md), "The stacking fix". Every incident replayed from its seed,
+plus two fresh seeds (5, 6) that showed it worse than seeds 1-2 did (0.31 per round):
+
+* **Flashed bots** now step apart too (a blinded bot skipped it).
+* **Bots off the walkable mesh** (in a wall's margin by a narrow door, at a wall edge, on a low
+  ledge) find a way apart from the nearest walkable cell; bots rotating or regrouping together
+  get spots 1.6 m apart; a bent step apart is at least a whole step.
+* **The bunker room is on the navmesh**: the floor stopped at the walls' inner faces, and 3.2 m
+  underground nothing covered the strip under the two doors, so the room was cut off and dropped
+  (bots of both brains queued in it with no mesh). Off-ground buildings get a threshold under
+  every door (shared level fix).
+* **Unstick**: progress is measured over the ground (a bot jumping at its own shield counted the
+  jumps as progress and never tried to get out) and the way out is judged from the nearest
+  walkable cell.
+
+Results on the final code (`5ecbe8a`):
+
+* **stacking 0.15 → 0.04** per round on seeds 1-2 (target 0.1: met), 0.31 → 0.04 on seeds 5-6;
+* **stuck bots 0** on all four seeds;
+* deaths while reloading 3.4 %, unseen deaths 6.2 %, trades 15.0 % (legacy 20.3, 8.4, 13.6 %);
+  largest attack plan 33 %; audit 0 everywhere;
+* head-to-head **43 %** (31 of 72, CI 32-55; attack 21/33, defence 10/39), within the interval
+  of the follow-up's 46 %;
+* performance: being measured on the final code.
+
 ### Follow-up decision (settled)
 
 **The AI spike rule: v2's AI p99 at most legacy's, measured in the same session** (option a, your
@@ -78,17 +106,14 @@ The rule is there to keep v2's decisions from spiking: v2 spikes less than legac
 its worst tick (32.6 against 59.7 ms), though more of its ticks pass 4 ms (2,156 against 950 in
 8 rounds).
 
-### Follow-up known issues
+### Known issues (final code)
 
-* **Win rate 46 %**, defence 23 %: legacy gets the first kill in 32 of the 43 rounds v2 defends,
-  and v2 wins 6 of those.
-* **Stacking** 0.15 per round against the 0.1 target (7 incidents in 48 rounds; 0 at an
-  earlier step of the same matches).
-* **More AI ticks over 4 ms than legacy** (2,156 against 950 in 8 rounds), though v2's AI p99
-  (5.57 against 5.97 ms) and worst AI tick (32.6 against 59.7 ms) are lower. On this VM neither
-  brain stays under 4 ms at p99 any more (the re-based rule above).
-* Path-follower micro-stucks (216 a match, legacy 82) include the intentional waits at corners
-  and doors; bots in groups still block each other for under a second.
+* **Win rate 43-46 %** against legacy (target 70 %, kept as is), defence the weaker side: legacy
+  gets the first kill in 24 of the 39 rounds v2 defends on the final code.
+* Path-follower micro-stucks (about 240 a match, legacy 82) include the intentional waits at
+  corners and doors; bots in groups still block each other for under a second.
+* The navmesh does not know where gadgets stand; a bot that boxes itself in with its own shield
+  now gets out within about 5 s (another route, then a step to open ground) instead of never.
 
 ## Milestone 9 - delivered
 

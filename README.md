@@ -19,9 +19,10 @@ weapons and characters are original. Third-party art is CC0 only.
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
 > holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
 > aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
-> you switch: after the follow-up (spacing, stuck bots, equal mechanics, lighter mistakes, defence) v2 wins
-> 46 % of rounds against them (target 70 %, kept as is by your decision), spreads out instead of stacking,
-> dies while reloading a third as often as they do (6.5 % of deaths against 20.3 %) and is traded more. Results in
+> you switch: after the follow-up (spacing, stuck bots, equal mechanics, lighter mistakes, defence) and the
+> stacking fix, v2 wins 43-46 % of rounds against them (target 70 %, kept as is by your decision), spreads out
+> instead of stacking (0.04 incidents a round, legacy 3.4), dies while reloading far less often (3.4 % of deaths
+> against 20.3 %) and is traded more. Results in
 > [docs/results/](docs/results/README.md). See "Milestone 8 - what to test" below.
 >
 > Milestone 7 added the polish:
