@@ -9,16 +9,17 @@
 | 5 | AI bots | **done** |
 | 6 | Destructible walls, lean, gadgets, specialists | **done** |
 | 7 | HUD polish, audio, menus, performance pass | **done** |
-| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up and the stacking fix below; win rate 43-46 % against legacy, kept as is (your decision) |
+| 8 | Bot intelligence overhaul (v2 brain, fairness audit, tactical map) | **done**, with the follow-up and the stacking fix below; v2 is the default brain; win rate 43-46 % against legacy, kept as is (your decision) |
 | 9 | Realistic soldiers (skinned bodies, materials, animation, variety) | **done** |
 
 ## Follow-up to Milestones 8 and 9 - delivered
 
 After the merge of Milestones 7-9 into `main` (swc0de/FPS-Game#1), the open items of the overhaul
-brief, settled the way you decided them: stacking and stuck bots, the human errors (equal
-mechanics, lighter mistakes) and a round on defence. The win rate is kept where it landed ("keep
-it as is"). Legacy stays the default brain (A-6, "v2 becomes the default later"); `--ai v2`
-selects the new one. Full tables: [docs/results/](results/README.md).
+brief, settled the way you decided them: stacking and stuck bots, the human errors (equal mechanics,
+lighter mistakes) and a round on defence. The win rate is kept where it landed ("keep it as is").
+**v2 is the default brain** since your call after the stacking fix (A-6, "v2 becomes the default
+later"); `--ai legacy` selects the Milestone 5 brain. Full tables:
+[docs/results/](results/README.md).
 
 * **Stacking**: the step apart from teammates closer than 1.1 m now bends the way of moving and
   fighting bots too, a whole step at a time (sideways when straight apart is blocked); a goal a
@@ -199,9 +200,9 @@ Full tables, sheet and statistics: [docs/results_m9/](results_m9/README.md).
 
 ## Milestone 8 - delivered
 
-Bots that play by decisions, not better aim (`ai/v2/`, selectable per team with `--ai`; the Milestone 5
-brain is unchanged and still the default until you confirm). Plan, measurements and running log:
-[OVERHAUL_PLAN.md](OVERHAUL_PLAN.md).
+Bots that play by decisions, not better aim (`ai/v2/`, selectable per team with `--ai`; the
+Milestone 5 brain is unchanged and was the default until v2 replaced it after the stacking fix). Plan,
+measurements and running log: [OVERHAUL_PLAN.md](OVERHAUL_PLAN.md).
 
 * **What a bot knows** (`ai/v2/knowledge.py`, `comms.py`, `belief.py`): facts with a source and a
   precision - sight (exact), sound (fuzzier with distance), damage from an unseen shooter (a direction
@@ -270,7 +271,8 @@ you chose (the deeper pass, with the spike rule as "AI p99 ≤ 4 ms").
 How they were settled after the merge, with the follow-up above:
 
 * **1. Win rate**: kept as it is ("keep it as is, don't try to get to 70 %"), after one tuning
-  round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
+  round on defence (42 → 46 %). Legacy stayed the default until after the stacking fix; then you made v2
+  the default (A-6, option a in effect).
 * **2. Path search budget**: 140 kept (a).
 * **3. Tick budget**: met on the final code (1.25 × legacy's mean, 1.15 × p95, same session), with
   no structural change needed. The spike rule beside it was settled after the stacking fix: v2's

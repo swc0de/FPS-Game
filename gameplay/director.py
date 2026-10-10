@@ -16,8 +16,9 @@ Bot AI (Milestone 8): each team runs either the Milestone 5 brain
 ai/v2/). ``ai`` is "legacy", "v2" or a per-team spec such as
 "team0=v2,team1=legacy" (team 0 is the human's team, or the team that
 starts on attack when spectating) or "attack=v2,defend=legacy" (the sides
-at the start of the match). A team keeps its AI when the sides swap at
-halftime: team brains exist per (AI, side) and are reassigned to the sides
+at the start of the match). Without a spec, data/bots.json "default_ai" decides: v2 since the
+overhaul's follow-up (your decision), the Milestone 5 brain stays behind "legacy". A team keeps its
+AI when the sides swap at halftime: team brains exist per (AI, side) and are reassigned to the sides
 at every round reset.
 """
 from __future__ import annotations
@@ -41,9 +42,10 @@ TEAM_THINK = 0.25
 
 
 AI_KINDS = ("legacy", "v2")
+DEFAULT_AI = "v2"           # data/bots.json "default_ai" overrides; legacy stays behind --ai legacy
 
 
-def parse_ai_spec(spec: str | None, start_side: str, default: str = "legacy") -> dict[int, str]:
+def parse_ai_spec(spec: str | None, start_side: str, default: str = DEFAULT_AI) -> dict[int, str]:
     """"v2" | "legacy" | "team0=v2,team1=legacy" | "attack=v2,defend=legacy" -> {team index: kind}.
     ``start_side`` is team 0's side at the start of the match."""
     out = {0: default, 1: default}
@@ -107,7 +109,7 @@ class MatchDirector:
         self.shop = Shop(self)
         from gameplay.tactical import Tactical
         self.tactical = Tactical(game, self)
-        self.team_ai = parse_ai_spec(ai, side, self.bot_config.get("default_ai", "legacy"))
+        self.team_ai = parse_ai_spec(ai, side, self.bot_config.get("default_ai", DEFAULT_AI))
         self._brains: dict[tuple[str, str], object] = {}      # (ai kind, side) -> team brain
         self.team_brains: dict = {}                            # side -> team brain of the team on it now
         self.audit = None
@@ -197,7 +199,7 @@ class MatchDirector:
             return
         out = {}
         for team in self.match.teams:
-            kind = self.team_ai.get(team.index, "legacy")
+            kind = self.team_ai.get(team.index, DEFAULT_AI)
             key = (kind, team.side)
             if key not in self._brains:
                 if kind == "v2":
@@ -211,11 +213,11 @@ class MatchDirector:
 
     def ai_of(self, agent) -> str:
         team = getattr(agent, "team", None)
-        return self.team_ai.get(team.index, "legacy") if team is not None else ""
+        return self.team_ai.get(team.index, DEFAULT_AI) if team is not None else ""
 
     def set_ai(self, spec: str) -> str:
         """Console / menu: choose the bots' AI ("v2", "legacy" or per team) and restart the match."""
-        self.team_ai = parse_ai_spec(spec, self.match.teams[0].side, self.bot_config.get("default_ai", "legacy"))
+        self.team_ai = parse_ai_spec(spec, self.match.teams[0].side, self.bot_config.get("default_ai", DEFAULT_AI))
         for tb in self._brains.values():
             if hasattr(tb, "detach"):
                 tb.detach()
@@ -236,7 +238,7 @@ class MatchDirector:
             a = BotAgent(self.game, name, side, self.difficulty, self.nav, seed=self.rng.randrange(1 << 30),
                          appearance_seed=look)
             self.match.add(a, team_index)
-            if self.team_ai.get(team_index, "legacy") == "v2":
+            if self.team_ai.get(team_index, DEFAULT_AI) == "v2":
                 from ai.v2.brain import BrainV2
                 a.brain = BrainV2(a, _TeamProxy(self, a))
             else:

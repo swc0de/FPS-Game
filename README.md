@@ -15,11 +15,11 @@ weapons and characters are original. Third-party art is CC0 only.
 > [docs/results_m9/](docs/results_m9/README.md); see "Milestone 9 - what to test" below.
 >
 > **Status: Milestone 8 - bots that decide like players** (workstream A of the overhaul in
-> [docs/OVERHAUL_PLAN.md](docs/OVERHAUL_PLAN.md)). A new bot brain (`--ai v2`) that knows only what a player
+> [docs/OVERHAUL_PLAN.md](docs/OVERHAUL_PLAN.md)). A new bot brain, now the default, that knows only what a player
 > knows (sight, sound, late and vague radio callouts, the radar, the kill feed), reads the map (corners,
 > holds, crossfires), plans rounds and plays roles, uses its grenades, and makes human mistakes - with the same
-> aim and reaction profile as before. The Milestone 5 bots stay selectable and are still the default until
-> you switch: after the follow-up (spacing, stuck bots, equal mechanics, lighter mistakes, defence) and the
+> aim and reaction profile as before. The Milestone 5 bots stay selectable with `--ai legacy` (or `ai legacy`
+> in the console). After the follow-up (spacing, stuck bots, equal mechanics, lighter mistakes, defence) and the
 > stacking fix, v2 wins 43-46 % of rounds against them (target 70 %, kept as is by your decision), spreads out
 > instead of stacking (0.04 incidents a round, legacy 3.4), dies while reloading far less often (3.4 % of deaths
 > against 20.3 %) and is traded more. Results in
@@ -171,9 +171,10 @@ The soldiers replace the jointed mannequins (`characters/`, `gameplay/body.py`, 
 ## Milestone 8 - what to test
 
 Milestone 8 rewrites the bots' decision making (`ai/v2/`). They aim and react exactly as before (same
-`data/bots.json` profiles); what changed is what they decide, and what they know. Start a match with the new
-bots with `python main.py --ai v2` (or `ai v2` in the console). `--ai team0=v2,team1=legacy` puts the
-Milestone 5 bots on one team for a comparison.
+`data/bots.json` profiles); what changed is what they decide, and what they know. They are the default: every
+match, bot demo and spectated match uses them. `python main.py --ai legacy` (or `ai legacy` in the console) brings
+back the Milestone 5 bots, `--ai team0=v2,team1=legacy` puts them on one team for a comparison. The first
+match after an update builds the map analysis once (about 15 s, cached in `assets/cache/nav/`).
 
 1. **They only know what a player would know.** Sight, sound, their team's radio callouts (late, and only as
    precise as an area name: "Two B Long, one tagged"), the radar (they glance at it now and then, never

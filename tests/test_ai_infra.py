@@ -22,6 +22,17 @@ class AiSpecTests(unittest.TestCase):
         self.assertEqual(parse_ai_spec("attack=v2,defend=legacy", "attack"), {0: "v2", 1: "legacy"})
         self.assertEqual(parse_ai_spec("attack=v2,defend=legacy", "defend"), {0: "legacy", 1: "v2"})
 
+    def test_v2_is_the_default(self):
+        """v2 is the default brain (your decision); the Milestone 5 brain stays behind --ai legacy."""
+        import json
+        from gameplay.director import DEFAULT_AI
+        cfg = json.load(open(os.path.join(HERE, "..", "data", "bots.json")))
+        self.assertEqual(cfg["default_ai"], "v2")
+        self.assertEqual(DEFAULT_AI, "v2")
+        self.assertEqual(parse_ai_spec(None, "attack", cfg["default_ai"]), {0: "v2", 1: "v2"})
+        self.assertEqual(parse_ai_spec("", "defend"), {0: "v2", 1: "v2"})
+        self.assertEqual(parse_ai_spec("legacy", "attack"), {0: "legacy", 1: "legacy"})
+
     def test_rejects_unknown(self):
         with self.assertRaises(ValueError):
             parse_ai_spec("smart", "attack")

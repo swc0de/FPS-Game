@@ -8,7 +8,7 @@
     team <attack|defend>      switch side and restart
     bots <opponents> [mates]  roster size (bots or stand-ins), restarts the match
     difficulty <level>        bot difficulty: easy normal hard expert
-    ai <spec>                 bot AI: legacy | v2 | team0=v2,team1=legacy (restarts the match)
+    ai <spec>                 bot AI: v2 (default) | legacy | team0=v2,team1=legacy (restarts the match)
     botinfo [name]            what every bot is doing / everything about one bot
     overlay                   bot labels: action, scores, task, the fact behind it
     hitboxes                  draw every soldier's hit capsules (head red, chest orange,
