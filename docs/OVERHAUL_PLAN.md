@@ -1011,6 +1011,9 @@ be added later behind the same event interface if you want.
   doors 3.2 m down, so it was cut off and dropped). All fixed, with tests; the re-measurement found
   one stuck bot (jumping at its own shield counted as progress), fixed. Final code `5ecbe8a`:
   stacking 0.04 per round on seeds 1-2 and on seeds 5-6, stuck 0, head-to-head 43 % (CI 32-55).
+  Tick 1.29 × legacy's (budget met at its edge); AI p99 3.02-3.24 ms, unchanged by the fix (the
+  follow-up and Milestone 8 code measure the same in that session), under 4 ms but above
+  legacy's 2.4 ms: the spike rule is a decision again (ROADMAP).
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

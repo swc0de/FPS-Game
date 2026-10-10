@@ -27,7 +27,9 @@ the Milestone 8 hit boxes). "Follow-up" is `1ccd8f8` (merged as swc0de/FPS-Game#
 | stuck bots (5 s without progress) | 0 | 2 + 0 | 0 + 0 | 0 + 0 | **0 + 0** (seeds 5-6 too) | yes |
 | no attack plan above 40 % of rounds | ≤ 40 % | 50 % | 29 % (as merged) | 33 % | **33 %** (execute) | yes |
 | fairness audit, v2 | 0 violations | | 0 | 0 | **0** in every run (72 head-to-head rounds, 96 v2-vs-v2 rounds) | yes |
-| live tick, AI spikes | ≤ 1.3 × legacy; AI p99 ≤ legacy's | | | 1.25 × / 1.15 ×; 5.57 against 5.97 ms | being measured on the final code | |
+| live tick mean | ≤ 1.3 × legacy | | 1.40 × (Milestone 8 as merged) | 1.25 × (a slow session) | **1.29 ×** (4.01 against 3.12 ms, same session, no drawing); the detail pairs 1.28 × and 1.33 × | yes, at the edge |
+| live tick p95 | ≤ 1.3 × legacy | | 1.32 × | 1.15 × | **1.21 ×** (6.35 against 5.26 ms) | yes |
+| AI decision spikes | ≤ 4 ms at p99 (Milestone 8); re-based after the follow-up to "at most legacy's in the same session" | 2.37 / 2.38 ms (two runs) | 3.05 ms (follow-up code, this session) | 5.57 against legacy's 5.97 ms (the slow session) | **3.02 / 3.24 ms** (two runs) | 4 ms: **yes**; at most legacy's: **no** in this session (decision in the ROADMAP) |
 | tests | utility, belief, comms, tactical map, roles, audit | | 253 | 254 | **257**, all green (3 skipped); new or rewritten: no aim or reaction error beyond the profile, a hole blocked by a crate, a way apart from off the mesh, regroup spots apart, the bunker room on the mesh | yes |
 
 Behaviour rows: means of the seed 1 and seed 2 matches (24 rounds each, Normal, v2 against v2
@@ -126,13 +128,47 @@ single matches range from about 10 to 23 % on the same code, as found before.
 
 ### Performance, final code
 
-Being measured (a legacy control and v2, seed 3, 8 rounds, one after the other).
+Seed 3, 8 rounds, Normal, no drawing (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`, the same 64 Hz
+game logic), alone on the machine, one run after the other in one session. This session (after a
+container restart) runs about twice as fast as the one that measured the follow-up.
+
+| | legacy control | v2 | ratio | budget |
+|---|---|---|---|---|
+| live tick mean ms | 3.12 | **4.01** | **1.29 ×** | ≤ 1.3 × |
+| live tick p95 ms | 5.26 | **6.35** | **1.21 ×** | ≤ 1.3 × |
+| live tick p99 ms | 7.41 | 8.41 | 1.13 × | |
+| with the per-subsystem timers, two pairs: mean ms | 3.32, 3.39 | 4.25, 4.52 | 1.28 ×, 1.33 × | |
+
+Same session, with the per-subsystem timers:
+
+| code | brain | AI decisions mean / p95 / p99 ms | ticks with AI over 4 ms | worst AI tick ms |
+|---|---|---|---|---|
+| final (`5ecbe8a`) | legacy | 0.57 / 1.28 / **2.37**; repeat 0.59 / 1.31 / **2.38** | 147; 157 | 28.3 (a path search); 110.5 |
+| final | v2 | 1.12 / 2.25 / **3.02**; repeat 1.21 / 2.41 / **3.24** | 74; 99 | 8.2; 10.5 |
+| follow-up (`1ccd8f8`) | v2 | 1.20 / 2.31 / 3.05 | 66 | 8.1 |
+| Milestone 8 as merged (`5877274`, mannequins) | v2 | 1.22 / 2.35 / 3.18 | 97 | 7.0 |
+
+* **The tick budget is met, at its edge**: 1.29 × in the plain pair, 1.28 × and 1.33 × in two
+  detail pairs (single runs vary by a few per cent). The slow session measured 1.25 ×.
+* **The stacking fix costs nothing measurable**: v2's AI is the same as on the follow-up code
+  and on the Milestone 8 code in this session (p99 3.0-3.2 ms).
+* **The AI spike rule** depends on which version you keep:
+  * "AI p99 ≤ 4 ms" (your Milestone 8 choice): **met**, 3.02-3.24 ms;
+  * "at most legacy's in the same session" (your re-based choice after the follow-up): **not
+    met** here, legacy 2.37-2.38 ms. It was met in the slow session (5.57 against 5.97 ms), where
+    a bot's shot cost 11-13 ms at p99 and dominated legacy's spikes; in this session a shot costs
+    5 ms and legacy's ordinary decisions are cheaper than v2's. v2 has fewer ticks over 4 ms than
+    legacy here (74-99 against 147-157) and a much lower worst tick (8-10 against 28-110 ms).
+  ROADMAP, "Decision to confirm".
+* The longest ticks (55-92 ms) are garbage-collection pauses (51-86 ms), except one 116 ms legacy
+  tick with a 108 ms perception call.
 
 ### Files
 
 * `final/h2h/s201.json` ... `s204.json`: the four head-to-head matches on the final code.
 * `final/v2_normal_seed{1,2,5,6}.json`: v2 against v2, 24 rounds, Normal, `--audit`.
-* `final/timing/`: the timing pair and the detail pair on the final code.
+* `final/timing/`: the timing pair, two detail pairs, and the same-session controls
+  (`control_followup_v2_*`, `control_m8_v2_*`).
 * `follow_up/`: the same for the follow-up code (`1ccd8f8`), with its same-session controls.
 
 ## The follow-up
