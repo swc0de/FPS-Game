@@ -91,30 +91,34 @@ Results on the final code (`5ecbe8a`):
 * performance, in a session about twice as fast as the follow-up's: live tick **1.29 ×**
   legacy's (4.01 against 3.12 ms; budget 1.3 ×, met at its edge; detail pairs 1.28 × and
   1.33 ×), p95 1.21 ×; AI p99 **3.02-3.24 ms**, the same as the follow-up and Milestone 8 code in
-  this session (3.05, 3.18): the fix costs nothing. Legacy's AI p99 here is 2.37 ms (decision
-  below).
+  this session (3.05, 3.18): the fix costs nothing. Spike rule as you settled it below: met.
 
-### Decision to confirm: the AI spike rule again
+### Decision (settled): the AI spike rule
 
-After the follow-up you re-based the spike rule to "v2's AI p99 at most legacy's in the same
-session", on my recommendation from a slow session where v2 had 5.57 ms and legacy 5.97 ms. In
-this faster session the order is the other way: v2 3.02-3.24 ms, legacy 2.37-2.38 ms (two runs
-each). There a bot's shot cost 11-13 ms at p99 and dominated legacy's spikes; here it costs
-5 ms, and legacy's ordinary decisions are cheaper than v2's. Every v2 version measures the same
-in this session (Milestone 8 3.18, follow-up 3.05, final 3.02-3.24 ms). Options:
+**Your choice, c): v2's AI p99 at most 4 ms, and no more ticks with over 4 ms of AI than legacy
+in the same session.** Met on the final code: p99 3.02 and 3.24 ms (two runs), 74 and 99 ticks
+over 4 ms against legacy's 147 and 157. It replaces the re-based rule from the follow-up (below).
+
+The question as it was put: after the follow-up you re-based the spike rule to "v2's AI p99 at
+most legacy's in the same session", on my recommendation from a slow session where v2 had 5.57
+ms and legacy 5.97 ms. In this faster session the order is the other way: v2 3.02-3.24 ms,
+legacy 2.37-2.38 ms (two runs each). There a bot's shot cost 11-13 ms at p99 and dominated
+legacy's spikes; here it costs 5 ms, and legacy's ordinary decisions are cheaper than v2's.
+Every v2 version measures the same in this session (Milestone 8 3.18, follow-up 3.05, final
+3.02-3.24 ms). Options:
 * a) back to "AI p99 ≤ 4 ms" (met: 3.02-3.24 ms; it was met at 3.90 ms when you set it);
 * b) keep "at most legacy's": not met here, and a performance round on v2's ordinary decisions
   (about 0.7 ms at p99) would be needed;
 * c) count both: p99 ≤ 4 ms and no more ticks over 4 ms than legacy (met: 74-99 against
   147-157).
 
-I recommend a) or c): v2 spikes less often than legacy and its worst tick is far lower (8-10
+I recommended a) or c): v2 spikes less often than legacy and its worst tick is far lower (8-10
 against 28-110 ms); what is higher is its steady cost, which the tick budget already covers.
 
 
 ### Follow-up decision (settled)
 
-Revisited after the stacking fix: "Decision to confirm: the AI spike rule again" above.
+Superseded after the stacking fix by "Decision (settled): the AI spike rule" above.
 
 **The AI spike rule: v2's AI p99 at most legacy's, measured in the same session** (option a, your
 choice; met: 5.57 against 5.97 ms). It replaces "AI p99 ≤ 4 ms" from Milestone 8, which neither
@@ -134,8 +138,8 @@ its worst tick (32.6 against 59.7 ms), though more of its ticks pass 4 ms (2,156
 
 * **Win rate 43-46 %** against legacy (target 70 %, kept as is), defence the weaker side: legacy
   gets the first kill in 24 of the 39 rounds v2 defends on the final code.
-* **AI spike rule**: v2's AI p99 3.02-3.24 ms is under 4 ms but above legacy's 2.4 ms in this
-  session, so the re-based rule is not met (decision above).
+* **Steady AI cost**: v2's AI p99 (3.0-3.2 ms) is above legacy's (2.4 ms) in a fast session,
+  though it spikes over 4 ms less often; within the spike rule as you settled it.
 * Path-follower micro-stucks (about 240 a match, legacy 82) include the intentional waits at
   corners and doors; bots in groups still block each other for under a second.
 * The navmesh does not know where gadgets stand; a bot that boxes itself in with its own shield
@@ -269,8 +273,8 @@ How they were settled after the merge, with the follow-up above:
   round on defence (42 → 46 %). Legacy stays the default brain for now (A-6).
 * **2. Path search budget**: 140 kept (a).
 * **3. Tick budget**: met on the final code (1.25 × legacy's mean, 1.15 × p95, same session), with
-  no structural change needed. The spike rule beside it was re-based in the follow-up: v2's AI
-  p99 at most the same session's legacy (met).
+  no structural change needed. The spike rule beside it was settled after the stacking fix: v2's
+  AI p99 at most 4 ms and no more ticks over 4 ms than legacy in the same session (met).
 * **4. Head-to-head method**: as run (full matches, four seeds, sides swapped).
 * **5. The radar**: a legitimate channel, as agreed.
 * **Human errors** (asked during the follow-up): equal mechanics (no second-enemy reaction
