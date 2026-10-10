@@ -140,7 +140,9 @@ class Mover:
         if wish.lengthSquared() < 0.04:
             self.prog_pos = None                 # standing still on purpose (spacing, waiting)
             return wish
-        if self.prog_pos is None or (pos - self.prog_pos).length() > 0.6:
+        # progress over the ground: a bot jumping at an obstacle (its own shield across the path)
+        # rose 0.9 m every second or two, which counted as progress, so it never tried to get out
+        if self.prog_pos is None or flat(pos - self.prog_pos).length() > 0.6:
             self.prog_pos, self.prog_t = Point3(pos), now
             return wish
         if now - self.prog_t < 2.5:
@@ -153,12 +155,20 @@ class Mover:
             self.goal_key = None                 # plan again next tick, on the other route
             return wish
         tm = b.tm
+        nav = b.bot.nav
+        start = pos
+        if nav.locate((pos.x, pos.y, pos.z), search=0) < 0:
+            # pinned in a wall's margin, off the mesh: no walkable line starts there, so judge the
+            # ways out from the nearest walkable cell
+            q0 = nav.snap((pos.x, pos.y, pos.z), search=3)
+            if q0 is not None:
+                start = q0
         best, bs = None, -1e9
         for i in tm.points_near((pos.x, pos.y, pos.z), 5.0, max_dz=1.0).tolist():
             q = tm._pl[i]
             v = Vec3(q[0] - pos.x, q[1] - pos.y, 0)
             dist = v.length()
-            if dist < 2.0 or not b.bot.nav.walkable_line(pos, q):
+            if dist < 2.0 or not nav.walkable_line(start, q):
                 continue
             score = -v.normalized().dot(wish) + b.rng.random() * 0.5
             if score > bs:
