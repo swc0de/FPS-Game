@@ -91,8 +91,8 @@ def main(argv=None) -> int:
                         help="off = practice against stand-ins that do not shoot back (Milestone 4)")
     parser.add_argument("--spectate", action="store_true", help="watch a 5v5 bot match")
     parser.add_argument("--ai", default=None, metavar="SPEC",
-                        help="bot AI: legacy | v2 | per team, e.g. team0=v2,team1=legacy or attack=v2,defend=legacy "
-                             "(default from data/bots.json)")
+                        help="bot AI: v2 | legacy | per team, e.g. team0=v2,team1=legacy or attack=v2,defend=legacy "
+                             "(default from data/bots.json: v2)")
     parser.add_argument("--audit", action="store_true",
                         help="fairness audit: report every bot read of enemy state it could not know (also BOT_AUDIT=1)")
     parser.add_argument("--seed", type=int, help="random seed for spawns, bot decisions and stand-in positions")

@@ -14,14 +14,14 @@ measured again with the same tools, seeds and machine.
   halftime side swap.
 * Behaviour runs (two in parallel):
   ```
-  xvfb-run -a python tools/bot_metrics.py --seed 1 --rounds 24 --full-match --out docs/baseline/legacy_normal_seed1.json
-  xvfb-run -a python tools/bot_metrics.py --seed 2 --rounds 24 --full-match --out docs/baseline/legacy_normal_seed2.json
+  xvfb-run -a python tools/bot_metrics.py --seed 1 --rounds 24 --full-match --ai legacy --out docs/baseline/legacy_normal_seed1.json
+  xvfb-run -a python tools/bot_metrics.py --seed 2 --rounds 24 --full-match --ai legacy --out docs/baseline/legacy_normal_seed2.json
   ```
 * Timing runs, **alone on the machine**: whole ticks only (lowest overhead), then the same seed with
   the subsystem and spike breakdown:
   ```
-  xvfb-run -a python tools/bot_metrics.py --seed 3 --rounds 8 --full-match --no-detail --out docs/baseline/legacy_normal_seed3_timing.json
-  xvfb-run -a python tools/bot_metrics.py --seed 3 --rounds 8 --full-match --out docs/baseline/legacy_normal_seed3_detail.json
+  xvfb-run -a python tools/bot_metrics.py --seed 3 --rounds 8 --full-match --no-detail --ai legacy --out docs/baseline/legacy_normal_seed3_timing.json
+  xvfb-run -a python tools/bot_metrics.py --seed 3 --rounds 8 --full-match --ai legacy --out docs/baseline/legacy_normal_seed3_detail.json
   ```
 * Soldiers: `xvfb-run -a python tools/soldier_sheet.py --out docs/images/soldiers_before.jpg --stats docs/baseline/soldier_stats.json`
 * Tables: `python tools/bot_metrics.py --compare <json files>`.

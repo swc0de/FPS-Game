@@ -834,6 +834,8 @@ be added later behind the same event interface if you want.
 * **A-5.** The belief field lives on tactical points (2.5 m grid, denser near cover), not navmesh
   rectangles, which are too coarse for pre-aiming.
 * **A-6.** v2 becomes the default once it meets the criteria. Legacy stays behind `--ai legacy`.
+  (Done after the stacking fix, at your call: every criterion met except the win rate, which you
+  kept as is.)
 
 **Workstream B**
 
@@ -1015,6 +1017,9 @@ be added later behind the same event interface if you want.
   follow-up and Milestone 8 code measure the same in that session), under 4 ms but above
   legacy's 2.4 ms. You settled the spike rule as p99 ≤ 4 ms and no more ticks over 4 ms than
   legacy (met: 74-99 against 147-157).
+
+* v2 made the default brain (`data/bots.json` "default_ai", A-6), at your call; the Milestone 5 brain
+  stays behind `--ai legacy` / console `ai legacy`.
 
 **Open questions**
 * Optional: allow `ambientcg.com` / `api.polyhaven.com` in the environment's network settings

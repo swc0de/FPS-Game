@@ -7,7 +7,7 @@ outside: it wraps a few methods on the classes and instances that already
 exist, and never changes a decision. The same numbers are measured again after
 the overhaul, on the same machine and seeds, so the two can be compared.
 
-    python tools/bot_metrics.py --seed 1 --rounds 24 --full-match --out docs/baseline/legacy_normal_seed1.json
+    python tools/bot_metrics.py --seed 1 --rounds 24 --full-match --ai legacy --out docs/baseline/legacy_normal_seed1.json
     xvfb-run -a python tools/bot_metrics.py ...      # headless Linux
     python tools/bot_metrics.py --compare a.json b.json   # markdown table of key metrics
 
