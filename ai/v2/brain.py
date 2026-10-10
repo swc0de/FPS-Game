@@ -767,16 +767,18 @@ class BrainV2:
         if now >= self.next_think and self.team.think_slot(now):
             self.next_think = now + self.rng.uniform(0.11, 0.16)
             self.think(now)
-        if now < self.flashed_until:
+        flashed = now < self.flashed_until
+        if flashed:
             self._flashed(dt, now)
-            return
-        if now < self.frozen_until:
+        elif now < self.frozen_until:
             return                                   # panicked for a moment
-        self.action.run(dt, now)
+        else:
+            self.action.run(dt, now)
         # closer than 1.1 m to a teammate: checked 16 times a second, and the way apart held in
         # between (a step set every fourth tick and kept for one tick moved a quarter as far).
         # Standing still it is a walking step apart; moving or fighting, it bends the way, so
-        # two bots on one lane, at one goal or shooting from one spot spread out
+        # two bots on one lane, at one goal or shooting from one spot spread out. Blinded too:
+        # two flashed bots backed off side by side, or stood blind together, for seconds
         self._space_n += 1
         if self._space_n % 4 == 0:
             self._space_step = self._personal_space()
@@ -790,13 +792,17 @@ class BrainV2:
                 it.wish = Vec3(step)
                 it.walk = True
             else:
+                # at least a whole step: two bots crossing at spawn each slowed to 0.35 for the
+                # other ahead, and the bent step at that strength did not get them apart
                 v = w / n + step * 1.2
                 v.normalize()
-                it.wish = v * n
+                it.wish = v * max(n, 1.0)
         if bot.slow < 0.9 and it.wish.lengthSquared() > 0.01:
             # in razor wire: walking at a third of walking pace, ground friction ate all of it
             # (stuck for seconds); the wire rattles anyway, so there is nothing to gain by walking
             it.walk = False
+        if flashed:
+            return
         self._shoot_gadget(dt, now)
         self._choose_lean(now)
 
@@ -1478,8 +1484,8 @@ class BrainV2:
 
     def _personal_space(self) -> Vec3 | None:
         """Within 1.1 m of teammates (one grenade or spray gets both): the unit direction apart
-        (weighted by how close each is), sideways along a wall when straight apart is blocked;
-        or None."""
+        (weighted by how close each is), sideways along a wall when straight apart is blocked,
+        back onto the walkable mesh when standing off it; or None."""
         bot = self.bot
         p = bot.position()
         sx = sy = 0.0
@@ -1498,9 +1504,25 @@ class BrainV2:
             return None
         sx, sy = sx / n, sy / n
         side = 1.0 if stable_bit(bot.name) else -1.0
-        for ax, ay in ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side)):
-            if bot.nav.walkable_line(p, (p.x + ax * 0.8, p.y + ay * 0.8, p.z)):
+        nav = bot.nav
+        ways = ((sx, sy), (-sy * side, sx * side), (sy * side, -sx * side))
+        for ax, ay in ways:
+            if nav.walkable_line(p, (p.x + ax * 0.8, p.y + ay * 0.8, p.z)):
                 return Vec3(ax, ay, 0)
+        # every way "blocked" because the bot stands off the mesh, where no walkable line passes:
+        # in the wall margin beside a door or at a corner, up on a ledge or a crate. Five of the
+        # seven stacked pairs in the final matches stood like that. Judge the ways from the
+        # nearest walkable cell, or at least step onto it
+        if nav.locate((p.x, p.y, p.z), search=0) < 0:
+            q = nav.snap((p.x, p.y, p.z), search=3)
+            if q is not None:
+                for ax, ay in ways:
+                    if nav.walkable_line(q, (q[0] + ax * 0.8, q[1] + ay * 0.8, q[2])):
+                        return Vec3(ax, ay, 0)
+                v = Vec3(q[0] - p.x, q[1] - p.y, 0)
+                if v.lengthSquared() > 1e-4:
+                    v.normalize()
+                    return v
         return None
 
     def _shoot_gadget(self, dt: float, now: float) -> None:

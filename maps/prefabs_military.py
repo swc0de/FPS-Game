@@ -106,6 +106,23 @@ def building(ctx, e):
     if e.get("floor_mat", "concrete_floor"):
         ctx.box(((x0 + x1) / 2, (y0 + y1) / 2, z - 0.03), (x1 - x0 - 2 * t + 0.02, y1 - y0 - 2 * t + 0.02, 0.1),
                 e.get("floor_mat", "concrete_floor"), collide=True, occlude=False)
+        if z != 0.0:
+            # off the ground nothing covers the floor under a door: the slab stops at the walls'
+            # inner faces and the ground floor is not there, so a 0.3 m strip under each doorway
+            # had no floor. The bunker room was cut off from the navmesh by it (bots walked in
+            # anyway, with no mesh to follow). A threshold under every door opening
+            for side, openings in ops.items():
+                for op in openings:
+                    if op.get("bottom", 0.0) > 0.0:
+                        continue                                    # a window
+                    w = op["width"]
+                    if side in ("s", "n"):
+                        yc = y0 + t / 2 if side == "s" else y1 - t / 2
+                        c, size = (op["x"], yc, z - 0.03), (w, t + 0.1, 0.1)
+                    else:
+                        xc = x0 + t / 2 if side == "w" else x1 - t / 2
+                        c, size = (xc, op["y"], z - 0.03), (t + 0.1, w, 0.1)
+                    ctx.box(c, size, e.get("floor_mat", "concrete_floor"), collide=True, occlude=False)
     if e.get("roof", True):
         roof_mat, ceil_mat = e.get("roof_mat", "roof_membrane"), e.get("ceiling_mat", inn)
         top = z + h + roof_t

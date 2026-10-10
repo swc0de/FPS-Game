@@ -6,34 +6,170 @@ Measured on the v2 brain (`ai/v2/`) against the Phase 0 baseline in
 software OpenGL as the baseline. The cloud VM's speed drifts between sessions, so every timing
 comes with a legacy control run from the same session.
 
-The first part is the final state, after the follow-up to the merge of Milestones 7-9 into
-`main`. The second part is Milestone 8 as it was merged; the numbers from before its
-performance pass are in [`before_perf/`](before_perf/).
+The first part is the final state: the follow-up to the merge of Milestones 7-9 into `main`,
+then the stacking fix. The last part is Milestone 8 as it was merged; the numbers from before
+its performance pass are in [`before_perf/`](before_perf/).
 
-## Final summary (after the follow-up)
+## Final summary
 
 "In main before" is the code merged into `main`: Milestone 8 with Milestone 9's fitted hit boxes
 (v2 against v2 from [docs/results_m9/](../results_m9/README.md); its head-to-head was measured on
-the Milestone 8 hit boxes). Legacy is the Phase 0 baseline.
+the Milestone 8 hit boxes). "Follow-up" is `1ccd8f8` (merged as swc0de/FPS-Game#4), "final" is
+`5ecbe8a`, after the stacking fix. Legacy is the Phase 0 baseline.
 
-| criterion | target | legacy | in main before | final | met |
-|---|---|---|---|---|---|
-| v2 beats legacy (same aim and reaction numbers) | ≥ 70 % of rounds, ≥ 60 rounds, sides swapped | | 42 % (32/77) | **46 %** (39 of 85, Wilson 95 % CI 36-56): attack 29/42 (69 %), defence 10/43 (23 %) | **no**: kept as is, your decision |
-| deaths while reloading | lower | 20.3 % | 12.7 % | **6.5 %** | yes |
-| unseen deaths (killer not seen in the last 5 s) | lower | 8.4 % | 5.0 % | **5.2 %** | yes |
-| deaths traded within 3 s | higher | 13.6 % | 15.9 % | **17.7 %** | yes |
-| stacking (teammates within 0.8 m for 1 s) | ≤ 0.1 per round | 3.38 | 1.79 | **0.15** (7 in 48 rounds; seed 1 0.08, seed 2 0.21) | **no**, close |
-| stuck bots (5 s without progress) | 0 | 2 + 0 | 0 + 0 | **0 + 0** | yes |
-| no attack plan above 40 % of rounds | ≤ 40 % | 50 % | 29 % (as merged) | **33 %** (execute) | yes |
-| fairness audit, v2 | 0 violations | | 0 | **0** in every run (85 head-to-head rounds, 48 v2-vs-v2 rounds) | yes |
-| live tick mean | ≤ 1.3 × legacy | | 1.40 × (Milestone 8 as merged) | **1.25 ×** (8.21 against 6.59 ms, same session, no drawing) | yes |
-| live tick p95 | ≤ 1.3 × legacy | | 1.32 × | **1.15 ×** (13.17 against 11.41 ms) | yes |
-| AI decision spikes (rule re-based, your choice: v2's AI p99 at most legacy's in the same session; was ≤ 4 ms) | ≤ legacy's p99 | 5.97 ms in this session (3.11 at Phase 0) | 6.21 ms in this session (Milestone 8 as merged: 3.90 ms in its own session, 5.63 ms in this one) | **5.57 ms** | **yes**; the old absolute 4 ms: no, by either brain in this session (Performance below) |
-| tests | utility, belief, comms, tactical map, roles, audit | | 253 | **254**, all green (3 skipped); new or rewritten: no aim or reaction error beyond the profile, a hole blocked by a crate | yes |
+| criterion | target | legacy | in main before | follow-up | **final** | met |
+|---|---|---|---|---|---|---|
+| v2 beats legacy (same aim and reaction numbers) | ≥ 70 % of rounds, ≥ 60 rounds, sides swapped | | 42 % (32/77) | 46 % (39/85, CI 36-56) | **43 %** (31 of 72, Wilson 95 % CI 32-55): attack 21/33 (64 %), defence 10/39 (26 %) | **no**: kept as is, your decision |
+| deaths while reloading | lower | 20.3 % | 12.7 % | 6.5 % | **3.4 %** | yes |
+| unseen deaths (killer not seen in the last 5 s) | lower | 8.4 % | 5.0 % | 5.2 % | **6.2 %** | yes |
+| deaths traded within 3 s | higher | 13.6 % | 15.9 % | 17.7 % | **15.0 %** | yes |
+| stacking (teammates within 0.8 m for 1 s) | ≤ 0.1 per round | 3.38 | 1.79 | 0.15 | **0.04** (2 in 48 rounds; seeds 5-6 also 0.04) | **yes** |
+| stuck bots (5 s without progress) | 0 | 2 + 0 | 0 + 0 | 0 + 0 | **0 + 0** (seeds 5-6 too) | yes |
+| no attack plan above 40 % of rounds | ≤ 40 % | 50 % | 29 % (as merged) | 33 % | **33 %** (execute) | yes |
+| fairness audit, v2 | 0 violations | | 0 | 0 | **0** in every run (72 head-to-head rounds, 96 v2-vs-v2 rounds) | yes |
+| live tick mean | ≤ 1.3 × legacy | | 1.40 × (Milestone 8 as merged) | 1.25 × (a slow session) | **1.29 ×** (4.01 against 3.12 ms, same session, no drawing); the detail pairs 1.28 × and 1.33 × | yes, at the edge |
+| live tick p95 | ≤ 1.3 × legacy | | 1.32 × | 1.15 × | **1.21 ×** (6.35 against 5.26 ms) | yes |
+| AI decision spikes | ≤ 4 ms at p99 (Milestone 8); re-based after the follow-up to "at most legacy's in the same session" | 2.37 / 2.38 ms (two runs) | 3.05 ms (follow-up code, this session) | 5.57 against legacy's 5.97 ms (the slow session) | **3.02 / 3.24 ms** (two runs) | 4 ms: **yes**; at most legacy's: **no** in this session (decision in the ROADMAP) |
+| tests | utility, belief, comms, tactical map, roles, audit | | 253 | 254 | **257**, all green (3 skipped); new or rewritten: no aim or reaction error beyond the profile, a hole blocked by a crate, a way apart from off the mesh, regroup spots apart, the bunker room on the mesh | yes |
 
 Behaviour rows: means of the seed 1 and seed 2 matches (24 rounds each, Normal, v2 against v2
 for the whole match, `--audit`), legacy from the baseline runs with the same seeds and
 definitions.
+
+## The stacking fix
+
+After the follow-up, stacking was 0.15 incidents per round against the 0.1 target. Each
+incident was replayed from its seed (a seeded match repeats exactly) with a probe on both bots.
+Two more seeds (5 and 6, never used for tuning) showed it was worse than seeds 1-2 suggested:
+0.31 per round. Five causes, all fixed (`ai/v2/brain.py`, `ai/v2/strategy.py`,
+`ai/v2/controllers.py`, `maps/prefabs_military.py`):
+
+* **Flashed bots** (3 of the 7 on seeds 1-2): a blinded bot returned before the step apart, so
+  two flashed bots backed off side by side or stood blind together. The step apart now applies
+  while flashed too.
+* **Off the walkable mesh** (3 of 7): bots pressed into a wall's margin (beside a narrow door at
+  Barracks, at a wall edge on B Long, on a 0.45 m ledge at CT A) stand on cells that are not
+  walkable, where no walkable line starts, so every way apart looked blocked. The ways apart are
+  now judged from the nearest walkable cell, or the step goes onto it. The CT A pair had also
+  been given the same rotation spot: bots rotating or regrouping together now get spots 1.6 m
+  apart.
+* **A bent step too weak** (1 of 7): two bots crossing at spawn each slowed to 0.35 for the
+  other one ahead, and the step apart bent their way at that strength, which ground friction
+  ate. A bent step is now at least a whole step.
+* **The bunker room was not on the navmesh** (all 10 on seeds 5-6, 8 of them in one round:
+  attackers queued shoulder to shoulder underground). A building's floor slab stops at the
+  walls' inner faces; on the ground the ground floor covers the strip under a doorway, 3.2 m
+  down nothing did. The bunker room had no floor under its two doors, was cut off from the ramp
+  and the tunnel, and was dropped as unreachable (about 1,900 cells); bots of both brains walked
+  in anyway, with no mesh to follow. An off-ground building now gets a threshold under every door
+  (a shared level fix: legacy bots have the room on their mesh too).
+* **A stuck bot** that this showed up on seed 2: a defender put its own shield across the gap
+  between a gabion and the yard and stood in the corner with its path through the shield. It
+  jumped at the shield, the jump counted as progress, and the escape never started. Progress is
+  now measured over the ground, and the escape is judged from the nearest walkable cell.
+
+Tests: a way apart from off the mesh, regroup spots kept apart, the bunker room on the mesh
+with the route from the ramp to the tunnel through it (each fails on the old code).
+
+Stacking incidents per round and stuck bots, v2 against v2, 24 rounds each:
+
+| code | seed 1 | seed 2 | seed 5 | seed 6 | stuck |
+|---|---|---|---|---|---|
+| follow-up (`1ccd8f8`) | 0.08 | 0.21 | 0.38 | 0.25 | 0 |
+| + flashed, off-mesh, regroup spots, whole step (`bfa255e`) | 0.00 | 0.12 | 0.33 | 0.08 | 0 |
+| + bunker on the navmesh (`1c8523e`) | 0.08 | 0.00 | 0.00 | 0.04 | 1 (seed 2) |
+| **final**, + unstick (`5ecbe8a`) | **0.00** | **0.08** | **0.00** | **0.08** | **0** |
+
+### Head-to-head, final code
+
+| seed | v2 won | on attack | on defence |
+|---|---|---|---|
+| 201 | 13 / 15 | 12 / 12 | 1 / 3 |
+| 202 | 1 / 14 | 0 / 2 | 1 / 12 |
+| 203 | 11 / 24 | 8 / 12 | 3 / 12 |
+| 204 | 6 / 19 | 1 / 7 | 5 / 12 |
+| **all** | **31 / 72 (43 %, CI 32-55)** | 21 / 33 (64 %) | 10 / 39 (26 %) |
+
+* **The same as before within the interval** (46 % on the follow-up code, 46 % with the first
+  spacing fixes). Single matches swing widely: 201 ended 13-2 for v2, 202 13-1 for legacy (v2
+  started on defence and won 1 of 12). Fewer rounds than before because two matches ended early.
+* **Attack**: rushes won 4 of 4, contact 5 of 7, executes 6 of 9, defaults 3 of 6, splits 2 of 6.
+  **Defence**: retake won 4 of 13, 2-1-2 3 of 13, aggressive 2 of 4, stack 1 of 9; legacy got the
+  first kill in 24 of the 39 rounds v2 defended.
+* **Fights**: v2 kills 229, deaths 278; deaths while reloading 15 against legacy's 41, to an
+  enemy never seen 10 against 29; traded 44 of v2's deaths (15.8 %) against 34 of legacy's
+  (14.8 %).
+* **Utility**: 111 flashes (37 % blinded an enemy), 7 smokes, 16 frags. **Fairness**: legacy read
+  hidden state 34,340 times; v2 0.
+
+### Behaviour, final code: v2 against v2
+
+| metric | legacy | in main before | follow-up | final, seed 1 | final, seed 2 | final, mean |
+|---|---|---|---|---|---|---|
+| attack round wins % | 62 | 64.5 | 79 | 71 | 71 | **71** |
+| deaths while reloading % | 20.3 | 12.7 | 6.5 | 4.3 | 2.4 | **3.4** |
+| unseen deaths % (killer not seen in the last 5 s) | 8.4 | 5.0 | 5.2 | 8.1 | 4.3 | **6.2** |
+| killer never seen that round % | 7.0 | 3.5 | 3.4 | 5.0 | 2.4 | **3.7** |
+| deaths traded within 3 s % | 13.6 | 15.9 | 17.7 | 13.6 | 16.5 | **15.0** |
+| traded, of tradeable deaths % | 22.3 | 26.7 | 28.7 | 26.2 | 29.9 | **28.0** |
+| killer's sight of victim before the kill s | 3.30 | 2.06 | 1.95 | 2.11 | 2.14 | **2.12** |
+| live time seen by an enemy % | 28.3 | 20.5 | 18.5 | 18.1 | 15.4 | **16.8** |
+| stacking incidents per round | 3.38 | 1.79 | 0.15 | 0.00 | 0.08 | **0.04** |
+| clumps (3+ within 2.5 m for 2 s) | 22.5 | 34.5 | 35 | 44 | 41 | **42.5** |
+| stuck bots | 2 + 0 | 0 + 0 | 0 + 0 | 0 | 0 | **0 + 0** |
+| path-follower micro-stucks | 82 | 407 | 216 | 276 | 199 | **238** |
+| bullet hits / shots % | 39.5 | 44 | 45 | 44 | 49 | **47** |
+| flashes that blinded an enemy % | 0 | 40 | 37 | 33 | 37 | **35** |
+| largest attack plan share % | 50 / 42 (execute) | 29 (as merged) | 33 | 33 (execute) | 29 (execute) | **33** |
+
+Seeds 5 and 6 on the final code: stacking 0.00 and 0.08, stuck 0, deaths while reloading 4.5 and
+6.1 %, unseen deaths 9.1 and 9.4 %, trades 10.4 and 12.7 %, largest plan 33 %, audit 0. Trades on
+single matches range from about 10 to 23 % on the same code, as found before.
+
+### Performance, final code
+
+Seed 3, 8 rounds, Normal, no drawing (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`, the same 64 Hz
+game logic), alone on the machine, one run after the other in one session. This session (after a
+container restart) runs about twice as fast as the one that measured the follow-up.
+
+| | legacy control | v2 | ratio | budget |
+|---|---|---|---|---|
+| live tick mean ms | 3.12 | **4.01** | **1.29 ×** | ≤ 1.3 × |
+| live tick p95 ms | 5.26 | **6.35** | **1.21 ×** | ≤ 1.3 × |
+| live tick p99 ms | 7.41 | 8.41 | 1.13 × | |
+| with the per-subsystem timers, two pairs: mean ms | 3.32, 3.39 | 4.25, 4.52 | 1.28 ×, 1.33 × | |
+
+Same session, with the per-subsystem timers:
+
+| code | brain | AI decisions mean / p95 / p99 ms | ticks with AI over 4 ms | worst AI tick ms |
+|---|---|---|---|---|
+| final (`5ecbe8a`) | legacy | 0.57 / 1.28 / **2.37**; repeat 0.59 / 1.31 / **2.38** | 147; 157 | 28.3 (a path search); 110.5 |
+| final | v2 | 1.12 / 2.25 / **3.02**; repeat 1.21 / 2.41 / **3.24** | 74; 99 | 8.2; 10.5 |
+| follow-up (`1ccd8f8`) | v2 | 1.20 / 2.31 / 3.05 | 66 | 8.1 |
+| Milestone 8 as merged (`5877274`, mannequins) | v2 | 1.22 / 2.35 / 3.18 | 97 | 7.0 |
+
+* **The tick budget is met, at its edge**: 1.29 × in the plain pair, 1.28 × and 1.33 × in two
+  detail pairs (single runs vary by a few per cent). The slow session measured 1.25 ×.
+* **The stacking fix costs nothing measurable**: v2's AI is the same as on the follow-up code
+  and on the Milestone 8 code in this session (p99 3.0-3.2 ms).
+* **The AI spike rule** depends on which version you keep:
+  * "AI p99 ≤ 4 ms" (your Milestone 8 choice): **met**, 3.02-3.24 ms;
+  * "at most legacy's in the same session" (your re-based choice after the follow-up): **not
+    met** here, legacy 2.37-2.38 ms. It was met in the slow session (5.57 against 5.97 ms), where
+    a bot's shot cost 11-13 ms at p99 and dominated legacy's spikes; in this session a shot costs
+    5 ms and legacy's ordinary decisions are cheaper than v2's. v2 has fewer ticks over 4 ms than
+    legacy here (74-99 against 147-157) and a much lower worst tick (8-10 against 28-110 ms).
+  ROADMAP, "Decision to confirm".
+* The longest ticks (55-92 ms) are garbage-collection pauses (51-86 ms), except one 116 ms legacy
+  tick with a 108 ms perception call.
+
+### Files
+
+* `final/h2h/s201.json` ... `s204.json`: the four head-to-head matches on the final code.
+* `final/v2_normal_seed{1,2,5,6}.json`: v2 against v2, 24 rounds, Normal, `--audit`.
+* `final/timing/`: the timing pair, two detail pairs, and the same-session controls
+  (`control_followup_v2_*`, `control_m8_v2_*`).
+* `follow_up/`: the same for the follow-up code (`1ccd8f8`), with its same-session controls.
 
 ## The follow-up
 
@@ -47,7 +183,7 @@ sides swapped, as below):
 | stuck fixes (holes blocked by an obstacle, razor wire); equal mechanics (your choice) | `b443e11`, `b633099` | 33 / 85 (39 %, CI 29-49) | 27 / 39 | 6 / 46 |
 | lighter mistakes (your choice: Normal at the old Expert rates) | `0f500d5` | 43 / 89 (48 %, CI 38-59) | 29 / 44 | 14 / 45 |
 | retake: in together, defuse only when safe or forced | `4d1a5af` | 41 / 90 (46 %, CI 36-56) | 29 / 43 | 12 / 47 |
-| **final**: holds that watch one entry, no gadget placing once the round is live | `1ccd8f8` | **39 / 85 (46 %, CI 36-56)** | 29 / 42 | 10 / 43 |
+| **follow-up**: holds that watch one entry, no gadget placing once the round is live | `1ccd8f8` | **39 / 85 (46 %, CI 36-56)** | 29 / 42 | 10 / 43 |
 
 Two diagnostics on `3d1dd4c` (not committed) decided the human-error questions you answered:
 
@@ -99,7 +235,7 @@ follow-up is +4 points over the merged 42 % (+11 over the first step).
     (13 of the 67 were still placing wire or a sensor in an entry 20 s in).
 * **Metrics**: the v2 defence setup per round (`setups_detail`).
 
-### Head-to-head, final code
+### Head-to-head, follow-up code (`1ccd8f8`)
 
 ```
 # seeds 201 and 203 with --ai team0=v2,team1=legacy; 202 and 204 with --ai team0=legacy,team1=v2
@@ -128,9 +264,9 @@ BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64 BOT_DEMO_ROUNDS=30 BOT_DEMO_JSON=s201.json
   threw one frag.
 * **Fairness**: legacy read hidden state 36,856 times in the four matches; v2 0.
 
-### Behaviour, final code: v2 against v2
+### Behaviour, follow-up code: v2 against v2
 
-| metric | legacy | in main before | final, seed 1 | final, seed 2 | final, mean |
+| metric | legacy | in main before | seed 1 | seed 2 | mean |
 |---|---|---|---|---|---|
 | attack round wins % | 62 | 64.5 | 83 | 75 | **79** |
 | deaths while reloading % | 20.3 | 12.7 | 4.6 | 8.5 | **6.5** |
@@ -151,7 +287,7 @@ BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64 BOT_DEMO_ROUNDS=30 BOT_DEMO_JSON=s201.json
 | largest attack plan share % | 50 / 42 (execute) | 29 (as merged) | 33 (execute) | 33 (execute) | **33** |
 
 `python tools/bot_metrics.py --compare docs/baseline/legacy_normal_seed1.json
-docs/results/final/v2_normal_seed1.json` prints the rows for one seed.
+docs/results/follow_up/v2_normal_seed1.json` prints the rows for one seed.
 
 * **Stacking: 0.15 per round**, 7 incidents in 48 rounds (target 0.1, i.e. at most 4.8), from
   1.79 in `main` and 3.38 for legacy. Seed 1 is under the target (0.08), seed 2 over (0.21). The
@@ -168,7 +304,7 @@ docs/results/final/v2_normal_seed1.json` prints the rows for one seed.
   its defence, as in the head-to-head.
 * **Audit**: 0 violations in both matches.
 
-### Performance, final code
+### Performance, follow-up code
 
 Seed 3, 8 rounds, Normal, the same method for every row: `--full-match`, no drawing
 (`BOT_DEMO_NORENDER=1 BOT_DEMO_TICKS=64`, the same 64 Hz game logic), alone on the machine, one
@@ -198,12 +334,12 @@ higher than in the plain runs above):
 |---|---|---|---|---|---|
 | Milestone 8 as merged (mannequins, `5877274`) | legacy | 5.34 / 10.14 | | 0.94 / 4.18 | 401 |
 | | v2 | 7.80 / 14.10 | 1.46 × / 1.39 × | 2.08 / **5.63** | 2,092 |
-| `main` before the follow-up (`ecd07bd`) | v2 | 9.24 / 14.59 | 1.31 × / 1.18 × against the final legacy | 2.37 / **6.21** | 3,411 |
-| final (`1ccd8f8`) | legacy | 7.03 / 12.32 | | 1.20 / 5.97 | 950 |
+| `main` before the follow-up (`ecd07bd`) | v2 | 9.24 / 14.59 | 1.31 × / 1.18 × against the follow-up's legacy | 2.37 / **6.21** | 3,411 |
+| follow-up (`1ccd8f8`) | legacy | 7.03 / 12.32 | | 1.20 / 5.97 | 950 |
 | | v2 | 8.42 / 13.27 | 1.20 × / 1.08 × | 2.13 / **5.57** | 2,156 |
 
-There is no legacy run on `main`: its legacy differs from the final one only by the navmesh fix,
-so the final legacy run stands in.
+There is no legacy run on `main`: its legacy differs from the follow-up's only by the navmesh fix,
+so the follow-up's legacy run stands in.
 
 * **The tick budget is met**: v2's tick is 1.25 × legacy's at the mean and 1.15 × at p95.
   Milestone 8 as merged was 1.40 × / 1.32 × in its own measurement and 1.46 × / 1.39 × in this
@@ -214,22 +350,22 @@ so the final legacy run stands in.
   (5.57 against 5.97 ms). As the absolute 4 ms it was before, it is met by neither brain in this
   measurement. This session and method measure higher than the ones before: the same
   Milestone 8 code that met the rule at 3.90 ms (its own session, rendering on) measures 5.63 ms
-  here, and its legacy 4.18 ms (3.11 at Phase 0). Against the same-session controls the final v2
+  here, and its legacy 4.18 ms (3.11 at Phase 0). Against the same-session controls the follow-up v2
   is at the Milestone 8 level (5.57 against 5.63), below `main` before the follow-up (6.21) and
   below legacy (5.97): the follow-up added no AI cost (mean 2.37 → 2.13 ms). Milestone 9 made a
   bot's shot dearer for both brains (`fire` p99 3.9-4.1 → 11-13 ms; it covers the hit tests and
   what a kill sets off, both changed by Milestone 9), and that counts as AI time because bots
-  shoot from their brain update. Scaled by the Milestone 8 control, the final v2 would be about
+  shoot from their brain update. Scaled by the Milestone 8 control, the follow-up v2 would be about
   3.9 ms in the session where the 4 ms rule was set.
 * The longest ticks of the detail runs (135 ms legacy, 142 ms v2) are garbage-collection pauses
   (130 and 131 ms).
 
 ### Files
 
-* `final/h2h/s201.json` ... `s204.json`: the four head-to-head matches on the final code.
-* `final/v2_normal_seed1.json`, `final/v2_normal_seed2.json`: v2 against v2, 24 rounds, Normal,
-  `--audit`.
-* `final/timing/`: the timing pair (`*_timing*.json`, whole ticks only), the detail pair
+* `follow_up/h2h/s201.json` ... `s204.json`: the four head-to-head matches on the follow-up code.
+* `follow_up/v2_normal_seed1.json`, `follow_up/v2_normal_seed2.json`: v2 against v2, 24 rounds,
+  Normal, `--audit`.
+* `follow_up/timing/`: the timing pair (`*_timing*.json`, whole ticks only), the detail pair
   (`*_detail*.json`, per subsystem) and the three same-session controls (`control_*.json`:
   `main` before the follow-up, Milestone 8 v2 and legacy).
 
